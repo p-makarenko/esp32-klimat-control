@@ -1,0 +1,274 @@
+﻿
+#include "actuator_manager.h"
+#include "system_core.h"
+#include <Arduino.h>
+#include "advanced_climate_logic.h"
+#include "utility_functions.h"
+Servo ventServo;
+
+void initPWM() {
+  ledcSetup(0, PWM_FREQ, PWM_RESOLUTION); ledcSetup(1, 0);
+  ledcSetup(0, PWM_FREQ, PWM_RESOLUTION); ledcSetup(2, 1); ledcSetup(1, 0); ledcAttachPin(PUMP_PWM_PIN, 2);
+  ledcSetup(0, PWM_FREQ, PWM_RESOLUTION); ledcSetup(2, 1); ledcSetup(1, 0); ledcAttachPin(FAN_PWM_PIN, 2);
+  
+  ledcWrite(PUMP_PWM_PIN, 0); ledcSetup(2, 1);
+  ledcWrite(FAN_PWM_PIN, 0); ledcAttachPin(EXTRACTOR_PIN, 2);
+  ledcWrite(EXTRACTOR_PIN, 0);
+  
+  Serial.println("вњ“ PWM РєР°РЅР°Р»Рё С–РЅС–С†С–Р°Р»С–Р·РѕРІР°РЅРѕ");
+}
+
+void initServo() {
+  ESP32PWM::allocateTimer(3);
+  ventServo.setPeriodHertz(50);
+  
+  ventState.switchState = digitalRead(VENT_SWITCH_PIN);
+  ventState.open = (ventState.switchState == HIGH);
+  ventState.currentAngle = ventState.open ? SERVO_OPEN_ANGLE : SERVO_CLOSED_ANGLE;
+  ventState.moving = false;
+  ventState.servoAttached = false;
+  
+  ventServo.attach(SERVO_PIN);
+  ventServo.write(ventState.currentAngle);
+  delay(1000);
+  ventServo.detach();
+  
+  Serial.printf("вњ“ РЎРµСЂРІРѕРїСЂРёРІС–Рґ С–РЅС–С†С–Р°Р»С–Р·РѕРІР°РЅРѕ: %s (%dВ°)\n", 
+                ventState.open ? "Р’Р†Р”РљР РРўРђ" : "Р—РђРљР РРўРђ", ventState.currentAngle);
+}
+
+void initGPIO() {
+  pinMode(VENT_SWITCH_PIN, INPUT_PULLUP);
+  pinMode(HUMIDIFIER_PIN, OUTPUT);
+  digitalWrite(HUMIDIFIER_PIN, LOW);
+  
+  Serial.println("вњ“ GPIO С–РЅС–С†С–Р°Р»С–Р·РѕРІР°РЅРѕ");
+}
+
+void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower) {
+  if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+    // Р’РЎР• РјС–РЅС–РјСѓРјРё РІРёРґР°Р»СЏС”РјРѕ Р· С†С–С”С— С„СѓРЅРєС†С–С— - РІРѕРЅРё РІР¶Рµ Р·Р°СЃС‚РѕСЃРѕРІР°РЅС– Сѓ setXPercent()
+    heatingState.pumpPower = pumpPower;
+    heatingState.fanPower = fanPower;
+    heatingState.extractorPower = extractorPower;
+    
+    ledcWrite(PUMP_PWM_PIN, heatingState.pumpPower);
+    ledcWrite(FAN_PWM_PIN, heatingState.fanPower);
+    ledcWrite(EXTRACTOR_PIN, heatingState.extractorPower);
+    
+    xSemaphoreGive(getHeatingMutex());
+  }
+}
+
+void setPumpPercent(uint8_t percent) {
+  // РўС–Р»СЊРєРё РІ Р°РІС‚РѕРјР°С‚РёС‡РЅРѕРјСѓ СЂРµР¶РёРјС– Р·Р°СЃС‚РѕСЃРѕРІСѓРІР°С‚Рё РјС–РЅС–РјСѓРј/РјР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+  if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
+    // Р’ Р°РІС‚Рѕ СЂРµР¶РёРјС–: РјС–РЅС–РјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ РїСЂРё РќР•РќРЈР›Р¬РћР’РћРњРЈ Р·РЅР°С‡РµРЅРЅС–
+    if (percent > 0 && percent < config.pumpMinPercent) {
+      percent = config.pumpMinPercent;
+    }
+    // РњР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+    if (percent > config.pumpMaxPercent) {
+      percent = config.pumpMaxPercent;
+    }
+  } else {
+    // РЈ СЂСѓС‡РЅРѕРјСѓ/С„РѕСЂСЃР°Р¶РЅРѕРјСѓ/Р°РІР°СЂС–Р№РЅРѕРјСѓ СЂРµР¶РёРјС–: Р‘РЈР”Р¬-РЇРљР• Р·РЅР°С‡РµРЅРЅСЏ, РІРєР»СЋС‡Р°СЋС‡Рё 0%
+    percent = constrain(percent, 0, 100);
+  }
+  
+  uint8_t pwmValue = map(percent, 0, 100, 0, 255);
+  setHeatingPower(pwmValue, heatingState.fanPower, heatingState.extractorPower);
+}
+
+void setFanPercent(uint8_t percent) {
+  // РўС–Р»СЊРєРё РІ Р°РІС‚РѕРјР°С‚РёС‡РЅРѕРјСѓ СЂРµР¶РёРјС– Р·Р°СЃС‚РѕСЃРѕРІСѓРІР°С‚Рё РјС–РЅС–РјСѓРј/РјР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+  if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
+    // Р’ Р°РІС‚Рѕ СЂРµР¶РёРјС–: РјС–РЅС–РјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ РїСЂРё РќР•РќРЈР›Р¬РћР’РћРњРЈ Р·РЅР°С‡РµРЅРЅС–
+    if (percent > 0 && percent < config.fanMinPercent) {
+      percent = config.fanMinPercent;
+    }
+    // РњР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+    if (percent > config.fanMaxPercent) {
+      percent = config.fanMaxPercent;
+    }
+  } else {
+    // РЈ СЂСѓС‡РЅРѕРјСѓ/С„РѕСЂСЃР°Р¶РЅРѕРјСѓ/Р°РІР°СЂС–Р№РЅРѕРјСѓ СЂРµР¶РёРјС–: Р‘РЈР”Р¬-РЇРљР• Р·РЅР°С‡РµРЅРЅСЏ, РІРєР»СЋС‡Р°СЋС‡Рё 0%
+    percent = constrain(percent, 0, 100);
+  }
+  
+  uint8_t pwmValue = map(percent, 0, 100, 0, 255);
+  setHeatingPower(heatingState.pumpPower, pwmValue, heatingState.extractorPower);
+}
+
+void setExtractorPercent(uint8_t percent) {
+  // РўС–Р»СЊРєРё РІ Р°РІС‚РѕРјР°С‚РёС‡РЅРѕРјСѓ СЂРµР¶РёРјС– Р·Р°СЃС‚РѕСЃРѕРІСѓРІР°С‚Рё РјС–РЅС–РјСѓРј/РјР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+  if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
+    // Р’ Р°РІС‚Рѕ СЂРµР¶РёРјС–: РјС–РЅС–РјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ РїСЂРё РќР•РќРЈР›Р¬РћР’РћРњРЈ Р·РЅР°С‡РµРЅРЅС–
+    if (percent > 0 && percent < config.extractorMinPercent) {
+      percent = config.extractorMinPercent;
+    }
+    // РњР°РєСЃРёРјСѓРј Р· РЅР°Р»Р°С€С‚СѓРІР°РЅСЊ
+    if (percent > config.extractorMaxPercent) {
+      percent = config.extractorMaxPercent;
+    }
+  } else {
+    // РЈ СЂСѓС‡РЅРѕРјСѓ/С„РѕСЂСЃР°Р¶РЅРѕРјСѓ/Р°РІР°СЂС–Р№РЅРѕРјСѓ СЂРµР¶РёРјС–: Р‘РЈР”Р¬-РЇРљР• Р·РЅР°С‡РµРЅРЅСЏ, РІРєР»СЋС‡Р°СЋС‡Рё 0%
+    percent = constrain(percent, 0, 100);
+  }
+  
+  uint8_t pwmValue = map(percent, 0, 100, 0, 255);
+  setHeatingPower(heatingState.pumpPower, heatingState.fanPower, pwmValue);
+}
+
+void moveServoSmooth(int targetAngle) {
+  if (targetAngle == ventState.currentAngle) {
+    return;
+  }
+  
+  if (!ventState.servoAttached) {
+    ventServo.attach(SERVO_PIN);
+    ventState.servoAttached = true;
+    delay(50);
+  }
+  
+  int startAngle = ventState.currentAngle;
+  int step = (targetAngle > startAngle) ? 1 : -1;
+  
+  for (int angle = startAngle; angle != targetAngle; angle += step) {
+    ventServo.write(angle);
+    delay(20);
+  }
+  
+  ventServo.write(targetAngle);
+  ventState.currentAngle = targetAngle;
+  ventState.open = (targetAngle == SERVO_OPEN_ANGLE);
+  
+  delay(SERVO_DETACH_DELAY);
+  ventServo.detach();
+  ventState.servoAttached = false;
+  ventState.moving = false;
+}
+
+void controlVentilation() {
+  if (ventState.moving) {
+    return;
+  }
+  
+  bool switchState = digitalRead(VENT_SWITCH_PIN);
+  
+  if (switchState && !ventState.open) {
+    ventState.moving = true;
+    moveServoSmooth(SERVO_OPEN_ANGLE);
+    Serial.println("вњ“ Р’РµРЅС‚РёР»СЏС†С–СЏ РІС–РґРєСЂРёС‚Р° (РјРµС…Р°РЅС–С‡РЅРёР№ РІРёРјРёРєР°С‡)");
+  } else if (!switchState && ventState.open) {
+    ventState.moving = true;
+    moveServoSmooth(SERVO_CLOSED_ANGLE);
+    Serial.println("вњ“ Р’РµРЅС‚РёР»СЏС†С–СЏ Р·Р°РєСЂРёС‚Р° (РјРµС…Р°РЅС–С‡РЅРёР№ РІРёРјРёРєР°С‡)");
+  }
+}
+
+void controlHumidifier(float humidity, float tempRoom) {
+  if (!config.humidityConfig.enabled || !config.humidifierEnabled) {
+    digitalWrite(HUMIDIFIER_PIN, LOW);
+    humidifierState.active = false;
+    return;
+  }
+  
+  float adaptiveHumMin, adaptiveHumMax;
+  calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
+  
+  unsigned long now = millis();
+  
+  // РџРµСЂРµРІС–СЂРєР° РЅР° РјР°РєСЃРёРјР°Р»СЊРЅРёР№ С‡Р°СЃ СЂРѕР±РѕС‚Рё
+  if (humidifierState.active && 
+      now - humidifierState.startTime > config.humidityConfig.maxRunTime) {
+    digitalWrite(HUMIDIFIER_PIN, LOW);
+    humidifierState.active = false;
+    Serial.println("вљ  Р—РІРѕР»РѕР¶СѓРІР°С‡: Р°РІС‚РѕРјР°С‚РёС‡РЅРѕ РІРёРјРєРЅРµРЅРѕ С‡РµСЂРµР· РјР°РєСЃРёРјР°Р»СЊРЅРёР№ С‡Р°СЃ СЂРѕР±РѕС‚Рё");
+    return;
+  }
+  
+  // РџРµСЂРµРІС–СЂРєР° РЅР° РјС–РЅС–РјР°Р»СЊРЅРёР№ С–РЅС‚РµСЂРІР°Р»
+  if (!humidifierState.active && 
+      now - humidifierState.lastCycle < config.humidityConfig.minInterval) {
+    return;
+  }
+  
+  // Р›РѕРіС–РєР° РІРјРёРєР°РЅРЅСЏ/РІРёРјРёРєР°РЅРЅСЏ
+  if (!humidifierState.active && humidity < adaptiveHumMin) {
+    digitalWrite(HUMIDIFIER_PIN, HIGH);
+    humidifierState.active = true;
+    humidifierState.startTime = now;
+    humidifierState.cyclesToday++;
+    Serial.printf("вњ“ Р—РІРѕР»РѕР¶СѓРІР°С‡: РЈР’Р†РњРљРќР•РќРћ (Р’РѕР»РѕРіС–СЃС‚СЊ: %.1f%%, Р¦С–Р»СЊ: %.1f%%)\n", 
+                  humidity, adaptiveHumMin);
+  } 
+  else if (humidifierState.active && humidity > adaptiveHumMax) {
+    digitalWrite(HUMIDIFIER_PIN, LOW);
+    humidifierState.active = false;
+    humidifierState.lastCycle = now;
+    Serial.printf("вњ“ Р—РІРѕР»РѕР¶СѓРІР°С‡: Р’РРњРљРќР•РќРћ (Р’РѕР»РѕРіС–СЃС‚СЊ: %.1f%%, Р¦С–Р»СЊ: %.1f%%)\n", 
+                  humidity, adaptiveHumMax);
+  }
+}
+
+void heatingTask(void *parameter) {
+  Serial.println("вњ“ Р—Р°РґР°С‡Сѓ РѕР±С–РіСЂС–РІСѓ Р·Р°РїСѓС‰РµРЅРѕ");
+  
+  while (1) {
+    float tempRoom = 0, tempCarrier = 0, humidity = 0;
+    
+    if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
+      tempRoom = sensorData.tempRoom;
+      tempCarrier = sensorData.tempCarrier;
+      humidity = sensorData.humidity;
+      xSemaphoreGive(getSensorMutex());
+    }
+    
+    if (config.humidifierEnabled) {
+      controlHumidifier(humidity, tempRoom);
+    }
+    
+    if (heatingState.emergencyMode) {
+      if (getEmergencyStartTime() == 0) {
+        setEmergencyStartTime(millis());
+        setEmergencyStartTempCarrier(tempCarrier);
+        setEmergencyStartTempRoom(tempRoom);
+        Serial.println("рџљЁ РђР’РђР РР™РќРР™ Р Р•Р–РРњ: Р·Р°РїСѓС‰РµРЅРѕ РїРµСЂРµРІС–СЂРєСѓ РїСЂРѕРіСЂС–РІСѓ...");
+      }
+      
+      checkEmergencyTimeout();
+    } else {
+      if (getEmergencyStartTime() > 0) {
+        setEmergencyStartTime(0);
+        setEmergencyStartTempCarrier(0);
+        setEmergencyStartTempRoom(0);
+      }
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+void ventilationTask(void *parameter) {
+  Serial.println("вњ“ Р—Р°РґР°С‡Сѓ РІРµРЅС‚РёР»СЏС†С–С— Р·Р°РїСѓС‰РµРЅРѕ");
+  
+  while (1) {
+    if (!config.manualVentControl) {
+      controlVentilation();
+    }
+    
+    // РџРµСЂРµРІС–СЂРєР° СЃС‚Р°РЅСѓ РјРµС…Р°РЅС–С‡РЅРѕРіРѕ РІРёРјРёРєР°С‡Р°
+    bool newSwitchState = digitalRead(VENT_SWITCH_PIN);
+    if (newSwitchState != ventState.switchState) {
+      ventState.switchState = newSwitchState;
+      if (!config.manualVentControl) {
+        controlVentilation();
+      }
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(1000)); // 1 СЃРµРєСѓРЅРґР°
+  }
+}
+
+
