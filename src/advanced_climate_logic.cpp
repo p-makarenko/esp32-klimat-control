@@ -562,27 +562,38 @@ void smartHeatingControl() {
         xSemaphoreGive(getSensorMutex());
     }
     
-    // Перевіряємо аварійні режими
-    if (tempRoom <= TEMP_EMERGENCY_LOW) {
-        if (!heatingState.emergencyMode) {
-            setEmergencyStartTime(millis());
-            setEmergencyStartTempCarrier(tempCarrier);
-            setEmergencyStartTempRoom(tempRoom);
+    // Перевіряємо аварійні режими (тільки в автоматичному режимі)
+    if (!heatingState.manualMode) {
+        if (tempRoom <= TEMP_EMERGENCY_LOW) {
+            if (!heatingState.emergencyMode) {
+                setEmergencyStartTime(millis());
+                setEmergencyStartTempCarrier(tempCarrier);
+                setEmergencyStartTempRoom(tempRoom);
+            }
+            
+            heatingState.emergencyMode = true;
+            heatingState.forceMode = false;
+            setPumpPercent(100);
+            setFanPercent(100);
+            Serial.println("⚠ АВАРІЙНИЙ РЕЖИМ: КРИТИЧНО НИЗЬКА ТЕМПЕРАТУРА!");
+            return;
         }
         
-        heatingState.emergencyMode = true;
-        setPumpPercent(100);
-        setFanPercent(100);
-        Serial.println("⚠ АВАРІЙНИЙ РЕЖИМ: КРИТИЧНО НИЗЬКА ТЕМПЕРАТУРА!");
-        return;
-    }
-    
-    if (tempRoom <= TEMP_CRITICAL_LOW) {
-        heatingState.forceMode = true;
-        setPumpPercent(80);
-        setFanPercent(80);
-        Serial.println("‼ ФОРСОВАНИЙ РЕЖИМ: НИЗЬКА ТЕМПЕРАТУРА!");
-        return;
+        if (tempRoom <= TEMP_CRITICAL_LOW) {
+            heatingState.forceMode = true;
+            heatingState.emergencyMode = false;
+            setPumpPercent(80);
+            setFanPercent(80);
+            Serial.println("‼ ФОРСОВАНИЙ РЕЖИМ: НИЗЬКА ТЕМПЕРАТУРА!");
+            return;
+        }
+        
+        // Якщо температура нормальна - скидаємо спеціальні режими
+        if (heatingState.forceMode || heatingState.emergencyMode) {
+            heatingState.forceMode = false;
+            heatingState.emergencyMode = false;
+            Serial.println("✓ Повернення до нормального АВТО режиму");
+        }
     }
     
     // Адаптивне управління обігрівом
@@ -806,7 +817,8 @@ void advancedLogicTask(void *parameter) {
             xSemaphoreGive(getSensorMutex());
         }
         
-        if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
+        // Автоматичне керування (АВТО режим включає підрежими ФОРСАЖ і АВАРІЯ)
+        if (!heatingState.manualMode) {
             smartHeatingControl();
         }
         

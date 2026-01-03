@@ -243,7 +243,8 @@ void handleRoot() {
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
     html += "<title>Клімат-контроль</title>";
     html += "<style>";
-    html += "body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }";
+    html += "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');";
+    html += "body { font-family: 'Roboto', sans-serif; margin: 20px; background: #f0f0f0; }";
     html += ".container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }";
     html += ".header { text-align: center; margin-bottom: 30px; }";
     html += ".status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 30px 0; }";
@@ -255,7 +256,7 @@ void handleRoot() {
     html += ".power-value { font-size: 1.8em; font-weight: bold; color: #2c3e50; }";
     
     html += ".command-section { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }";
-    html += "#commandOutput { background: white; padding: 10px; border-radius: 5px; font-family: monospace; min-height: 50px; white-space: pre-wrap; overflow-y: auto; max-height: 200px; }";
+    html += "#commandOutput { background: white; padding: 10px; border-radius: 5px; font-family: 'Consolas', monospace; min-height: 50px; white-space: pre-wrap; overflow-y: auto; max-height: 200px; }";
     html += ".quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }";
     html += ".quick-btn { background: #e0e0e0; padding: 8px 12px; border-radius: 4px; cursor: pointer; border: none; transition: background 0.2s; }";
     html += ".quick-btn:hover { background: #bdbdbd; }";
@@ -277,25 +278,26 @@ void handleRoot() {
     html += "<div class='header'>";
     html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ v4.0</h1>";
     html += "<p>IP: " + WiFi.localIP().toString() + " | " + getTimeString() + "</p>";
+    html += "<div style='display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: bold; margin-top: 10px;'>";
+    html += "Режим: <span id='currentMode'>";
+    html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
+    html += "</span></div>";
     html += "</div>";
     
     html += "<div class='power-indicators'>";
     html += "<div class='power-item'>";
-    html += "<div class='power-label'>НАСОС (A)</div>";
+    html += "<div class='power-label'>💧 НАСОС</div>";
     html += "<div class='power-value' id='pumpPower'>" + String((heatingState.pumpPower * 100) / 255) + "%</div>";
-    html += "<div style='font-size: 0.8em; color: #666;'>PWM: " + String(heatingState.pumpPower) + "</div>";
     html += "</div>";
     
     html += "<div class='power-item'>";
-    html += "<div class='power-label'>ВЕНТИЛЯТОР (B)</div>";
+    html += "<div class='power-label'>🌪️ ВЕНТИЛЯТОР</div>";
     html += "<div class='power-value' id='fanPower'>" + String((heatingState.fanPower * 100) / 255) + "%</div>";
-    html += "<div style='font-size: 0.8em; color: #666;'>PWM: " + String(heatingState.fanPower) + "</div>";
     html += "</div>";
     
     html += "<div class='power-item'>";
-    html += "<div class='power-label'>ВИТЯЖКА (C)</div>";
+    html += "<div class='power-label'>💨 ВИТЯЖКА</div>";
     html += "<div class='power-value' id='extractorPower'>" + String((heatingState.extractorPower * 100) / 255) + "%</div>";
-    html += "<div style='font-size: 0.8em; color: #666;'>PWM: " + String(heatingState.extractorPower) + "</div>";
     html += "</div>";
     html += "</div>";
     
@@ -304,6 +306,7 @@ void handleRoot() {
     html += "<h3>🌡️ ТЕМПЕРАТУРА</h3>";
     html += "<div class='status-value temp-status' id='tempRoom'>" + String(sensorData.tempRoom, 1) + "°C</div>";
     html += "<div>Теплоносій: <span id='tempCarrier'>" + String(sensorData.tempCarrier, 1) + "°C</span></div>";
+    html += "<div>BME280: <span id='tempBME'>" + String(sensorData.tempBME, 1) + "°C</span></div>";
     html += "<div>Ціль: " + String(config.tempMin, 1) + "-" + String(config.tempMax, 1) + "°C</div>";
     html += "<div>Тренд: <span id='tempTrend'>--</span></div>";
     html += "</div>";
@@ -345,8 +348,6 @@ void handleRoot() {
     html += "<button class='quick-btn' onclick=\"quickCommand('fan 40')\">Вентилятор 40%</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('extractor 50')\">Витяжка 50%</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('extractor 0')\">Витяжка ВИМК</button>";
-    html += "<button class='quick-btn' onclick=\"quickCommand('timer on 30')\">Таймер 30хв</button>";
-    html += "<button class='quick-btn' onclick=\"quickCommand('timer off')\">Таймер ВИМК</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('auto')\">АВТО</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('manual')\">РУЧНИЙ</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('status')\">СТАТУС</button>";
@@ -381,6 +382,17 @@ void handleRoot() {
     html += "let updateInterval = 3000;";
     html += "let lastUpdateTime = new Date();";
     
+    html += "function updateModeButtons(activeMode) {";
+    html += "  const btns = document.querySelectorAll('.mode-btn');";
+    html += "  if (btns.length === 0) return;";
+    html += "  btns.forEach(btn => {";
+    html += "    btn.classList.remove('active');";
+    html += "    if (btn.getAttribute('data-mode') === activeMode) {";
+    html += "      btn.classList.add('active');";
+    html += "    }";
+    html += "  });";
+    html += "}";
+    
     html += "function updateStatus() {";
     html += "  fetch('/status')";
     html += "    .then(response => response.json())";
@@ -388,6 +400,9 @@ void handleRoot() {
     html += "      if (data.tempRoom !== undefined) {";
     html += "        document.getElementById('tempRoom').textContent = data.tempRoom.toFixed(1) + '°C';";
     html += "        document.getElementById('tempCarrier').textContent = data.tempCarrier.toFixed(1) + '°C';";
+    html += "      }";
+    html += "      if (data.tempBME !== undefined) {";
+    html += "        document.getElementById('tempBME').textContent = data.tempBME.toFixed(1) + '°C';";
     html += "      }";
     html += "      if (data.humidity !== undefined) {";
     html += "        document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
@@ -406,6 +421,13 @@ void handleRoot() {
     html += "      }";
     html += "      if (data.mode) {";
     html += "        document.getElementById('mode').textContent = data.mode;";
+    html += "        let modeIcon = '🤖';";
+    html += "        let modeKey = 'auto';";
+    html += "        if (data.mode === 'АВАРІЯ') { modeIcon = '🚨'; modeKey = 'emergency'; }";
+    html += "        else if (data.mode === 'ФОРСАЖ') { modeIcon = '⚡'; modeKey = 'force'; }";
+    html += "        else if (data.mode === 'РУЧНИЙ') { modeIcon = '✋'; modeKey = 'manual'; }";
+    html += "        document.getElementById('currentMode').textContent = modeIcon + ' ' + data.mode;";
+    html += "        updateModeButtons(modeKey);";
     html += "      }";
     html += "      if (data.memory) {";
     html += "        document.getElementById('memory').textContent = data.memory + ' KB';";
@@ -495,6 +517,7 @@ void handleStatus() {
     
     doc["tempRoom"] = sensorData.tempRoom;
     doc["tempCarrier"] = sensorData.tempCarrier;
+    doc["tempBME"] = sensorData.tempBME;
     doc["humidity"] = sensorData.humidity;
     doc["pressure"] = sensorData.pressure;
     doc["pumpPower"] = (heatingState.pumpPower * 100) / 255;
@@ -545,48 +568,8 @@ String processWebCommand(const String& cmd) {
     String lowerCmd = cmd;
     lowerCmd.toLowerCase();
     
-    // Компактні команди (a50, b40, c30)
-    if (lowerCmd.length() >= 2 && lowerCmd.length() <= 4) {
-        char device = lowerCmd[0];
-        if (device == 'a' || device == 'b' || device == 'c') {
-            String valueStr = lowerCmd.substring(1);
-            int value = valueStr.toInt();
-            
-            if (value >= 0 && value <= 100) {
-                switch(device) {
-                    case 'a':
-                        setPumpPercent(value);
-                        return "✅ Насос (A): " + String(value) + "%";
-                    case 'b':
-                        setFanPercent(value);
-                        return "✅ Вентилятор (B): " + String(value) + "%";
-                    case 'c':
-                        setExtractorPercent(value);
-                        return "✅ Витяжка (C): " + String(value) + "%";
-                }
-            }
-        }
-    }
-    
-    if (lowerCmd.startsWith("pump ")) {
-        int percent = cmd.substring(5).toInt();
-        percent = constrain(percent, 0, 100);
-        setPumpPercent(percent);
-        return "✅ Насос: " + String(percent) + "%";
-    }
-    else if (lowerCmd.startsWith("fan ")) {
-        int percent = cmd.substring(4).toInt();
-        percent = constrain(percent, 0, 100);
-        setFanPercent(percent);
-        return "✅ Вентилятор: " + String(percent) + "%";
-    }
-    else if (lowerCmd.startsWith("extractor ")) {
-        int percent = cmd.substring(10).toInt();
-        percent = constrain(percent, 0, 100);
-        setExtractorPercent(percent);
-        return "✅ Витяжка: " + String(percent) + "%";
-    }
-    else if (lowerCmd == "auto") {
+    // Перевірка режимів СПОЧАТКУ (щоб "auto" не розпізнавався як "a0")
+    if (lowerCmd == "auto") {
         heatingState.manualMode = false;
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
@@ -601,11 +584,68 @@ String processWebCommand(const String& cmd) {
     else if (lowerCmd == "force") {
         heatingState.forceMode = true;
         heatingState.manualMode = false;
+        heatingState.emergencyMode = false;
         return "🔧 Режим: ФОРСАЖ";
     }
     else if (lowerCmd == "emergency") {
         heatingState.emergencyMode = true;
+        heatingState.manualMode = false;
+        heatingState.forceMode = false;
         return "⚠️ Режим: АВАРІЯ";
+    }
+    
+    // Компактні команди (a50, b40, c30) - автоматично перемикають в РУЧНИЙ режим
+    if (lowerCmd.length() >= 2 && lowerCmd.length() <= 4) {
+        char device = lowerCmd[0];
+        if (device == 'a' || device == 'b' || device == 'c') {
+            String valueStr = lowerCmd.substring(1);
+            int value = valueStr.toInt();
+            
+            if (value >= 0 && value <= 100) {
+                heatingState.manualMode = true;
+                heatingState.forceMode = false;
+                heatingState.emergencyMode = false;
+                switch(device) {
+                    case 'a':
+                        setPumpPercent(value);
+                        return "✅ Насос (A): " + String(value) + "% [РУЧНИЙ]";
+                    case 'b':
+                        setFanPercent(value);
+                        return "✅ Вентилятор (B): " + String(value) + "% [РУЧНИЙ]";
+                    case 'c':
+                        setExtractorPercent(value);
+                        return "✅ Витяжка (C): " + String(value) + "% [РУЧНИЙ]";
+                }
+            }
+        }
+    }
+    
+    if (lowerCmd.startsWith("pump ")) {
+        heatingState.manualMode = true;
+        heatingState.forceMode = false;
+        heatingState.emergencyMode = false;
+        int percent = cmd.substring(5).toInt();
+        percent = constrain(percent, 0, 100);
+        setPumpPercent(percent);
+        return "✅ Насос: " + String(percent) + "% [РУЧНИЙ]";
+    }
+    else if (lowerCmd.startsWith("fan ")) {
+        heatingState.manualMode = true;
+        heatingState.forceMode = false;
+        heatingState.emergencyMode = false;
+        int percent = cmd.substring(4).toInt();
+        percent = constrain(percent, 0, 100);
+        setFanPercent(percent);
+        return "✅ Вентилятор: " + String(percent) + "% [РУЧНИЙ]";
+    }
+    else if (lowerCmd.startsWith("extractor ")) {
+        heatingState.manualMode = true;
+        heatingState.forceMode = false;
+        heatingState.emergencyMode = false;
+        int percent = cmd.substring(10).toInt();
+        percent = constrain(percent, 0, 100);
+        setExtractorPercent(percent);
+        return "✅ Витяжка: " + String(percent) + "% [РУЧНИЙ]";
     }
     else if (lowerCmd.startsWith("timer on ")) {
         int minutes = cmd.substring(9).toInt();
@@ -1375,13 +1415,20 @@ void handleControlPage() {
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
     html += "<title>Керування</title>";
     html += "<style>";
-    html += "body { font-family: Arial; margin: 20px; background: #f5f5f5; }";
+    html += "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');";
+    html += "body { font-family: 'Roboto', sans-serif; margin: 20px; background: #f5f5f5; }";
     html += ".container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }";
     html += ".slider { width: 100%; margin: 10px 0; }";
-    html += ".btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 5px; cursor: pointer; }";
-    html += ".btn:hover { background: #45a049; }";
+    html += ".btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 5px; cursor: pointer; transition: all 0.3s; }";
+    html += ".btn:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }";
     html += ".slider-value { display: inline-block; width: 50px; text-align: center; font-weight: bold; }";
     html += ".control-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; }";
+    html += ".mode-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }";
+    html += ".mode-btn { padding: 15px 20px; border: 2px solid #ddd; background: #f5f5f5; color: #333; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; position: relative; overflow: hidden; }";
+    html += ".mode-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }";
+    html += ".mode-btn.active { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border-color: #4CAF50; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); animation: pulse 2s infinite; }";
+    html += "@keyframes pulse { 0%, 100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); } 50% { box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6); } }";
+    html += ".mode-btn.active::before { content: '✓ '; font-weight: bold; margin-right: 5px; }";
     html += "</style>";
     html += "</head><body>";
     
@@ -1421,20 +1468,15 @@ void handleControlPage() {
     
     html += "<div class='control-section'>";
     html += "<h3>РЕЖИМИ РОБОТИ</h3>";
-    html += "<button class='btn' onclick=\"sendCmd('auto')\">АВТО</button>";
-    html += "<button class='btn' onclick=\"sendCmd('manual')\">РУЧНИЙ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('force')\" style='background: #ff9800;'>ФОРСАЖ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('emergency')\" style='background: #f44336;'>АВАРІЯ</button>";
+    html += "<div class='mode-buttons'>";
+    html += "<button class='mode-btn" + String(!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode ? " active" : "") + "' onclick=\"sendCmd('auto')\" data-mode='auto'>🤖 АВТО</button>";
+    html += "<button class='mode-btn" + String(heatingState.manualMode ? " active" : "") + "' onclick=\"sendCmd('manual')\" data-mode='manual'>✋ РУЧНИЙ</button>";
     html += "</div>";
-    
-    html += "<div class='control-section'>";
-    html += "<h3>ТАЙМЕР ВИТЯЖКИ</h3>";
-    html += "<button class='btn' onclick=\"sendCmd('timer on 5')\">5 ХВ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('timer on 15')\">15 ХВ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('timer on 30')\">30 ХВ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('timer on 60')\">60 ХВ</button>";
-    html += "<button class='btn' onclick=\"sendCmd('timer off')\" style='background: #f44336;'>ВИМК</button>";
-    html += "<p>Поточний таймер: " + String(config.extractorTimer.enabled ? "ВКЛ (" + String(config.extractorTimer.onMinutes) + " хв)" : "ВИМК") + "</p>";
+    html += "<div style='margin-top: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px;'>";
+    html += "<strong>ℹ️ Автоматичні режими:</strong><br>";
+    html += "⚡ <strong>ФОРСАЖ</strong> - вмикається при температурі < 20°C (80% потужність)<br>";
+    html += "🚨 <strong>АВАРІЯ</strong> - вмикається при температурі < 18°C (100% потужність)";
+    html += "</div>";
     html += "</div>";
     
     html += "</div>";
@@ -1443,6 +1485,15 @@ void handleControlPage() {
     html += "function updatePump(v) { sendCmd('manual'); document.getElementById('pumpValue').textContent = v + '%'; sendCmd('pump ' + v); }";
     html += "function updateFan(v) { sendCmd('manual'); document.getElementById('fanValue').textContent = v + '%'; sendCmd('fan ' + v); }";
     html += "function updateExtractor(v) { sendCmd('manual'); document.getElementById('extractorValue').textContent = v + '%'; sendCmd('extractor ' + v); }";
+    html += "function updateModeButtons(activeMode) {";
+    html += "  const btns = document.querySelectorAll('.mode-btn');";
+    html += "  btns.forEach(btn => {";
+    html += "    btn.classList.remove('active');";
+    html += "    if (btn.getAttribute('data-mode') === activeMode) {";
+    html += "      btn.classList.add('active');";
+    html += "    }";
+    html += "  });";
+    html += "}";
     html += "function sendCmd(cmd) {";
     html += "  fetch('/command', {";
     html += "    method: 'POST',";
@@ -1450,6 +1501,9 @@ void handleControlPage() {
     html += "    body: 'cmd=' + encodeURIComponent(cmd)";
     html += "  }).then(response => response.text()).then(text => {";
     html += "    console.log('Команда виконана:', text);";
+    html += "    if (cmd === 'auto' || cmd === 'manual' || cmd === 'force' || cmd === 'emergency') {";
+    html += "      updateModeButtons(cmd);";
+    html += "    }";
     html += "  });";
     html += "}";
     html += "</script>";
