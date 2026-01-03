@@ -3,7 +3,8 @@
 #include <Arduino.h>
 #include "advanced_climate_logic.h"
 #include "utility_functions.h"
-// Р—РјС–РЅРЅС– С–СЃС‚РѕСЂС–С—
+
+// Глобальні змінні
 HistoryData history[HISTORY_BUFFER_SIZE];
 int historyIndex = 0;
 bool historyInitialized = false;
@@ -11,7 +12,7 @@ bool historyInitialized = false;
 void addToHistory() {
   unsigned long now = millis();
   
-  if (now - getLastHistorySave() < 60000) { // Р—Р±РµСЂС–РіР°С”РјРѕ РєРѕР¶РЅСѓ С…РІРёР»РёРЅСѓ
+  if (now - getLastHistorySave() < 60000) { // Зберігаємо кожну хвилину
     return;
   }
   
@@ -34,9 +35,9 @@ void addToHistory() {
       historyInitialized = true;
     }
     
-    // Р’РёРІС–Рґ РґР»СЏ РІС–РґР»Р°РіРѕРґР¶РµРЅРЅСЏ (РєРѕР¶РЅС– 10 Р·Р°РїРёСЃС–РІ)
+    // Вивід для відлагодження (кожні 10 записів)
     if (historyIndex % 10 == 0) {
-      Serial.printf("[HISTORY] Р—Р°РїРёСЃР°РЅРѕ Р·Р°РїРёСЃ %d\n", historyIndex);
+      Serial.printf("[HISTORY] Записано запис %d\n", historyIndex);
     }
     
     xSemaphoreGive(getHistoryMutex());
@@ -44,40 +45,40 @@ void addToHistory() {
 }
 
 void timeTask(void *parameter) {
-  Serial.println("вњ“ Р—Р°РґР°С‡Сѓ С‡Р°СЃСѓ Р·Р°РїСѓС‰РµРЅРѕ");
+  // Задача часу запущено
   
-  // Р§РµРєР°С”РјРѕ РЅР° С–РЅС–С†С–Р°Р»С–Р·Р°С†С–СЋ С–РЅС€РёС… РєРѕРјРїРѕРЅРµРЅС‚С–РІ
+  // Чекаємо на ініціалізацію інших компонентів
   vTaskDelay(pdMS_TO_TICKS(2000));
   
   unsigned long lastDebugPrint = 0;
   
   while (1) {
-    // РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ С‡Р°СЃСѓ
+    // Синхронізація часу
     syncTime();
     
-    // РћРЅРѕРІР»РµРЅРЅСЏ Р»РѕРєР°Р»СЊРЅРѕРіРѕ С‡Р°СЃСѓ РєРѕР¶РЅСѓ СЃРµРєСѓРЅРґСѓ
+    // Оновлення локального часу кожну секунду
     if (xSemaphoreTake(getTimeMutex(), portMAX_DELAY)) {
       time(&currentTime);
       localtime_r(&currentTime, &timeInfo);
       xSemaphoreGive(getTimeMutex());
     }
     
-    // Р’РёРІС–Рґ СЃС‚Р°С‚СѓСЃСѓ СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С— (РєРѕР¶РЅС– 30 СЃРµРєСѓРЅРґ)
+    // Вивід статусу синхронізації (кожні 30 секунд)
     unsigned long now = millis();
     if (now - lastDebugPrint > 30000) {
       lastDebugPrint = now;
       if (isTimeSynced()) {
-        Serial.printf("[TIME] РЎРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ: %s\n", getTimeString().c_str());
+        Serial.printf("[TIME] Синхронізовано: %s\n", getTimeString().c_str());
       } else {
-        Serial.println("[TIME] вљ  РќРµРјР°С” СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С—");
+        // Немає синхронізації
       }
     }
     
-    vTaskDelay(pdMS_TO_TICKS(1000)); // 1 СЃРµРєСѓРЅРґР°
+    vTaskDelay(pdMS_TO_TICKS(1000)); // 1 секунда
   }
 }
 
-// Р”РѕРґР°С‚РєРѕРІС– С„СѓРЅРєС†С–С— РґР»СЏ СЂРѕР±РѕС‚Рё Р· С–СЃС‚РѕСЂС–С”СЋ
+// Додаткові функції для роботи з історією
 HistoryData* getHistoryBuffer() {
     return history;
 }

@@ -1,0 +1,1922 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x3 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+==========================================
+       Клімат-контроль системи вентиляції v4.0
+==========================================
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+🔍 Пошук доступних мереж...
+Знайдено 4 мереж:
+  1: Redmi Note 14 (-28 dBm) захищена
+  2: Smart-539874 (-31 dBm) відкрита
+  3: Redmi 10C (-65 dBm) захищена
+  4: Redmi Note 9 (-73 dBm) захищена
+
+📡 Збережена мережа знайдена: Redmi Note 14 (сигнал: -28 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 14
+..... [Статус: 6]..... [Статус: 6]..... [Статус: 6]..... [Статус: 6]
+❌ Не вдалося підключитись до збереженої мережі: Redmi Note 14
+
+📡 Пробуємо підключитись до мережі: Redmi Note 14 (сигнал: -28 dBm)
+...
+✅ Успішно підключено до: Redmi Note 14
+Налаштування збережені для мережі: Redmi Note 14
+SSID: Redmi Note 14 | IP адреса: 10.85.214.166 | Сигнал: -39 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-03 16:47:15
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (166°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://10.85.214.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.4°C, Насос=24, Вентилятор=37
+[TIME] Синхронізовано: 03.01.2026 16:47:24
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+⚡ Обігрів: T=27.6°C, Насос=23, Вентилятор=28
+✓ Зволожувач: ВКЛ (Вологість: 50.4, Ціль: 66.7)
+[SENSOR] T:27.8/67.2°C H:50.0% P:979.4hPa
+[DEBUG] setPumpPercent: 21% -> 21% -> PWM=53
+[DEBUG] setFanPercent: 19% -> 19% -> PWM=48
+⚡ Обігрів: T=27.8°C, Насос=21, Вентилятор=19
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 19% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+📊 Підтримання: T=28.1°C, Насос=19, Вентилятор=37
+[DEBUG] setPumpPercent: 17% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 31% -> 31% -> PWM=79
+📊 Підтримання: T=28.3°C, Насос=17, Вентилятор=31
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 25% -> 25% -> PWM=63
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=25
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=20
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setPumpPercent: 11% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+📊 Підтримання: T=28.9°C, Насос=11, Вентилятор=13
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:47:53
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 29.1°C (ціль: 28.0-29.0°C)
+  Теплоносій: 66.7°C
+  Вологість: 50.0% (ціль: 68.0-70.0%)
+  Тиск: 979.4 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 9% (25)
+  Витяжка (C): 9% (25)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-30 dBm)
+  Пам'ять: 152 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=10
+📈 Статистика: Пам'ять=152KB, Записів=1, Час=61сек
+[TIME] Синхронізовано: 03.01.2026 16:47:55
+[SENSOR] T:29.0/66.9°C H:50.5% P:979.4hPa
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=10
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+📊 Підтримання: T=28.9°C, Насос=12, Вентилятор=14
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=20
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 22% -> 22% -> PWM=56
+📊 Підтримання: T=28.6°C, Насос=14, Вентилятор=22
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=24
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=28
+[DEBUG] setPumpPercent: 17% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 29% -> 29% -> PWM=73
+📊 Підтримання: T=28.4°C, Насос=17, Вентилятор=29
+[DEBUG] setPumpPercent: 17% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 31% -> 31% -> PWM=79
+📊 Підтримання: T=28.3°C, Насос=17, Вентилятор=31
+[DEBUG] setPumpPercent: 18% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 33% -> 33% -> PWM=84
+📊 Підтримання: T=28.2°C, Насос=18, Вентилятор=33
+[DEBUG] setPumpPercent: 19% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 35% -> 35% -> PWM=89
+📊 Підтримання: T=28.2°C, Насос=19, Вентилятор=35
+[DEBUG] setPumpPercent: 19% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 35% -> 35% -> PWM=89
+📊 Підтримання: T=28.2°C, Насос=19, Вентилятор=35
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+[DEBUG] setPumpPercent: 19% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+📊 Підтримання: T=28.1°C, Насос=19, Вентилятор=37
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 40% -> 40% -> PWM=102
+📊 Підтримання: T=28.0°C, Насос=20, Вентилятор=40
+[TIME] Синхронізовано: 03.01.2026 16:48:26
+[SENSOR] T:27.9/68.0°C H:47.9% P:979.4hPa
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=14
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=10
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=14
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+⚡ Обігрів: T=27.9°C, Насос=20, Вентилятор=14
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+⚡ Обігрів: T=27.8°C, Насос=20, Вентилятор=14
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+⚡ Обігрів: T=27.8°C, Насос=20, Вентилятор=14
+[DEBUG] setPumpPercent: 21% -> 21% -> PWM=53
+[DEBUG] setFanPercent: 19% -> 19% -> PWM=48
+⚡ Обігрів: T=27.8°C, Насос=21, Вентилятор=19
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:48:53
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 27.8°C (ціль: 28.0-29.0°C)
+  Теплоносій: 67.9°C
+  Вологість: 47.2% (ціль: 68.0-70.0%)
+  Тиск: 979.3 hPa
+----------------------------------------------
+  Насос (A): 20% (53)
+  Вентилятор (B): 18% (48)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-30 dBm)
+  Пам'ять: 133 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+[DEBUG] setPumpPercent: 21% -> 21% -> PWM=53
+[DEBUG] setFanPercent: 19% -> 19% -> PWM=48
+⚡ Обігрів: T=27.8°C, Насос=21, Вентилятор=19
+📈 Статистика: Пам'ять=133KB, Записів=2, Час=121сек
+[TIME] Синхронізовано: 03.01.2026 16:48:56
+[SENSOR] T:27.7/68.0°C H:46.9% P:979.3hPa
+[DEBUG] setPumpPercent: 22% -> 22% -> PWM=56
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+⚡ Обігрів: T=27.7°C, Насос=22, Вентилятор=23
+[DEBUG] setPumpPercent: 22% -> 22% -> PWM=56
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+⚡ Обігрів: T=27.7°C, Насос=22, Вентилятор=23
+[DEBUG] setPumpPercent: 22% -> 22% -> PWM=56
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+⚡ Обігрів: T=27.6°C, Насос=22, Вентилятор=23
+[DEBUG] setPumpPercent: 22% -> 22% -> PWM=56
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+⚡ Обігрів: T=27.6°C, Насос=22, Вентилятор=23
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+⚡ Обігрів: T=27.6°C, Насос=23, Вентилятор=28
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+⚡ Обігрів: T=27.6°C, Насос=23, Вентилятор=28
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+⚡ Обігрів: T=27.6°C, Насос=23, Вентилятор=28
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.4°C, Насос=24, Вентилятор=37
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.4°C, Насос=24, Вентилятор=37
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.3°C, Насос=24, Вентилятор=37
+[DEBUG] setPumpPercent: 25% -> 25% -> PWM=63
+[DEBUG] setFanPercent: 41% -> 41% -> PWM=104
+⚡ Обігрів: T=27.2°C, Насос=25, Вентилятор=41
+[DEBUG] setPumpPercent: 25% -> 25% -> PWM=63
+[DEBUG] setFanPercent: 41% -> 41% -> PWM=104
+⚡ Обігрів: T=27.2°C, Насос=25, Вентилятор=41
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+[SENSOR] T:27.1/67.8°C H:47.2% P:979.3hPa
+[TIME] Синхронізовано: 03.01.2026 16:49:27
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=50
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=50
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=50
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 25% -> 25% -> PWM=63
+[DEBUG] setFanPercent: 41% -> 41% -> PWM=104
+⚡ Обігрів: T=27.2°C, Насос=25, Вентилятор=41
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.3°C, Насос=24, Вентилятор=37
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.4°C, Насос=24, Вентилятор=37
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.4°C, Насос=24, Вентилятор=37
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:49:53
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 27.4°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.1°C
+  Вологість: 47.5% (ціль: 68.0-70.0%)
+  Тиск: 979.3 hPa
+----------------------------------------------
+  Насос (A): 23% (61)
+  Вентилятор (B): 36% (94)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-43 dBm)
+  Пам'ять: 125 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.4°C, Насос=23, Вентилятор=32
+📈 Статистика: Пам'ять=125KB, Записів=3, Час=181сек
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.4°C, Насос=23, Вентилятор=32
+[SENSOR] T:27.5/63.7°C H:47.6% P:979.3hPa
+[TIME] Синхронізовано: 03.01.2026 16:49:58
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+⚡ Обігрів: T=27.6°C, Насос=23, Вентилятор=28
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+==========================================
+       Клімат-контроль системи вентиляції v4.0
+==========================================
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+🔍 Пошук доступних мереж...
+Знайдено 4 мереж:
+  1: Redmi Note 14 (-30 dBm) захищена
+  2: Smart-539874 (-32 dBm) відкрита
+  3: Redmi 10C (-65 dBm) захищена
+  4: Redmi Note 9 (-76 dBm) захищена
+
+📡 Збережена мережа знайдена: Redmi Note 14 (сигнал: -30 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 14
+...
+✅ Успішно підключено до збереженої мережі: Redmi Note 14
+SSID: Redmi Note 14 | IP адреса: 10.85.214.166 | Сигнал: -34 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-03 16:50:19
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (166°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://10.85.214.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 32% -> 32% -> PWM=81
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=32
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[DEBUG] setPumpPercent: 25% -> 25% -> PWM=63
+[DEBUG] setFanPercent: 41% -> 41% -> PWM=104
+⚡ Обігрів: T=27.2°C, Насос=25, Вентилятор=41
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: pump 0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=50
+WEB COMMAND: extractor 30
+[DEBUG] setExtractorPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: extractor 50
+[DEBUG] setExtractorPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: extractor 80
+[DEBUG] setExtractorPercent: 80% -> 80% -> PWM=204
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=26.9°C, Насос=27, Вентилятор=55
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 30
+[DEBUG] setFanPercent: 30% -> 30% -> PWM=76
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=27.0°C, Насос=27, Вентилятор=55
+WEB COMMAND: fan 50
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+[TIME] Синхронізовано: 03.01.2026 16:50:40
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=27.0°C, Насос=27, Вентилятор=55
+✓ Зволожувач: ВКЛ (Вологість: 47.6, Ціль: 67.0)
+[SENSOR] T:27.1/63.9°C H:47.4% P:979.3hPa
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=46
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=46
+WEB COMMAND: manual
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: manual
+WEB COMMAND: fan 46
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+WEB COMMAND: manual
+WEB COMMAND: fan 48
+[DEBUG] setFanPercent: 48% -> 48% -> PWM=122
+WEB COMMAND: manual
+WEB COMMAND: fan 51
+[DEBUG] setFanPercent: 51% -> 51% -> PWM=130
+WEB COMMAND: manual
+WEB COMMAND: fan 54
+[DEBUG] setFanPercent: 54% -> 54% -> PWM=137
+WEB COMMAND: manual
+WEB COMMAND: fan 58
+[DEBUG] setFanPercent: 58% -> 58% -> PWM=147
+WEB COMMAND: manual
+WEB COMMAND: fan 62
+[DEBUG] setFanPercent: 62% -> 62% -> PWM=158
+WEB COMMAND: manual
+WEB COMMAND: fan 65
+[DEBUG] setFanPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: fan 68
+[DEBUG] setFanPercent: 68% -> 68% -> PWM=173
+WEB COMMAND: manual
+WEB COMMAND: fan 69
+[DEBUG] setFanPercent: 69% -> 69% -> PWM=175
+WEB COMMAND: manual
+WEB COMMAND: fan 71
+[DEBUG] setFanPercent: 71% -> 71% -> PWM=181
+WEB COMMAND: fan 72
+[DEBUG] setFanPercent: 72% -> 72% -> PWM=183
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 73
+[DEBUG] setFanPercent: 73% -> 73% -> PWM=186
+WEB COMMAND: manual
+WEB COMMAND: fan 74
+[DEBUG] setFanPercent: 74% -> 74% -> PWM=188
+WEB COMMAND: manual
+WEB COMMAND: fan 75
+[DEBUG] setFanPercent: 75% -> 75% -> PWM=191
+WEB COMMAND: manual
+WEB COMMAND: fan 77
+[DEBUG] setFanPercent: 77% -> 77% -> PWM=196
+WEB COMMAND: manual
+WEB COMMAND: fan 79
+[DEBUG] setFanPercent: 79% -> 79% -> PWM=201
+WEB COMMAND: manual
+WEB COMMAND: fan 82
+[DEBUG] setFanPercent: 82% -> 82% -> PWM=209
+WEB COMMAND: manual
+WEB COMMAND: fan 85
+[DEBUG] setFanPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: fan 89
+[DEBUG] setFanPercent: 89% -> 89% -> PWM=226
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 91
+[DEBUG] setFanPercent: 91% -> 91% -> PWM=232
+WEB COMMAND: manual
+WEB COMMAND: fan 93
+[DEBUG] setFanPercent: 93% -> 93% -> PWM=237
+WEB COMMAND: manual
+WEB COMMAND: fan 96
+[DEBUG] setFanPercent: 96% -> 96% -> PWM=244
+WEB COMMAND: manual
+WEB COMMAND: fan 98
+[DEBUG] setFanPercent: 98% -> 98% -> PWM=249
+WEB COMMAND: manual
+WEB COMMAND: fan 100
+[DEBUG] setFanPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: manual
+WEB COMMAND: pump 26
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+WEB COMMAND: manual
+WEB COMMAND: pump 29
+[DEBUG] setPumpPercent: 29% -> 29% -> PWM=73
+WEB COMMAND: manual
+WEB COMMAND: pump 32
+[DEBUG] setPumpPercent: 32% -> 32% -> PWM=81
+WEB COMMAND: manual
+WEB COMMAND: pump 38
+[DEBUG] setPumpPercent: 38% -> 38% -> PWM=96
+WEB COMMAND: manual
+WEB COMMAND: pump 44
+[DEBUG] setPumpPercent: 44% -> 44% -> PWM=112
+WEB COMMAND: manual
+WEB COMMAND: pump 52
+[DEBUG] setPumpPercent: 52% -> 52% -> PWM=132
+WEB COMMAND: manual
+WEB COMMAND: pump 60
+[DEBUG] setPumpPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: pump 67
+[DEBUG] setPumpPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: pump 77
+[DEBUG] setPumpPercent: 77% -> 77% -> PWM=196
+WEB COMMAND: manual
+WEB COMMAND: pump 82
+[DEBUG] setPumpPercent: 82% -> 82% -> PWM=209
+WEB COMMAND: manual
+WEB COMMAND: pump 88
+[DEBUG] setPumpPercent: 88% -> 88% -> PWM=224
+WEB COMMAND: manual
+WEB COMMAND: pump 93
+[DEBUG] setPumpPercent: 93% -> 93% -> PWM=237
+WEB COMMAND: manual
+WEB COMMAND: pump 97
+[DEBUG] setPumpPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: pump 100
+[DEBUG] setPumpPercent: 100% -> 100% -> PWM=255
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:51:09
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 29.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 59.6°C
+  Вологість: 48.4% (ціль: 68.0-70.0%)
+  Тиск: 979.3 hPa
+----------------------------------------------
+  Насос (A): 100% (255)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-36 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+[TIME] Синхронізовано: 03.01.2026 16:51:10
+📈 Статистика: Пам'ять=149KB, Записів=1, Час=60сек
+[SENSOR] T:29.8/60.2°C H:48.8% P:979.3hPa
+WEB COMMAND: pump 50
+[DEBUG] setPumpPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: pump 30
+[DEBUG] setPumpPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: pump 0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+[TIME] Синхронізовано: 03.01.2026 16:51:41
+[SENSOR] T:28.9/64.2°C H:50.6% P:979.3hPa
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: extractor 80
+[DEBUG] setExtractorPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: manual
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════WEB COMMAND: fan 2
+
+[DEBUG] setFanPercent: 2% -> 2% -> PWM=5
+  Час: 03.01.2026 16:52:09
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.9°C (ціль: 28.0-29.0°C)
+WEB COMMAND: manual
+  Теплоносій: 65.9°C
+  Вологість: 51.3% (ціль: 68.0-70.0%)
+  Тиск: 979.3 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+WEB COMMAND: fan 1
+  Витяжка (C): 0% (0)
+[DEBUG] setFanPercent: 1% -> 1% -> PWM=2
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-35 dBm)
+  Пам'ять: 133 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+WEB COMMAND: manual
+📈 Статистика: Пам'ять=141KB, Записів=2, Час=120сек
+WEB COMMAND: fan 3
+[DEBUG] setFanPercent: 3% -> 3% -> PWM=7
+WEB COMMAND: manual
+WEB COMMAND: fan 4
+[DEBUG] setFanPercent: 4% -> 4% -> PWM=10
+WEB COMMAND: manual
+WEB COMMAND: fan 6
+[DEBUG] setFanPercent: 6% -> 6% -> PWM=15
+WEB COMMAND: manual
+WEB COMMAND: fan 7
+[DEBUG] setFanPercent: 7% -> 7% -> PWM=17
+WEB COMMAND: manual
+WEB COMMAND: fan 8
+[DEBUG] setFanPercent: 8% -> 8% -> PWM=20
+[TIME] Синхронізовано: 03.01.2026 16:52:11
+WEB COMMAND: manual
+WEB COMMAND: fan 9
+[DEBUG] setFanPercent: 9% -> 9% -> PWM=22
+WEB COMMAND: manual
+WEB COMMAND: fan 10
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+WEB COMMAND: manual
+WEB COMMAND: fan 12
+[DEBUG] setFanPercent: 12% -> 12% -> PWM=30
+WEB COMMAND: manual
+WEB COMMAND: fan 13
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+WEB COMMAND: manual
+WEB COMMAND: fan 14
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+WEB COMMAND: manual
+WEB COMMAND: fan 15
+[DEBUG] setFanPercent: 15% -> 15% -> PWM=38
+WEB COMMAND: manual
+WEB COMMAND: fan 16
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+WEB COMMAND: manual
+WEB COMMAND: fan 17
+[DEBUG] setFanPercent: 17% -> 17% -> PWM=43
+WEB COMMAND: manual
+[SENSOR] T:27.8/66.1°C H:51.3% P:979.4hPa
+WEB COMMAND: fan 18
+[DEBUG] setFanPercent: 18% -> 18% -> PWM=45
+WEB COMMAND: manual
+WEB COMMAND: fan 20
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+WEB COMMAND: manual
+WEB COMMAND: fan 21
+[DEBUG] setFanPercent: 21% -> 21% -> PWM=53
+WEB COMMAND: manual
+WEB COMMAND: fan 22
+[DEBUG] setFanPercent: 22% -> 22% -> PWM=56
+WEB COMMAND: manual
+WEB COMMAND: fan 23
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+WEB COMMAND: manual
+WEB COMMAND: fan 24
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+WEB COMMAND: manual
+WEB COMMAND: fan 26
+[DEBUG] setFanPercent: 26% -> 26% -> PWM=66
+WEB COMMAND: manual
+WEB COMMAND: fan 28
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+WEB COMMAND: manual
+WEB COMMAND: fan 30
+[DEBUG] setFanPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: manual
+WEB COMMAND: fan 33
+[DEBUG] setFanPercent: 33% -> 33% -> PWM=84
+WEB COMMAND: manual
+WEB COMMAND: fan 35
+[DEBUG] setFanPercent: 35% -> 35% -> PWM=89
+WEB COMMAND: manual
+WEB COMMAND: fan 36
+[DEBUG] setFanPercent: 36% -> 36% -> PWM=91
+WEB COMMAND: manual
+WEB COMMAND: fan 37
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+WEB COMMAND: manual
+WEB COMMAND: fan 39
+[DEBUG] setFanPercent: 39% -> 39% -> PWM=99
+WEB COMMAND: manual
+WEB COMMAND: fan 45
+[DEBUG] setFanPercent: 45% -> 45% -> PWM=114
+WEB COMMAND: manual
+WEB COMMAND: fan 47
+[DEBUG] setFanPercent: 47% -> 47% -> PWM=119
+WEB COMMAND: manual
+WEB COMMAND: fan 53
+[DEBUG] setFanPercent: 53% -> 53% -> PWM=135
+WEB COMMAND: manual
+WEB COMMAND: fan 56
+[DEBUG] setFanPercent: 56% -> 56% -> PWM=142
+WEB COMMAND: manual
+WEB COMMAND: fan 57
+[DEBUG] setFanPercent: 57% -> 57% -> PWM=145
+WEB COMMAND: manual
+WEB COMMAND: fan 58
+[DEBUG] setFanPercent: 58% -> 58% -> PWM=147
+WEB COMMAND: manual
+WEB COMMAND: fan 59
+[DEBUG] setFanPercent: 59% -> 59% -> PWM=150
+WEB COMMAND: manual
+WEB COMMAND: fan 60
+[DEBUG] setFanPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: fan 62
+[DEBUG] setFanPercent: 62% -> 62% -> PWM=158
+WEB COMMAND: manual
+WEB COMMAND: fan 64
+[DEBUG] setFanPercent: 64% -> 64% -> PWM=163
+WEB COMMAND: manual
+WEB COMMAND: fan 67
+[DEBUG] setFanPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: fan 70
+[DEBUG] setFanPercent: 70% -> 70% -> PWM=178
+WEB COMMAND: manual
+WEB COMMAND: fan 73
+[DEBUG] setFanPercent: 73% -> 73% -> PWM=186
+WEB COMMAND: manual
+WEB COMMAND: fan 75
+[DEBUG] setFanPercent: 75% -> 75% -> PWM=191
+WEB COMMAND: manual
+WEB COMMAND: fan 76
+[DEBUG] setFanPercent: 76% -> 76% -> PWM=193
+WEB COMMAND: manual
+WEB COMMAND: fan 77
+[DEBUG] setFanPercent: 77% -> 77% -> PWM=196
+WEB COMMAND: manual
+WEB COMMAND: fan 78
+[DEBUG] setFanPercent: 78% -> 78% -> PWM=198
+WEB COMMAND: manual
+WEB COMMAND: fan 79
+[DEBUG] setFanPercent: 79% -> 79% -> PWM=201
+WEB COMMAND: manual
+WEB COMMAND: fan 82
+[DEBUG] setFanPercent: 82% -> 82% -> PWM=209
+WEB COMMAND: manual
+WEB COMMAND: fan 86
+[DEBUG] setFanPercent: 86% -> 86% -> PWM=219
+WEB COMMAND: manual
+WEB COMMAND: fan 90
+[DEBUG] setFanPercent: 90% -> 90% -> PWM=229
+WEB COMMAND: manual
+WEB COMMAND: fan 94
+[DEBUG] setFanPercent: 94% -> 94% -> PWM=239
+WEB COMMAND: manual
+WEB COMMAND: fan 97
+[DEBUG] setFanPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: fan 98
+[DEBUG] setFanPercent: 98% -> 98% -> PWM=249
+WEB COMMAND: manual
+WEB COMMAND: fan 99
+[DEBUG] setFanPercent: 99% -> 99% -> PWM=252
+WEB COMMAND: manual
+WEB COMMAND: fan 100
+[DEBUG] setFanPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: fan 50
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: fan 30
+[DEBUG] setFanPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: manual
+WEB COMMAND: fan 60
+[DEBUG] setFanPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: fan 21
+[DEBUG] setFanPercent: 21% -> 21% -> PWM=53
+WEB COMMAND: manual
+WEB COMMAND: fan 22
+[DEBUG] setFanPercent: 22% -> 22% -> PWM=56
+WEB COMMAND: manual
+WEB COMMAND: fan 23
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+[TIME] Синхронізовано: 03.01.2026 16:52:41
+WEB COMMAND: manual
+WEB COMMAND: fan 24
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+WEB COMMAND: manual
+WEB COMMAND: fan 26
+[DEBUG] setFanPercent: 26% -> 26% -> PWM=66
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 27
+[DEBUG] setFanPercent: 27% -> 27% -> PWM=68
+WEB COMMAND: fan 31
+[DEBUG] setFanPercent: 31% -> 31% -> PWM=79
+WEB COMMAND: manual
+WEB COMMAND: fan 33
+[DEBUG] setFanPercent: 33% -> 33% -> PWM=84
+WEB COMMAND: manual
+WEB COMMAND: fan 34
+[DEBUG] setFanPercent: 34% -> 34% -> PWM=86
+WEB COMMAND: manual
+WEB COMMAND: fan 35
+[DEBUG] setFanPercent: 35% -> 35% -> PWM=89
+WEB COMMAND: manual
+WEB COMMAND: fan 36
+[DEBUG] setFanPercent: 36% -> 36% -> PWM=91
+WEB COMMAND: manual
+WEB COMMAND: fan 37
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+WEB COMMAND: manual
+WEB COMMAND: fan 38
+[DEBUG] setFanPercent: 38% -> 38% -> PWM=96
+WEB COMMAND: manual
+[SENSOR] T:27.9/61.9°C H:50.8% P:979.4hPa
+WEB COMMAND: fan 39
+[DEBUG] setFanPercent: 39% -> 39% -> PWM=99
+WEB COMMAND: manual
+WEB COMMAND: fan 40
+[DEBUG] setFanPercent: 40% -> 40% -> PWM=102
+WEB COMMAND: manual
+WEB COMMAND: fan 42
+[DEBUG] setFanPercent: 42% -> 42% -> PWM=107
+WEB COMMAND: manual
+WEB COMMAND: fan 43
+[DEBUG] setFanPercent: 43% -> 43% -> PWM=109
+WEB COMMAND: manual
+WEB COMMAND: fan 45
+[DEBUG] setFanPercent: 45% -> 45% -> PWM=114
+WEB COMMAND: manual
+WEB COMMAND: fan 46
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+WEB COMMAND: manual
+WEB COMMAND: fan 47
+[DEBUG] setFanPercent: 47% -> 47% -> PWM=119
+WEB COMMAND: manual
+WEB COMMAND: fan 49
+[DEBUG] setFanPercent: 49% -> 49% -> PWM=124
+WEB COMMAND: manual
+WEB COMMAND: fan 52
+[DEBUG] setFanPercent: 52% -> 52% -> PWM=132
+WEB COMMAND: manual
+WEB COMMAND: fan 55
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 58
+[DEBUG] setFanPercent: 58% -> 58% -> PWM=147
+WEB COMMAND: fan 59
+[DEBUG] setFanPercent: 59% -> 59% -> PWM=150
+WEB COMMAND: manual
+WEB COMMAND: fan 60
+[DEBUG] setFanPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: fan 61
+[DEBUG] setFanPercent: 61% -> 61% -> PWM=155
+WEB COMMAND: manual
+WEB COMMAND: fan 62
+[DEBUG] setFanPercent: 62% -> 62% -> PWM=158
+WEB COMMAND: manual
+WEB COMMAND: fan 65
+[DEBUG] setFanPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: fan 67
+[DEBUG] setFanPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: fan 70
+[DEBUG] setFanPercent: 70% -> 70% -> PWM=178
+WEB COMMAND: manual
+WEB COMMAND: fan 71
+[DEBUG] setFanPercent: 71% -> 71% -> PWM=181
+WEB COMMAND: manual
+WEB COMMAND: fan 72
+[DEBUG] setFanPercent: 72% -> 72% -> PWM=183
+WEB COMMAND: manual
+WEB COMMAND: fan 73
+[DEBUG] setFanPercent: 73% -> 73% -> PWM=186
+WEB COMMAND: manual
+WEB COMMAND: fan 75
+[DEBUG] setFanPercent: 75% -> 75% -> PWM=191
+WEB COMMAND: manual
+WEB COMMAND: fan 77
+[DEBUG] setFanPercent: 77% -> 77% -> PWM=196
+WEB COMMAND: manual
+WEB COMMAND: fan 79
+[DEBUG] setFanPercent: 79% -> 79% -> PWM=201
+WEB COMMAND: manual
+WEB COMMAND: fan 81
+[DEBUG] setFanPercent: 81% -> 81% -> PWM=206
+WEB COMMAND: manual
+WEB COMMAND: fan 83
+[DEBUG] setFanPercent: 83% -> 83% -> PWM=211
+WEB COMMAND: manual
+WEB COMMAND: fan 84
+[DEBUG] setFanPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: fan 85
+[DEBUG] setFanPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: manual
+WEB COMMAND: fan 87
+[DEBUG] setFanPercent: 87% -> 87% -> PWM=221
+WEB COMMAND: manual
+WEB COMMAND: fan 89
+[DEBUG] setFanPercent: 89% -> 89% -> PWM=226
+WEB COMMAND: manual
+WEB COMMAND: fan 91
+[DEBUG] setFanPercent: 91% -> 91% -> PWM=232
+WEB COMMAND: manual
+WEB COMMAND: fan 96
+[DEBUG] setFanPercent: 96% -> 96% -> PWM=244
+WEB COMMAND: manual
+WEB COMMAND: fan 99
+[DEBUG] setFanPercent: 99% -> 99% -> PWM=252
+WEB COMMAND: manual
+WEB COMMAND: fan 100
+[DEBUG] setFanPercent: 100% -> 100% -> PWM=255
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:53:09
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 58.9°C
+  Вологість: 50.9% (ціль: 68.0-70.0%)
+  Тиск: 979.4 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 100% (255)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-47 dBm)
+  Пам'ять: 148 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=148KB, Записів=3, Час=180сек
+[TIME] Синхронізовано: 03.01.2026 16:53:12
+[SENSOR] T:28.9/58.0°C H:51.1% P:979.4hPa
+[TIME] Синхронізовано: 03.01.2026 16:53:43
+[SENSOR] T:30.6/55.5°C H:51.3% P:979.4hPa
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:54:10
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 31.7°C (ціль: 28.0-29.0°C)
+  Теплоносій: 54.7°C
+  Вологість: 49.6% (ціль: 68.0-70.0%)
+  Тиск: 979.4 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 100% (255)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-38 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 3
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=149KB, Записів=4, Час=240сек
+[TIME] Синхронізовано: 03.01.2026 16:54:13
+[SENSOR] T:32.0/54.5°C H:49.0% P:979.5hPa
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+==========================================
+       Клімат-контроль системи вентиляції v4.0
+==========================================
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+🔍 Пошук доступних мереж...
+Знайдено 4 мереж:
+  1: Smart-539874 (-35 dBm) відкрита
+  2: Redmi Note 14 (-36 dBm) захищена
+  3: Redmi Note 9 (-79 dBm) захищена
+  4: Redmi 10C (-87 dBm) захищена
+
+📡 Збережена мережа знайдена: Redmi Note 14 (сигнал: -36 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 14
+...
+✅ Успішно підключено до збереженої мережі: Redmi Note 14
+SSID: Redmi Note 14 | IP адреса: 10.85.214.166 | Сигнал: -38 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-03 16:54:32
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (166°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://10.85.214.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=32.2°C, Насос=0, Вентилятор=0
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=32.5°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=32.6°C, Насос=0, Вентилятор=0
+WEB COMMAND: manual
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: manual
+WEB COMMAND: fan 2
+[DEBUG] setFanPercent: 2% -> 2% -> PWM=5
+WEB COMMAND: manual
+WEB COMMAND: fan 5
+[DEBUG] setFanPercent: 5% -> 5% -> PWM=12
+WEB COMMAND: manual
+WEB COMMAND: fan 9
+[DEBUG] setFanPercent: 9% -> 9% -> PWM=22
+WEB COMMAND: manual
+WEB COMMAND: fan 13
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+WEB COMMAND: manual
+WEB COMMAND: fan 20
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+WEB COMMAND: manual
+WEB COMMAND: fan 27
+[DEBUG] setFanPercent: 27% -> 27% -> PWM=68
+WEB COMMAND: manual
+WEB COMMAND: fan 34
+[DEBUG] setFanPercent: 34% -> 34% -> PWM=86
+WEB COMMAND: manual
+WEB COMMAND: fan 41
+[DEBUG] setFanPercent: 41% -> 41% -> PWM=104
+WEB COMMAND: manual
+WEB COMMAND: fan 47
+[DEBUG] setFanPercent: 47% -> 47% -> PWM=119
+WEB COMMAND: manual
+WEB COMMAND: fan 52
+[DEBUG] setFanPercent: 52% -> 52% -> PWM=132
+WEB COMMAND: fan 56
+[DEBUG] setFanPercent: 56% -> 56% -> PWM=142
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 60
+[DEBUG] setFanPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: fan 67
+[DEBUG] setFanPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: fan 71
+[DEBUG] setFanPercent: 71% -> 71% -> PWM=181
+WEB COMMAND: manual
+WEB COMMAND: fan 76
+[DEBUG] setFanPercent: 76% -> 76% -> PWM=193
+WEB COMMAND: manual
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: manual
+WEB COMMAND: fan 84
+[DEBUG] setFanPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: fan 86
+[DEBUG] setFanPercent: 86% -> 86% -> PWM=219
+WEB COMMAND: manual
+WEB COMMAND: fan 88
+[DEBUG] setFanPercent: 88% -> 88% -> PWM=224
+WEB COMMAND: manual
+WEB COMMAND: fan 90
+[DEBUG] setFanPercent: 90% -> 90% -> PWM=229
+WEB COMMAND: manual
+WEB COMMAND: fan 92
+[DEBUG] setFanPercent: 92% -> 92% -> PWM=234
+WEB COMMAND: manual
+WEB COMMAND: fan 94
+[DEBUG] setFanPercent: 94% -> 94% -> PWM=239
+WEB COMMAND: manual
+WEB COMMAND: fan 97
+[DEBUG] setFanPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: fan 99
+[DEBUG] setFanPercent: 99% -> 99% -> PWM=252
+✓ Зволожувач: УВІМКНЕНО (Вологість: 44.9%, Ціль: 64.3%)
+[TIME] Синхронізовано: 03.01.2026 16:54:54
+WEB COMMAND: manual
+[SENSOR] T:32.2/59.6°C H:44.9% P:979.5hPa
+WEB COMMAND: fan 100
+[DEBUG] setFanPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: fan 50
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: fan 44
+[DEBUG] setFanPercent: 44% -> 44% -> PWM=112
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 46
+[DEBUG] setFanPercent: 46% -> 46% -> PWM=117
+WEB COMMAND: fan 47
+[DEBUG] setFanPercent: 47% -> 47% -> PWM=119
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 50
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: pump 80
+[DEBUG] setPumpPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: pump 1
+[DEBUG] setPumpPercent: 1% -> 1% -> PWM=2
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: pump 4
+[DEBUG] setPumpPercent: 4% -> 4% -> PWM=10
+WEB COMMAND: manual
+WEB COMMAND: pump 11
+[DEBUG] setPumpPercent: 11% -> 11% -> PWM=28
+WEB COMMAND: manual
+WEB COMMAND: pump 19
+[DEBUG] setPumpPercent: 19% -> 19% -> PWM=48
+WEB COMMAND: manual
+WEB COMMAND: pump 28
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+WEB COMMAND: manual
+WEB COMMAND: pump 36
+[DEBUG] setPumpPercent: 36% -> 36% -> PWM=91
+WEB COMMAND: pump 42
+[DEBUG] setPumpPercent: 42% -> 42% -> PWM=107
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: pump 47
+[DEBUG] setPumpPercent: 47% -> 47% -> PWM=119
+WEB COMMAND: manual
+WEB COMMAND: pump 50
+[DEBUG] setPumpPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: manual
+WEB COMMAND: pump 53
+[DEBUG] setPumpPercent: 53% -> 53% -> PWM=135
+WEB COMMAND: manual
+WEB COMMAND: pump 55
+[DEBUG] setPumpPercent: 55% -> 55% -> PWM=140
+WEB COMMAND: manual
+WEB COMMAND: pump 57
+[DEBUG] setPumpPercent: 57% -> 57% -> PWM=145
+WEB COMMAND: manual
+WEB COMMAND: pump 59
+[DEBUG] setPumpPercent: 59% -> 59% -> PWM=150
+WEB COMMAND: manual
+WEB COMMAND: pump 62
+[DEBUG] setPumpPercent: 62% -> 62% -> PWM=158
+WEB COMMAND: manual
+WEB COMMAND: pump 63
+[DEBUG] setPumpPercent: 63% -> 63% -> PWM=160
+WEB COMMAND: manual
+WEB COMMAND: pump 65
+[DEBUG] setPumpPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: pump 67
+[DEBUG] setPumpPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: pump 69
+[DEBUG] setPumpPercent: 69% -> 69% -> PWM=175
+WEB COMMAND: manual
+WEB COMMAND: pump 71
+[DEBUG] setPumpPercent: 71% -> 71% -> PWM=181
+WEB COMMAND: manual
+WEB COMMAND: pump 74
+[DEBUG] setPumpPercent: 74% -> 74% -> PWM=188
+WEB COMMAND: manual
+WEB COMMAND: pump 76
+[DEBUG] setPumpPercent: 76% -> 76% -> PWM=193
+WEB COMMAND: manual
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:55:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 32.1°C (ціль: 28.0-29.0°C)
+  Теплоносій: 58.5°C
+  Вологість: 45.2% (ціль: 68.0-70.0%)
+  Тиск: 979.4 hPa
+----------------------------------------------
+  Насос (A): 75% (193)
+WEB COMMAND: pump 78
+  Вентилятор (B): 0% (0)
+[DEBUG] setPumpPercent: 78% -> 78% -> PWM=198
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-42 dBm)
+  Пам'ять: 135 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+WEB COMMAND: manual
+WEB COMMAND: pump 81
+[DEBUG] setPumpPercent: 81% -> 81% -> PWM=206
+WEB COMMAND: manual
+WEB COMMAND: pump 82
+[DEBUG] setPumpPercent: 82% -> 82% -> PWM=209
+WEB COMMAND: manual
+WEB COMMAND: pump 83
+[DEBUG] setPumpPercent: 83% -> 83% -> PWM=211
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: pump 84
+[DEBUG] setPumpPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: pump 85
+[DEBUG] setPumpPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: manual
+[SENSOR] T:32.1/58.7°C H:45.2% P:979.4hPa
+WEB COMMAND: pump 86
+[DEBUG] setPumpPercent: 86% -> 86% -> PWM=219
+WEB COMMAND: manual
+[TIME] Синхронізовано: 03.01.2026 16:55:25
+WEB COMMAND: pump 87
+[DEBUG] setPumpPercent: 87% -> 87% -> PWM=221
+📈 Статистика: Пам'ять=135KB, Записів=1, Час=61сек
+WEB COMMAND: manual
+WEB COMMAND: pump 88
+[DEBUG] setPumpPercent: 88% -> 88% -> PWM=224
+WEB COMMAND: manual
+WEB COMMAND: pump 89
+[DEBUG] setPumpPercent: 89% -> 89% -> PWM=226
+WEB COMMAND: manual
+WEB COMMAND: pump 90
+[DEBUG] setPumpPercent: 90% -> 90% -> PWM=229
+WEB COMMAND: manual
+WEB COMMAND: pump 91
+[DEBUG] setPumpPercent: 91% -> 91% -> PWM=232
+WEB COMMAND: manual
+WEB COMMAND: pump 93
+[DEBUG] setPumpPercent: 93% -> 93% -> PWM=237
+WEB COMMAND: manual
+WEB COMMAND: pump 95
+[DEBUG] setPumpPercent: 95% -> 95% -> PWM=242
+WEB COMMAND: manual
+WEB COMMAND: pump 96
+[DEBUG] setPumpPercent: 96% -> 96% -> PWM=244
+WEB COMMAND: manual
+WEB COMMAND: pump 97
+[DEBUG] setPumpPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: pump 98
+[DEBUG] setPumpPercent: 98% -> 98% -> PWM=249
+WEB COMMAND: manual
+WEB COMMAND: pump 99
+[DEBUG] setPumpPercent: 99% -> 99% -> PWM=252
+WEB COMMAND: manual
+WEB COMMAND: pump 100
+[DEBUG] setPumpPercent: 100% -> 100% -> PWM=255
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+WEB COMMAND: pump 50
+[DEBUG] setPumpPercent: 50% -> 50% -> PWM=127
+[TIME] Синхронізовано: 03.01.2026 16:55:55
+[SENSOR] T:30.9/62.5°C H:47.3% P:979.4hPa
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:56:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 29.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.2°C
+  Вологість: 49.0% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-40 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=149KB, Записів=2, Час=121сек
+[SENSOR] T:29.5/64.4°C H:49.3% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 16:56:26
+[TIME] Синхронізовано: 03.01.2026 16:56:56
+[SENSOR] T:28.2/65.2°C H:50.3% P:979.5hPa
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:57:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.5°C
+  Вологість: 49.5% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-47 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=3, Час=181сек
+[SENSOR] T:28.8/63.2°C H:49.3% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 16:57:27
+[SENSOR] T:29.6/63.3°C H:48.9% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 16:57:58
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:58:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.7°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.2°C
+  Вологість: 47.9% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-23 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 3
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=151KB, Записів=4, Час=241сек
+[SENSOR] T:28.5/64.4°C H:48.1% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 16:58:28
+[SENSOR] T:27.3/64.6°C H:60.6% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 16:58:59
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:59:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 62.8°C
+  Вологість: 63.9% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-28 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 4
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=151KB, Записів=5, Час=301сек
+[TIME] Синхронізовано: 03.01.2026 16:59:29
+[TIME] Синхронізовано: 03.01.2026 17:00:00
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:00:23
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.3°C (ціль: 28.0-29.0°C)
+  Теплоносій: -127.0°C
+  Вологість: 63.3% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-26 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 5
+══════════════════════════════════════════════════════════
+
+⚠ Проблема: Проблема з датчиками температури!
+📈 Статистика: Пам'ять=150KB, Записів=6, Час=361сек
+[SENSOR] T:28.0/63.0°C H:62.6% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:00:30
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Витяжка увімкнена
+[SENSOR] T:27.6/63.3°C H:63.3% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:01:01
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:01:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.3°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.1°C
+  Вологість: 64.8% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 9% (25)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-32 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 6
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=7, Час=421сек
+[SENSOR] T:28.5/63.1°C H:65.0% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:01:31
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+[SENSOR] T:28.2/63.6°C H:66.5% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:02:02
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:02:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.0°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.9°C
+  Вологість: 67.3% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-32 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 7
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=8, Час=481сек
+[SENSOR] T:26.6/64.0°C H:67.8% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:02:33
+[SENSOR] T:27.0/62.2°C H:68.0% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:03:03
+✓ Зволожувач: ВИМКНЕНО (Вологість: 68.0%, Ціль: 67.9%)
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:03:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.4°C (ціль: 28.0-29.0°C)
+  Теплоносій: 61.4°C
+  Вологість: 68.1% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-25 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 8
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=9, Час=541сек
+[SENSOR] T:28.4/61.9°C H:68.0% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:03:34
+[SENSOR] T:26.9/63.4°C H:69.4% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:04:04
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:04:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 26.0°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.0°C
+  Вологість: 69.8% (ціль: 68.0-70.0%)
+  Тиск: 979.6 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-25 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 9
+══════════════════════════════════════════════════════════
+
+[HISTORY] Записано запис 10
+📈 Статистика: Пам'ять=150KB, Записів=10, Час=601сек
+[SENSOR] T:26.1/63.6°C H:69.9% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:04:35
+[SENSOR] T:27.9/62.2°C H:68.8% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:05:05
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:05:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.8°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.4°C
+  Вологість: 69.2% (ціль: 68.0-70.0%)
+  Тиск: 979.6 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-25 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 10
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=11, Час=661сек
+[SENSOR] T:27.4/63.9°C H:69.5% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:05:36
+[SENSOR] T:26.0/65.3°C H:69.9% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:06:06
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:06:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 26.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.6°C
+  Вологість: 68.0% (ціль: 68.0-70.0%)
+  Тиск: 979.6 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-27 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 11
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=12, Час=721сек
+[SENSOR] T:27.9/64.1°C H:67.1% P:979.5hPa
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Витяжка увімкнена
+[TIME] Синхронізовано: 03.01.2026 17:06:37
+[SENSOR] T:30.2/64.9°C H:65.9% P:979.5hPa
+[TIME] Синхронізовано: 03.01.2026 17:07:08
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:07:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 31.1°C (ціль: 28.0-29.0°C)
+  Теплоносій: 65.4°C
+  Вологість: 67.1% (ціль: 68.0-70.0%)
+  Тиск: 979.5 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 9% (25)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-34 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 12
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=13, Час=781сек
+[SENSOR] T:31.4/65.7°C H:66.9% P:979.5hPa
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+[TIME] Синхронізовано: 03.01.2026 17:07:38
+[SENSOR] T:30.8/66.9°C H:68.1% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:08:09
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:08:24
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 29.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 67.6°C
+  Вологість: 68.9% (ціль: 68.0-70.0%)
+  Тиск: 979.6 hPa
+----------------------------------------------
+  Насос (A): 49% (127)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-25 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 13
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=14, Час=841сек
+[SENSOR] T:28.9/67.9°C H:69.2% P:979.6hPa
+[TIME] Синхронізовано: 03.01.2026 17:08:39
+[SENSOR] T:27.4/68.2°C H:69.6% P:979.6hPa

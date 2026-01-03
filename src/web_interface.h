@@ -1,4 +1,4 @@
-#ifndef WEB_INTERFACE_H
+﻿#ifndef WEB_INTERFACE_H
 #define WEB_INTERFACE_H
 
 #include "system_core.h"
@@ -7,13 +7,13 @@
 #include "utility_functions.h"
 
 // ============================================================================
-// ВЕБ-ИНТЕРФЕЙС
+// ВЕБ-ІНТЕРФЕЙС
 // ============================================================================
 
-// Инициализация Wi-Fi и веб-сервера
+// Ініціалізація Wi-Fi та веб-сервера
 void initWiFi();
 
-// Основные страницы
+// Основні сторінки
 void handleRoot();
 void handleStatus();
 void handleControlPage();
@@ -26,21 +26,25 @@ void handleDebugPage();
 void handleLearningPage();
 void handleLearningAPI();
 
-// Настройки Wi-Fi (добавляем!)
+// Servo calibration
+void handleServoPage();
+void handleServoAPI();
+
+// Налаштування Wi-Fi (додаємо!)
 void handleWiFiSettingsPage();
 void handleSaveWiFiSettings();
 void handleScanWiFi();
 void handleConnectWiFi();
 
-// Обработка команд из веба
+// Обробка команд із веб-інтерфейсу
 void handleWebCommand();
 String processWebCommand(const String& cmd);
 
-// Вспомогательные функции для Wi-Fi
+// Допоміжні функції для Wi-Fi
 String wifiStrengthToHTML(int rssi);
 String encryptionTypeToString(wifi_auth_mode_t type);
 
-// Задача веб-сервера
+// Завдання веб-сервера
 void webTask(void *parameter);
 
 #endif

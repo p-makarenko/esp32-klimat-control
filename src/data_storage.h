@@ -1,8 +1,8 @@
-#ifndef DATA_STORAGE_H
+﻿#ifndef DATA_STORAGE_H
 #define DATA_STORAGE_H
 
 #include "system_core.h"
-#include "utility_functions.h"  // Добавьте этот инклюд
+#include "utility_functions.h"  // Додайте цей інклуд
 
 // Змінні історії даних
 extern HistoryData history[HISTORY_BUFFER_SIZE];

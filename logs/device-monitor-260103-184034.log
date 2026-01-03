@@ -1,0 +1,349 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x23 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+==========================================
+       Клімат-контроль системи вентиляції v4.0
+==========================================
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+🔍 Пошук доступних мереж...
+Знайдено 4 мереж:
+  1: Smart-539874 (-35 dBm) відкрита
+  2: Redmi Note 14 (-38 dBm) захищена
+  3: Redmi 10C (-75 dBm) захищена
+  4: Redmi Note 9 (-84 dBm) захищена
+
+📡 Збережена мережа знайдена: Redmi Note 14 (сигнал: -38 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 14
+...
+✅ Успішно підключено до збереженої мережі: Redmi Note 14
+SSID: Redmi Note 14 | IP адреса: 10.85.214.166 | Сигнал: -35 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-03 18:40:50
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (180°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задача розширеної логіки запущена✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://10.85.214.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[DEBUG] setPumpPercent: 17% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 26% -> 26% -> PWM=66
+📊 Підтримання: T=28.4°C, Насос=17, Вентилятор=26
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=13
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 6% -> 6% -> PWM=15
+📊 Підтримання: T=28.9°C, Насос=12, Вентилятор=6
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=85.0°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.5°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.7°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.8°C, Насос=0, Вентилятор=0
+[TIME] Синхронізовано: 03.01.2026 18:41:12
+✓ Зволожувач: УВІМКНЕНО (Вологість: 65.3%, Ціль: 65.6%)
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.0°C, Насос=0, Вентилятор=0
+WEB COMMAND: quiet
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.5°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.7°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.1°C, Насос=0, Вентилятор=0
+[SENSOR] T:31.1/63.0°C H:65.7% P:980.2hPa
+[TIME] Синхронізовано: 03.01.2026 18:41:43
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.1°C, Насос=0, Вентилятор=0
+📈 Статистика: Пам'ять=150KB, Записів=1, Час=61сек
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.3°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.6°C, Насос=0, Вентилятор=0
+✓ Зволожувач: ВИМК (Вологість: 65.8, Ціль: 65.7)
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.6°C, Насос=0, Вентилятор=0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.7°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[TIME] Синхронізовано: 03.01.2026 18:42:13
+[SENSOR] T:31.8/63.6°C H:65.8% P:980.3hPa
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.7°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.3°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=31.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.8°C, Насос=0, Вентилятор=0
+✓ Зволожувач: ВКЛ (Вологість: 65.1, Ціль: 65.1)
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.6°C, Насос=0, Вентилятор=0
+⚠ Проблема: Проблема з датчиками температури!
+📈 Статистика: Пам'ять=149KB, Записів=2, Час=121сек
+[TIME] Синхронізовано: 03.01.2026 18:42:44
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.5°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.3°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=30.0°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.9°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.8°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.7°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.6°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.5°C, Насос=0, Вентилятор=0
+[TIME] Синхронізовано: 03.01.2026 18:43:14
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.4°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.3°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.2°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0

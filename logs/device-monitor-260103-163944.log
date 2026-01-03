@@ -1,0 +1,585 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x23 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+==========================================
+       Клімат-контроль системи вентиляції v4.0
+==========================================
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+🔍 Пошук доступних мереж...
+Знайдено 4 мереж:
+  1: Smart-539874 (-35 dBm) відкрита
+  2: Redmi Note 14 (-38 dBm) захищена
+  3: Redmi 10C (-68 dBm) захищена
+  4: Redmi Note 9 (-80 dBm) захищена
+
+📡 Збережена мережа знайдена: Redmi Note 14 (сигнал: -38 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 14
+...
+✅ Успішно підключено до збереженої мережі: Redmi Note 14
+SSID: Redmi Note 14 | IP адреса: 10.85.214.166 | Сигнал: -38 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-03 16:40:17
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (166°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://10.85.214.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 37% -> 37% -> PWM=94
+⚡ Обігрів: T=27.3°C, Насос=24, Вентилятор=37
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[DEBUG] setPumpPercent: 13% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 18% -> 18% -> PWM=45
+📊 Підтримання: T=28.8°C, Насос=13, Вентилятор=18
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=20
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=20
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=24
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 25% -> 25% -> PWM=63
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=25
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 25% -> 25% -> PWM=63
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=25
+[SENSOR] T:28.4/63.7°C H:58.2% P:979.2hPa
+[TIME] Синхронізовано: 03.01.2026 16:40:35
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=28
+✓ Зволожувач: ВКЛ (Вологість: 58.2, Ціль: 66.3)
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 25% -> 25% -> PWM=63
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=25
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=28
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=24
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=24
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 24% -> 24% -> PWM=61
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=24
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 22% -> 22% -> PWM=56
+📊 Підтримання: T=28.6°C, Насос=14, Вентилятор=22
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=20
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=16
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 14% -> 14% -> PWM=35
+📊 Підтримання: T=28.9°C, Насос=12, Вентилятор=14
+[DEBUG] setPumpPercent: 11% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+📊 Підтримання: T=28.9°C, Насос=11, Вентилятор=13
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=10
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:41:05
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 29.1°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.0°C
+  Вологість: 59.2% (ціль: 68.0-70.0%)
+  Тиск: 979.2 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 9% (25)
+  Витяжка (C): 9% (25)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-44 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+[SENSOR] T:29.2/63.1°C H:59.2% P:979.2hPa
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.2°C, Насос=0, Вентилятор=10
+📈 Статистика: Пам'ять=131KB, Записів=1, Час=61сек
+[TIME] Синхронізовано: 03.01.2026 16:41:06
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.2°C, Насос=0, Вентилятор=10
+[ 64290][E][WebServer.cpp:638] _handleRequest(): request handler not found
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.2°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.3°C, Насос=0, Вентилятор=10
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+❄ Охолодження: T=29.4°C, Насос=0, Вентилятор=10
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: pump 0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 80
+[DEBUG] setFanPercent: 80% -> 80% -> PWM=204
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+🔧 Таймер витяжки: Витяжка вимкнена
+WEB COMMAND: manual
+WEB COMMAND: fan 10
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+WEB COMMAND: manual
+WEB COMMAND: fan 12
+[DEBUG] setFanPercent: 12% -> 12% -> PWM=30
+WEB COMMAND: manual
+WEB COMMAND: fan 15
+[DEBUG] setFanPercent: 15% -> 15% -> PWM=38
+WEB COMMAND: manual
+WEB COMMAND: fan 19
+[DEBUG] setFanPercent: 19% -> 19% -> PWM=48
+WEB COMMAND: manual
+WEB COMMAND: fan 28
+[DEBUG] setFanPercent: 28% -> 28% -> PWM=71
+WEB COMMAND: fan 36
+[DEBUG] setFanPercent: 36% -> 36% -> PWM=91
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: fan 43
+[DEBUG] setFanPercent: 43% -> 43% -> PWM=109
+WEB COMMAND: manual
+WEB COMMAND: fan 50
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: manual
+WEB COMMAND: fan 57
+[DEBUG] setFanPercent: 57% -> 57% -> PWM=145
+WEB COMMAND: manual
+WEB COMMAND: fan 60
+[DEBUG] setFanPercent: 60% -> 60% -> PWM=153
+WEB COMMAND: manual
+WEB COMMAND: fan 63
+[DEBUG] setFanPercent: 63% -> 63% -> PWM=160
+WEB COMMAND: manual
+WEB COMMAND: fan 65
+[DEBUG] setFanPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: fan 66
+[DEBUG] setFanPercent: 66% -> 66% -> PWM=168
+WEB COMMAND: manual
+WEB COMMAND: fan 67
+[DEBUG] setFanPercent: 67% -> 67% -> PWM=170
+WEB COMMAND: manual
+WEB COMMAND: fan 70
+[DEBUG] setFanPercent: 70% -> 70% -> PWM=178
+WEB COMMAND: manual
+WEB COMMAND: fan 74
+[DEBUG] setFanPercent: 74% -> 74% -> PWM=188
+WEB COMMAND: manual
+WEB COMMAND: fan 79
+[DEBUG] setFanPercent: 79% -> 79% -> PWM=201
+WEB COMMAND: manual
+WEB COMMAND: fan 84
+[DEBUG] setFanPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: fan 89
+[DEBUG] setFanPercent: 89% -> 89% -> PWM=226
+WEB COMMAND: manual
+WEB COMMAND: fan 94
+[DEBUG] setFanPercent: 94% -> 94% -> PWM=239
+WEB COMMAND: manual
+WEB COMMAND: fan 95
+[DEBUG] setFanPercent: 95% -> 95% -> PWM=242
+WEB COMMAND: manual
+WEB COMMAND: fan 96
+[DEBUG] setFanPercent: 96% -> 96% -> PWM=244
+WEB COMMAND: manual
+WEB COMMAND: fan 97
+[DEBUG] setFanPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: fan 98
+[DEBUG] setFanPercent: 98% -> 98% -> PWM=249
+WEB COMMAND: manual
+WEB COMMAND: fan 99
+[DEBUG] setFanPercent: 99% -> 99% -> PWM=252
+WEB COMMAND: manual
+WEB COMMAND: fan 100
+[DEBUG] setFanPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: manual
+WEB COMMAND: pump 1
+[DEBUG] setPumpPercent: 1% -> 1% -> PWM=2
+WEB COMMAND: manual
+WEB COMMAND: pump 2
+[DEBUG] setPumpPercent: 2% -> 2% -> PWM=5
+WEB COMMAND: manual
+WEB COMMAND: pump 4
+[DEBUG] setPumpPercent: 4% -> 4% -> PWM=10
+WEB COMMAND: manual
+WEB COMMAND: pump 6
+[DEBUG] setPumpPercent: 6% -> 6% -> PWM=15
+WEB COMMAND: manual
+WEB COMMAND: pump 10
+[DEBUG] setPumpPercent: 10% -> 10% -> PWM=25
+WEB COMMAND: manual
+[SENSOR] T:29.6/63.6°C H:60.8% P:979.2hPa
+WEB COMMAND: pump 18
+[DEBUG] setPumpPercent: 18% -> 18% -> PWM=45
+WEB COMMAND: manual
+WEB COMMAND: pump 28
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+WEB COMMAND: manual
+[TIME] Синхронізовано: 03.01.2026 16:41:36
+WEB COMMAND: pump 37
+[DEBUG] setPumpPercent: 37% -> 37% -> PWM=94
+WEB COMMAND: manual
+WEB COMMAND: pump 51
+[DEBUG] setPumpPercent: 51% -> 51% -> PWM=130
+WEB COMMAND: manual
+WEB COMMAND: pump 55
+[DEBUG] setPumpPercent: 55% -> 55% -> PWM=140
+WEB COMMAND: manual
+WEB COMMAND: pump 61
+[DEBUG] setPumpPercent: 61% -> 61% -> PWM=155
+WEB COMMAND: manual
+WEB COMMAND: pump 65
+[DEBUG] setPumpPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: pump 70
+[DEBUG] setPumpPercent: 70% -> 70% -> PWM=178
+WEB COMMAND: manual
+WEB COMMAND: pump 74
+[DEBUG] setPumpPercent: 74% -> 74% -> PWM=188
+WEB COMMAND: manual
+WEB COMMAND: pump 79
+[DEBUG] setPumpPercent: 79% -> 79% -> PWM=201
+WEB COMMAND: manual
+WEB COMMAND: pump 84
+[DEBUG] setPumpPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: pump 93
+[DEBUG] setPumpPercent: 93% -> 93% -> PWM=237
+WEB COMMAND: manual
+WEB COMMAND: pump 100
+[DEBUG] setPumpPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: pump 50
+[DEBUG] setPumpPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: pump 30
+[DEBUG] setPumpPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: pump 0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: extractor 30
+[DEBUG] setExtractorPercent: 30% -> 30% -> PWM=76
+WEB COMMAND: extractor 50
+[DEBUG] setExtractorPercent: 50% -> 50% -> PWM=127
+WEB COMMAND: extractor 80
+[DEBUG] setExtractorPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: extractor 12
+[DEBUG] setExtractorPercent: 12% -> 12% -> PWM=30
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: extractor 14
+[DEBUG] setExtractorPercent: 14% -> 14% -> PWM=35
+WEB COMMAND: manual
+WEB COMMAND: extractor 21
+[DEBUG] setExtractorPercent: 21% -> 21% -> PWM=53
+WEB COMMAND: manual
+WEB COMMAND: extractor 29
+[DEBUG] setExtractorPercent: 29% -> 29% -> PWM=73
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: extractor 37
+[DEBUG] setExtractorPercent: 37% -> 37% -> PWM=94
+WEB COMMAND: extractor 44
+[DEBUG] setExtractorPercent: 44% -> 44% -> PWM=112
+WEB COMMAND: manual
+WEB COMMAND: extractor 51
+[DEBUG] setExtractorPercent: 51% -> 51% -> PWM=130
+WEB COMMAND: manual
+WEB COMMAND: extractor 56
+[DEBUG] setExtractorPercent: 56% -> 56% -> PWM=142
+WEB COMMAND: manual
+WEB COMMAND: extractor 59
+[DEBUG] setExtractorPercent: 59% -> 59% -> PWM=150
+WEB COMMAND: manual
+WEB COMMAND: extractor 62
+[DEBUG] setExtractorPercent: 62% -> 62% -> PWM=158
+WEB COMMAND: manual
+WEB COMMAND: extractor 65
+[DEBUG] setExtractorPercent: 65% -> 65% -> PWM=165
+WEB COMMAND: manual
+WEB COMMAND: extractor 68
+[DEBUG] setExtractorPercent: 68% -> 68% -> PWM=173
+WEB COMMAND: manual
+WEB COMMAND: extractor 70
+[DEBUG] setExtractorPercent: 70% -> 70% -> PWM=178
+WEB COMMAND: manual
+WEB COMMAND: extractor 73
+[DEBUG] setExtractorPercent: 73% -> 73% -> PWM=186
+WEB COMMAND: manual
+WEB COMMAND: extractor 75
+[DEBUG] setExtractorPercent: 75% -> 75% -> PWM=191
+WEB COMMAND: manual
+WEB COMMAND: extractor 78
+[DEBUG] setExtractorPercent: 78% -> 78% -> PWM=198
+WEB COMMAND: manual
+WEB COMMAND: extractor 80
+[DEBUG] setExtractorPercent: 80% -> 80% -> PWM=204
+WEB COMMAND: manual
+WEB COMMAND: extractor 82
+[DEBUG] setExtractorPercent: 82% -> 82% -> PWM=209
+WEB COMMAND: manual
+WEB COMMAND: manual
+WEB COMMAND: extractor 85
+[DEBUG] setExtractorPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: extractor 87
+[DEBUG] setExtractorPercent: 87% -> 87% -> PWM=221
+WEB COMMAND: manual
+WEB COMMAND: extractor 90
+[DEBUG] setExtractorPercent: 90% -> 90% -> PWM=229
+WEB COMMAND: manual
+WEB COMMAND: extractor 92
+[DEBUG] setExtractorPercent: 92% -> 92% -> PWM=234
+WEB COMMAND: manual
+WEB COMMAND: extractor 95
+[DEBUG] setExtractorPercent: 95% -> 95% -> PWM=242
+WEB COMMAND: manual
+WEB COMMAND: extractor 97
+[DEBUG] setExtractorPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: extractor 100
+[DEBUG] setExtractorPercent: 100% -> 100% -> PWM=255
+WEB COMMAND: manual
+WEB COMMAND: extractor 99
+[DEBUG] setExtractorPercent: 99% -> 99% -> PWM=252
+WEB COMMAND: manual
+WEB COMMAND: extractor 98
+[DEBUG] setExtractorPercent: 98% -> 98% -> PWM=249
+WEB COMMAND: manual
+WEB COMMAND: extractor 97
+[DEBUG] setExtractorPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: extractor 96
+[DEBUG] setExtractorPercent: 96% -> 96% -> PWM=244
+WEB COMMAND: manual
+WEB COMMAND: extractor 95
+[DEBUG] setExtractorPercent: 95% -> 95% -> PWM=242
+WEB COMMAND: manual
+WEB COMMAND: extractor 94
+[DEBUG] setExtractorPercent: 94% -> 94% -> PWM=239
+WEB COMMAND: manual
+WEB COMMAND: extractor 93
+[DEBUG] setExtractorPercent: 93% -> 93% -> PWM=237
+WEB COMMAND: manual
+WEB COMMAND: extractor 92
+[DEBUG] setExtractorPercent: 92% -> 92% -> PWM=234
+WEB COMMAND: manual
+WEB COMMAND: extractor 91
+[DEBUG] setExtractorPercent: 91% -> 91% -> PWM=232
+WEB COMMAND: manual
+WEB COMMAND: extractor 90
+[DEBUG] setExtractorPercent: 90% -> 90% -> PWM=229
+WEB COMMAND: manual
+WEB COMMAND: extractor 89
+[DEBUG] setExtractorPercent: 89% -> 89% -> PWM=226
+WEB COMMAND: manual
+WEB COMMAND: extractor 87
+[DEBUG] setExtractorPercent: 87% -> 87% -> PWM=221
+WEB COMMAND: manual
+WEB COMMAND: extractor 86
+[DEBUG] setExtractorPercent: 86% -> 86% -> PWM=219
+WEB COMMAND: manual
+WEB COMMAND: extractor 85
+[DEBUG] setExtractorPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: manual
+WEB COMMAND: extractor 84
+[DEBUG] setExtractorPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: extractor 83
+[DEBUG] setExtractorPercent: 83% -> 83% -> PWM=211
+WEB COMMAND: manual
+WEB COMMAND: extractor 84
+[DEBUG] setExtractorPercent: 84% -> 84% -> PWM=214
+WEB COMMAND: manual
+WEB COMMAND: extractor 85
+[DEBUG] setExtractorPercent: 85% -> 85% -> PWM=216
+WEB COMMAND: manual
+WEB COMMAND: extractor 87
+[DEBUG] setExtractorPercent: 87% -> 87% -> PWM=221
+WEB COMMAND: manual
+WEB COMMAND: extractor 91
+[DEBUG] setExtractorPercent: 91% -> 91% -> PWM=232
+WEB COMMAND: manual
+WEB COMMAND: extractor 97
+[DEBUG] setExtractorPercent: 97% -> 97% -> PWM=247
+WEB COMMAND: manual
+WEB COMMAND: extractor 100
+[DEBUG] setExtractorPercent: 100% -> 100% -> PWM=255
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:42:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.7°C (ціль: 28.0-29.0°C)
+  Теплоносій: 65.5°C
+  Вологість: 58.0% (ціль: 68.0-70.0%)
+  Тиск: 979.2 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 100% (255)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-41 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=149KB, Записів=2, Час=121сек
+[TIME] Синхронізовано: 03.01.2026 16:42:06
+[SENSOR] T:28.6/65.7°C H:57.5% P:979.2hPa
+WEB COMMAND: extractor 0
+[DEBUG] setExtractorPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: fan 0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+WEB COMMAND: pump 0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[SENSOR] T:27.6/67.4°C H:53.8% P:979.2hPa
+[TIME] Синхронізовано: 03.01.2026 16:42:37
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 16:43:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.1°C (ціль: 28.0-29.0°C)
+  Теплоносій: 68.2°C
+  Вологість: 51.5% (ціль: 68.0-70.0%)
+  Тиск: 979.2 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-38 dBm)
+  Пам'ять: 149 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=149KB, Записів=3, Час=181сек
+[TIME] Синхронізовано: 03.01.2026 16:43:07
+[SENSOR] T:27.1/67.9°C H:51.4% P:979.2hPa
+[SENSOR] T:28.9/66.0°C H:53.5% P:979.3hPa
+[TIME] Синхронізовано: 03.01.2026 16:43:38

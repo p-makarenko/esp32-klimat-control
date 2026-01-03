@@ -2,7 +2,7 @@
 #include "system_core.h"
 #include <Arduino.h>
 
-// Р“Р»РѕР±Р°Р»СЊРЅС– РѕР±'С”РєС‚Рё РґР°С‚С‡РёРєС–РІ
+// Глобальні об'єкти датчиків
 OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
 Adafruit_BME280 bme;
@@ -12,27 +12,27 @@ bool initTemperatureSensors() {
   sensors.begin();
 
   int deviceCount = sensors.getDeviceCount();
-  Serial.printf("Р—РЅР°Р№РґРµРЅРѕ DS18B20 РґР°С‚С‡РёРєС–РІ: %d\n", deviceCount);
+  Serial.printf("Знайдено DS18B20 датчиків: %d\n", deviceCount);
 
   if (deviceCount < 2) {
-    Serial.println("вљ  РџРћРџР•Р Р•Р”Р–Р•РќРќРЇ: РџРѕС‚СЂС–Р±РЅРѕ С‰РѕРЅР°Р№РјРµРЅС€Рµ 2 РґР°С‚С‡РёРєРё!");
+    Serial.println("⚠ Проблема: Потрібно щонайменше 2 датчики!");
     return false;
   }
 
   if (!sensors.getAddress(tempCarrierAddr, 0)) {
-    Serial.println("вљ  РџРћРџР•Р Р•Р”Р–Р•РќРќРЇ: РќРµ РІРґР°Р»РѕСЃСЏ Р·РЅР°Р№С‚Рё Р°РґСЂРµСЃСѓ РґР°С‚С‡РёРєР° С‚РµРїР»РѕРЅРѕСЃС–СЏ!");
+    Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика теплоносія!");
     return false;
   }
   
   if (!sensors.getAddress(tempRoomAddr, 1)) {
-    Serial.println("вљ  РџРћРџР•Р Р•Р”Р–Р•РќРќРЇ: РќРµ РІРґР°Р»РѕСЃСЏ Р·РЅР°Р№С‚Рё Р°РґСЂРµСЃСѓ РґР°С‚С‡РёРєР° РєС–РјРЅР°С‚Рё!");
+    Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика кімнати!");
     return false;
   }
 
   sensors.setResolution(tempCarrierAddr, 12);
   sensors.setResolution(tempRoomAddr, 12);
 
-  Serial.println("вњ“ DS18B20 РґР°С‚С‡РёРєРё С–РЅС–С†С–Р°Р»С–Р·РѕРІР°РЅРѕ");
+  Serial.println("✓ DS18B20 датчики ініціалізовано");
   return true;
 }
 
@@ -44,7 +44,7 @@ bool initBME280() {
 
   if (!bme.begin(0x76)) {
     if (!bme.begin(0x77)) {
-      Serial.println("вљ  РџРћРџР•Р Р•Р”Р–Р•РќРќРЇ: BME280 РЅРµ Р·РЅР°Р№РґРµРЅРѕ!");
+      Serial.println("⚠ Проблема: BME280 не знайдено!");
       return false;
     }
   }
@@ -56,7 +56,7 @@ bool initBME280() {
                   Adafruit_BME280::FILTER_X16,
                   Adafruit_BME280::STANDBY_MS_500);
 
-  Serial.println("вњ“ BME280 С–РЅС–С†С–Р°Р»С–Р·РѕРІР°РЅРѕ");
+  Serial.println("✓ BME280 ініціалізовано");
   return true;
 }
 
@@ -73,7 +73,7 @@ void readTemperatureSensors() {
     sensorData.roomValid = (room > -50.0f && room < 125.0f && room != -127.0f);
     sensorData.timestamp = millis();
     
-    // РћРЅРѕРІР»РµРЅРЅСЏ Р±СѓС„РµСЂСѓ С‚СЂРµРЅРґСѓ
+    // Оновлення буфера тренду
     if (sensorData.carrierValid) {
       float* trendBuffer = getTempTrendBufferPtr();
       int currentTrendIndex = getTrendIndexValue();
@@ -104,24 +104,24 @@ void readBME280() {
 }
 
 void sensorTask(void *parameter) {
-  Serial.println("вњ“ Р—Р°РґР°С‡Сѓ РґР°С‚С‡РёРєС–РІ Р·Р°РїСѓС‰РµРЅРѕ");
+  Serial.println("✓ Задача датчиків запущена");
   
-  // Р§РµРєР°С”РјРѕ РЅР° С–РЅС–С†С–Р°Р»С–Р·Р°С†С–СЋ С–РЅС€РёС… РєРѕРјРїРѕРЅРµРЅС‚С–РІ
+  // Чекаємо на ініціалізацію інших компонентів
   vTaskDelay(pdMS_TO_TICKS(2000));
   
   while (1) {
-    // Р—С‡РёС‚СѓРІР°РЅРЅСЏ РґР°С‚С‡РёРєС–РІ
+    // Читання датчиків
     readTemperatureSensors();
     readBME280();
     
-    // Р’РёРІС–Рґ РІС–РґР»Р°РґРєРѕРІРёС… РґР°РЅРёС… (РєРѕР¶РЅС– 30 СЃРµРєСѓРЅРґ)
+    // Вивід відладкових даних (кожні 30 секунд)
     static unsigned long lastDebugPrint = 0;
     unsigned long now = millis();
     
     if (now - lastDebugPrint > 30000) {
       lastDebugPrint = now;
       if (sensorData.carrierValid && sensorData.roomValid && sensorData.bmeValid) {
-        Serial.printf("[SENSOR] T:%.1f/%.1fВ°C H:%.1f%% P:%.1fhPa\n",
+        Serial.printf("[SENSOR] T:%.1f/%.1f°C H:%.1f%% P:%.1fhPa\n",
                      sensorData.tempRoom, sensorData.tempCarrier,
                      sensorData.humidity, sensorData.pressure);
       }

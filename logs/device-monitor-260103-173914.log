@@ -1,0 +1,148 @@
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 40% -> 40% -> PWM=102
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=40
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=27.0°C, Насос=27, Вентилятор=50
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=26.9°C, Насос=27, Вентилятор=50
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=26.9°C, Насос=28, Вентилятор=55
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=26.8°C, Насос=28, Вентилятор=55
+[TIME] Синхронізовано: 03.01.2026 17:39:25
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=26.9°C, Насос=28, Вентилятор=55
+[DEBUG] setPumpPercent: 28% -> 28% -> PWM=71
+[DEBUG] setFanPercent: 55% -> 55% -> PWM=140
+⚡ Обігрів: T=26.9°C, Насос=28, Вентилятор=55
+[DEBUG] setPumpPercent: 27% -> 27% -> PWM=68
+[DEBUG] setFanPercent: 50% -> 50% -> PWM=127
+⚡ Обігрів: T=26.9°C, Насос=27, Вентилятор=50
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 45% -> 45% -> PWM=114
+⚡ Обігрів: T=27.1°C, Насос=26, Вентилятор=45
+✓ Зволожувач: ВИМК (Вологість: 68.1, Ціль: 68.0)
+[DEBUG] setPumpPercent: 26% -> 26% -> PWM=66
+[DEBUG] setFanPercent: 40% -> 40% -> PWM=102
+⚡ Обігрів: T=27.2°C, Насос=26, Вентилятор=40
+[DEBUG] setPumpPercent: 24% -> 24% -> PWM=61
+[DEBUG] setFanPercent: 30% -> 30% -> PWM=76
+⚡ Обігрів: T=27.3°C, Насос=24, Вентилятор=30
+[DEBUG] setPumpPercent: 23% -> 23% -> PWM=58
+[DEBUG] setFanPercent: 25% -> 25% -> PWM=63
+⚡ Обігрів: T=27.5°C, Насос=23, Вентилятор=25
+[DEBUG] setPumpPercent: 22% -> 22% -> PWM=56
+[DEBUG] setFanPercent: 15% -> 15% -> PWM=38
+⚡ Обігрів: T=27.6°C, Насос=22, Вентилятор=15
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 5% -> 5% -> PWM=12
+⚡ Обігрів: T=27.8°C, Насос=20, Вентилятор=5
+[DEBUG] setPumpPercent: 20% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 40% -> 40% -> PWM=102
+📊 Підтримання: T=28.0°C, Насос=20, Вентилятор=40
+[DEBUG] setPumpPercent: 19% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 33% -> 33% -> PWM=84
+📊 Підтримання: T=28.2°C, Насос=19, Вентилятор=33
+[SENSOR] T:28.4/63.2°C H:67.8% P:979.9hPa
+[DEBUG] setPumpPercent: 17% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 26% -> 26% -> PWM=66
+📊 Підтримання: T=28.4°C, Насос=17, Вентилятор=26
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=20
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 13% -> 13% -> PWM=33
+📊 Підтримання: T=28.7°C, Насос=14, Вентилятор=13
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 03.01.2026 17:39:53
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 28.7°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.2°C
+  Вологість: 67.6% (ціль: 68.0-70.0%)
+  Тиск: 979.9 hPa
+----------------------------------------------
+  Насос (A): 20% (51)
+  Вентилятор (B): 12% (33)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВИМК
+  Вентиляція: ЗАКРИТА
+----------------------------------------------
+  Wi-Fi:  (0 dBm)
+  Пам'ять: 152 KB
+  Записів в історії: 29
+══════════════════════════════════════════════════════════
+
+[HISTORY] Записано запис 30
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 8% -> 8% -> PWM=20
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=8
+[TIME] Синхронізовано: 03.01.2026 17:39:56
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+⚠ Проблема: Втрачено з'єднання Wi-Fi!
+📈 Статистика: Пам'ять=152KB, Записів=30, Час=1811сек
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 0% -> 0% -> PWM=0
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+❄ Охолодження: T=29.1°C, Насос=0, Вентилятор=0
+[DEBUG] setPumpPercent: 10% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 0% -> 0% -> PWM=0
+📊 Підтримання: T=29.0°C, Насос=10, Вентилятор=0
+[DEBUG] setPumpPercent: 11% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 3% -> 3% -> PWM=7
+📊 Підтримання: T=28.9°C, Насос=11, Вентилятор=3
+[DEBUG] setExtractorPercent: 10% -> 10% -> PWM=25
+🔧 Таймер витяжки: Витяжка увімкнена
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 6% -> 6% -> PWM=15
+📊 Підтримання: T=28.9°C, Насос=12, Вентилятор=6
+[DEBUG] setPumpPercent: 12% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 8% -> 8% -> PWM=20
+📊 Підтримання: T=28.8°C, Насос=12, Вентилятор=8
+[DEBUG] setPumpPercent: 13% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 10% -> 10% -> PWM=25
+📊 Підтримання: T=28.8°C, Насос=13, Вентилятор=10
+[SENSOR] T:28.6/65.3°C H:66.7% P:979.9hPa
+[DEBUG] setPumpPercent: 14% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 16% -> 16% -> PWM=40
+📊 Підтримання: T=28.6°C, Насос=14, Вентилятор=16
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 18% -> 18% -> PWM=45
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=18
+[DEBUG] setPumpPercent: 15% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 20% -> 20% -> PWM=51
+📊 Підтримання: T=28.5°C, Насос=15, Вентилятор=20
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=23
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=23
+[TIME] Синхронізовано: 03.01.2026 17:40:27
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=23
+[DEBUG] setPumpPercent: 16% -> 20% -> PWM=51
+[DEBUG] setFanPercent: 23% -> 23% -> PWM=58
+📊 Підтримання: T=28.4°C, Насос=16, Вентилятор=23

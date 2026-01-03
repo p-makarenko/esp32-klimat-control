@@ -7,7 +7,7 @@
 #include "utility_functions.h"
 
 // ============================================================================
-// Р“Р›РћР‘РђР›Р¬РќР«Р• РџР•Р Р•РњР•РќРќР«Р• Р”Р›РЇ РЈРџР РђР’Р›Р•РќРРЇ Р Р•Р–РРњРђРњР
+// ГЛОБАЛЬНІ ЗМІННІ ДЛЯ ІНТЕЛЕКТУАЛЬНОГО КЕРУВАННЯ
 // ============================================================================
 
 bool compactMode = true;
@@ -16,97 +16,99 @@ unsigned long lastPowerUpdate = 0;
 const unsigned long POWER_UPDATE_INTERVAL = 1000;
 
 // ============================================================================
-// Р”Р’Рђ Р Р•Р–РРњРђ Р РђР‘РћРўР« SERIAL MONITOR
+// ДРУК ДЛЯ SERIAL MONITOR
 // ============================================================================
 
 void printCompactMode() {
-    Serial.println("\nв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ");
-    Serial.println("        рџљЂ Р Р•Р–РРњ Р‘Р«РЎРўР РћР“Рћ РЈРџР РђР’Р›Р•РќРРЇ");
-    Serial.println("в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ");
-    Serial.println("Р‘Р«РЎРўР Р«Р• РљРћРњРђРќР”Р« (Р±СѓРєРІР° + С‡РёСЃР»Рѕ):");
-    Serial.println("  aXX - РЅР°СЃРѕСЃ XX%        (РїСЂРёРјРµСЂ: a50)");
-    Serial.println("  bXX - РІРµРЅС‚РёР»СЏС‚РѕСЂ XX%   (РїСЂРёРјРµСЂ: b40)");
-    Serial.println("  cXX - РІС‹С‚СЏР¶РєР° XX%      (РїСЂРёРјРµСЂ: c30, c0)");
-    Serial.println("\nРќРђРЎРўР РћР™РљР РџР Р•Р”Р•Р›РћР’:");
-    Serial.println("  tmin XX - РјРёРЅ. С‚РµРјРї.   (РїСЂРёРјРµСЂ: tmin 25)");
-    Serial.println("  tmax XX - РјР°РєСЃ. С‚РµРјРї.  (РїСЂРёРјРµСЂ: tmax 26)");
-    Serial.println("  hmin XX - РјРёРЅ. РІР»Р°Р¶.   (РїСЂРёРјРµСЂ: hmin 65)");
-    Serial.println("  hmax XX - РјР°РєСЃ. РІР»Р°Р¶.  (РїСЂРёРјРµСЂ: hmax 70)");
-    Serial.println("\nРўРђР™РњР•Р  Р’Р«РўРЇР–РљР:");
-    Serial.println("  ton XX  - РІРєР» РЅР° XX РјРёРЅ (РїСЂРёРјРµСЂ: ton 30)");
-    Serial.println("  toff    - РІС‹РєР»СЋС‡РёС‚СЊ С‚Р°Р№РјРµСЂ");
-    Serial.println("  tcycle X Y - С†РёРєР» X РјРёРЅ РІРєР», Y РјРёРЅ РІС‹РєР»");
-    Serial.println("\nРЎРРЎРўР•РњРќР«Р•:");
-    Serial.println("  s      - СЃС‚Р°С‚СѓСЃ СЃРёСЃС‚РµРјС‹");
-    Serial.println("  m      - РїРѕР»РЅРѕРµ РјРµРЅСЋ");
-    Serial.println("  mode   - СЃРјРµРЅРёС‚СЊ СЂРµР¶РёРј (РєРѕРјРїР°РєС‚РЅС‹Р№/РїРѕР»РЅС‹Р№)");
-    Serial.println("  web    - РёРЅС„РѕСЂРјР°С†РёСЏ Рѕ РІРµР±-РёРЅС‚РµСЂС„РµР№СЃРµ");
-    Serial.println("в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ\n");
+    Serial.println("\n══════════════════════════════════════════════════════════");
+    Serial.println("        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ");
+    Serial.println("══════════════════════════════════════════════════════════");
+    Serial.println("ШВИДКІ КОМАНДИ (буква + число):");
+    Serial.println("  aXX - насос XX%        (приклад: a50)");
+    Serial.println("  bXX - вентилятор XX%   (приклад: b40)");
+    Serial.println("  cXX - витяжка XX%      (приклад: c30, c0)");
+    Serial.println("\nНАЛАШТУВАННЯ:");
+    Serial.println("  tmin XX - мін. темп.   (приклад: tmin 25)");
+    Serial.println("  tmax XX - макс. темп.  (приклад: tmax 26)");
+    Serial.println("  hmin XX - мін. вл.     (приклад: hmin 65)");
+    Serial.println("  hmax XX - макс. вл.    (приклад: hmax 70)");
+    Serial.println("\nТАЙМЕРИ:");
+    Serial.println("  ton XX  - вкл на XX хв (приклад: ton 30)");
+    Serial.println("  toff    - вимкнути таймер");
+    Serial.println("  tcycle X Y - цикл X хв вкл, Y хв викл");
+    Serial.println("\nСЕРВІС:");
+    Serial.println("  s      - статус системи");
+    Serial.println("  m      - повне меню");
+    Serial.println("  mode   - змінити режим (компактний/повний)");
+    Serial.println("  quiet  - вимкнути авто-вивід статусу");
+    Serial.println("  verbose- увімкнути авто-вивід статусу");
+    Serial.println("  web    - інформація про веб-інтерфейс");
+    Serial.println("══════════════════════════════════════════════════════════\n");
 }
 
 void printExtendedMode() {
-    Serial.println("\nв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ");
-    Serial.println("        вљ™пёЏ РџРћР›РќРћР• РЎРРЎРўР•РњРќРћР• РњР•РќР® v4.0");
-    Serial.println("в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ");
-    Serial.println("РћРЎРќРћР’РќР«Р• РљРћРњРђРќР”Р«:");
-    Serial.println("  status      - РЎС‚Р°С‚СѓСЃ СЃРёСЃС‚РµРјС‹");
-    Serial.println("  menu        - РџРѕРєР°Р·Р°С‚СЊ РјРµРЅСЋ");
-    Serial.println("  compact     - РџРµСЂРµР№С‚Рё РІ РєРѕРјРїР°РєС‚РЅС‹Р№ СЂРµР¶РёРј");
-    Serial.println("  web         - РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РІРµР±-РёРЅС‚РµСЂС„РµР№СЃРµ");
-    Serial.println("  save        - РЎРѕС…СЂР°РЅРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєРё");
-    Serial.println("  reboot      - РџРµСЂРµР·Р°РіСЂСѓР·РєР°");
+    Serial.println("\n══════════════════════════════════════════════════════════");
+    Serial.println("        ПОВНИЙ РЕЖИМ КЕРУВАННЯ v4.0");
+    Serial.println("══════════════════════════════════════════════════════════");
+    Serial.println("СЕРВІСНІ КОМАНДИ:");
+    Serial.println("  status      - статус системи");
+    Serial.println("  menu        - показати меню");
+    Serial.println("  compact     - перейти в компактний режим");
+    Serial.println("  web         - інформація про веб-інтерфейс");
+    Serial.println("  save        - зберегти налаштування");
+    Serial.println("  reboot      - перезавантаження");    Serial.println("  quiet       - вимкнути авто-вивід статусу");
+    Serial.println("  verbose     - увімкнути авто-вивід статусу");    
+    Serial.println("\nУПРАВЛІННЯ ПРИЛАДАМИ:");
+    Serial.println("  pump XX     - насос (0-100%)");
+    Serial.println("  fan XX      - вентилятор (0-100%)");
+    Serial.println("  extractor XX- витяжка (0-100%)");
+    Serial.println("  auto        - автоматичний режим");
+    Serial.println("  manual      - ручний режим");
+    Serial.println("  force       - форсований режим");
     
-    Serial.println("\nРЈРџР РђР’Р›Р•РќРР• РњРћР©РќРћРЎРўР¬Р®:");
-    Serial.println("  pump XX     - РќР°СЃРѕСЃ (0-100%)");
-    Serial.println("  fan XX      - Р’РµРЅС‚РёР»СЏС‚РѕСЂ (0-100%)");
-    Serial.println("  extractor XX- Р’С‹С‚СЏР¶РєР° (0-100%)");
-    Serial.println("  auto        - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ СЂРµР¶РёРј");
-    Serial.println("  manual      - Р СѓС‡РЅРѕР№ СЂРµР¶РёРј");
-    Serial.println("  force       - Р¤РѕСЂСЃР°Р¶РЅС‹Р№ СЂРµР¶РёРј");
+    Serial.println("\nНАЛАШТУВАННЯ ТЕМПЕРАТУРИ:");
+    Serial.println("  tmin XX     - мінімальна температура");
+    Serial.println("  tmax XX     - максимальна температура");
+    Serial.println("  temp XX     - встановити обидва границі (мін=макс)");
     
-    Serial.println("\nРќРђРЎРўР РћР™РљР РўР•РњРџР•Р РђРўРЈР Р«:");
-    Serial.println("  tmin XX     - РњРёРЅРёРјР°Р»СЊРЅР°СЏ С‚РµРјРїРµСЂР°С‚СѓСЂР°");
-    Serial.println("  tmax XX     - РњР°РєСЃРёРјР°Р»СЊРЅР°СЏ С‚РµРјРїРµСЂР°С‚СѓСЂР°");
-    Serial.println("  temp XX     - РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РѕР±Рµ РіСЂР°РЅРёС†С‹ (РјРёРЅ=РјР°РєСЃ)");
+    Serial.println("\nНАЛАШТУВАННЯ ВОЛОГОСТІ:");
+    Serial.println("  hmin XX     - мінімальна вологість");
+    Serial.println("  hmax XX     - максимальна вологість");
+    Serial.println("  hum XX      - встановити обидва границі (мін=макс)");
     
-    Serial.println("\nРќРђРЎРўР РћР™РљР Р’Р›РђР–РќРћРЎРўР:");
-    Serial.println("  hmin XX     - РњРёРЅРёРјР°Р»СЊРЅР°СЏ РІР»Р°Р¶РЅРѕСЃС‚СЊ");
-    Serial.println("  hmax XX     - РњР°РєСЃРёРјР°Р»СЊРЅР°СЏ РІР»Р°Р¶РЅРѕСЃС‚СЊ");
-    Serial.println("  hum XX      - РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РѕР±Рµ РіСЂР°РЅРёС†С‹ (РјРёРЅ=РјР°РєСЃ)");
+    Serial.println("\nТАЙМЕРИ:");
+    Serial.println("  timer on XX - увімкнути таймер на XX хвилин");
+    Serial.println("  timer off   - вимкнути таймер");
+    Serial.println("  timer set XX YY - встановити таймер (вкл/викл)");
+    Serial.println("  timer power XX - потужність таймера (10-100%)");
     
-    Serial.println("\nРўРђР™РњР•Р  Р’Р«РўРЇР–РљР:");
-    Serial.println("  timer on XX - Р’РєР»СЋС‡РёС‚СЊ С‚Р°Р№РјРµСЂ РЅР° XX РјРёРЅСѓС‚");
-    Serial.println("  timer off   - Р’С‹РєР»СЋС‡РёС‚СЊ С‚Р°Р№РјРµСЂ");
-    Serial.println("  timer set XX YY - РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С‚Р°Р№РјРµСЂ (РІРєР»/РІС‹РєР»)");
-    Serial.println("  timer power XX - РњРѕС‰РЅРѕСЃС‚СЊ С‚Р°Р№РјРµСЂР° (10-100%)");
+    Serial.println("\nРЕЖИМИ РОБОТИ:");
+    Serial.println("  mode auto   - автоматичний режим");
+    Serial.println("  mode manual - ручний режим");
+    Serial.println("  mode compact- компактний режим Serial");
+    Serial.println("  mode full   - повний режим Serial");
     
-    Serial.println("\nР Р•Р–РРњР« РЈРџР РђР’Р›Р•РќРРЇ:");
-    Serial.println("  mode auto   - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ СЂРµР¶РёРј");
-    Serial.println("  mode manual - Р СѓС‡РЅРѕР№ СЂРµР¶РёРј");
-    Serial.println("  mode compact- РљРѕРјРїР°РєС‚РЅС‹Р№ СЂРµР¶РёРј Serial");
-    Serial.println("  mode full   - РџРѕР»РЅС‹Р№ СЂРµР¶РёРј Serial");
-    
-    Serial.println("\nРўР•РЎРўР«:");
-    Serial.println("  test vent   - РўРµСЃС‚ РІРµРЅС‚РёР»СЏС†РёРё");
-    Serial.println("  test pump   - РўРµСЃС‚ РЅР°СЃРѕСЃР° (10 СЃРµРє)");
-    Serial.println("  test fan    - РўРµСЃС‚ РІРµРЅС‚РёР»СЏС‚РѕСЂР° (10 СЃРµРє)");
-    Serial.println("в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ\n");
+    Serial.println("\nТЕСТИ:");
+    Serial.println("  test vent   - тест вентиляції");
+    Serial.println("  test pump   - тест насоса (10 сек)");
+    Serial.println("  test fan    - тест вентилятора (10 сек)");
+    Serial.println("══════════════════════════════════════════════════════════\n");
 }
 
 void toggleMode() {
     compactMode = !compactMode;
     if (compactMode) {
-        Serial.println("\nвњ… РџРµСЂРµРєР»СЋС‡РµРЅРѕ РІ РљРћРњРџРђРљРўРќР«Р™ СЂРµР¶РёРј (Р±С‹СЃС‚СЂРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ)");
+        Serial.println("\n✓ Переключено в КОМПАКТНИЙ РЕЖИМ (швидке управління)");
         printCompactMode();
     } else {
-        Serial.println("\nвњ… РџРµСЂРµРєР»СЋС‡РµРЅРѕ РІ Р РђРЎРЁРР Р•РќРќР«Р™ СЂРµР¶РёРј (РїРѕР»РЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё)");
+        Serial.println("\n✓ Переключено в ПОВНИЙ РЕЖИМ (повні налаштування)");
         printExtendedMode();
     }
     lastModeSwitch = millis();
 }
 
 // ============================================================================
-// РћР‘Р РђР‘РћРўРљРђ РљРћРњРђРќР” Р’ РљРћРњРџРђРљРўРќРћРњ Р Р•Р–РРњР•
+// ОБРОБКА КОМАНД У КОМПАКТНОМУ РЕЖИМІ
 // ============================================================================
 
 void processCompactCommand(String command) {
@@ -115,59 +117,59 @@ void processCompactCommand(String command) {
     
     if (command.length() < 1) return;
     
-    // РљРѕРјР°РЅРґС‹ С‚РёРїР° "a50", "b40", "c30"
+    // Команди типу "a50", "b40", "c30"
     if (command.length() >= 2 && command.length() <= 4) {
         char device = command[0];
         String valueStr = command.substring(1);
         int value = valueStr.toInt();
         
         if (value < 0 || value > 100) {
-            Serial.println("вќЊ РћС€РёР±РєР°: Р·РЅР°С‡РµРЅРёРµ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ 0-100");
+            Serial.println("✗ Помилка: значення повинно бути 0-100");
             return;
         }
         
         switch(device) {
             case 'a':
                 setPumpPercent(value);
-                Serial.printf("вњ… РќР°СЃРѕСЃ: %d%%\n", value);
+                Serial.printf("Насос: %d%%\n", value);
                 break;
             case 'b':
                 setFanPercent(value);
-                Serial.printf("вњ… Р’РµРЅС‚РёР»СЏС‚РѕСЂ: %d%%\n", value);
+                Serial.printf("Вентилятор: %d%%\n", value);
                 break;
             case 'c':
                 setExtractorPercent(value);
-                Serial.printf("вњ… Р’С‹С‚СЏР¶РєР°: %d%%\n", value);
+                Serial.printf("Витяжка: %d%%\n", value);
                 break;
             default:
-                Serial.println("вќЊ РќРµРёР·РІРµСЃС‚РЅРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ. РСЃРїРѕР»СЊР·СѓР№С‚Рµ a, b РёР»Рё c");
+                break;
         }
         return;
     }
     
-    // РљРѕРјР°РЅРґС‹ РЅР°СЃС‚СЂРѕРµРє
+    // Команди налаштувань
     if (command.startsWith("tmin ")) {
         float temp = command.substring(5).toFloat();
         config.tempMin = temp;
-        Serial.printf("вњ… РњРёРЅ. С‚РµРјРїРµСЂР°С‚СѓСЂР°: %.1fВ°C\n", temp);
+        Serial.printf("✓ Мін. температура: %.1f°C\n", temp);
         saveConfiguration();
     }
     else if (command.startsWith("tmax ")) {
         float temp = command.substring(5).toFloat();
         config.tempMax = temp;
-        Serial.printf("вњ… РњР°РєСЃ. С‚РµРјРїРµСЂР°С‚СѓСЂР°: %.1fВ°C\n", temp);
+        Serial.printf("✓ Макс. температура: %.1f°C\n", temp);
         saveConfiguration();
     }
     else if (command.startsWith("hmin ")) {
         float hum = command.substring(5).toFloat();
         config.humidityConfig.minHumidity = hum;
-        Serial.printf("вњ… РњРёРЅ. РІР»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%\n", hum);
+        Serial.printf("✓ Мін. вологість: %.1f%%\n", hum);
         saveConfiguration();
     }
     else if (command.startsWith("hmax ")) {
         float hum = command.substring(5).toFloat();
         config.humidityConfig.maxHumidity = hum;
-        Serial.printf("вњ… РњР°РєСЃ. РІР»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%\n", hum);
+        Serial.printf("✓ Макс. вологість: %.1f%%\n", hum);
         saveConfiguration();
     }
     else if (command.startsWith("ton ")) {
@@ -176,13 +178,13 @@ void processCompactCommand(String command) {
         config.extractorTimer.onMinutes = minutes;
         config.extractorTimer.enabled = true;
         config.extractorTimer.cycleStart = millis();
-        Serial.printf("вњ… РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’РљР› РЅР° %d РјРёРЅ\n", minutes);
+        Serial.printf("✓ Таймер витяжки: ВКЛ на %d хв\n", minutes);
         saveConfiguration();
     }
     else if (command == "toff") {
         config.extractorTimer.enabled = false;
         setExtractorPercent(0);
-        Serial.println("вњ… РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’Р«РљР›");
+        Serial.println("✓ Таймер витяжки: ВИМК");
         saveConfiguration();
     }
     else if (command.startsWith("tcycle ")) {
@@ -200,7 +202,7 @@ void processCompactCommand(String command) {
             config.extractorTimer.enabled = true;
             config.extractorTimer.cycleStart = millis();
             
-            Serial.printf("вњ… РўР°Р№РјРµСЂ: %d РјРёРЅ Р’РљР› / %d РјРёРЅ Р’Р«РљР›\n", onTime, offTime);
+            Serial.printf("✓ Таймер: %d хв ВКЛ / %d хв ВИМК\n", onTime, offTime);
             saveConfiguration();
         }
     }
@@ -213,20 +215,30 @@ void processCompactCommand(String command) {
     else if (command == "mode") {
         toggleMode();
     }
+    else if (command == "quiet") {
+        config.autoStatusEnabled = false;
+        saveConfiguration();
+        Serial.println("✓ Автоматичний вивід статусу ВИМКНЕНО");
+    }
+    else if (command == "verbose") {
+        config.autoStatusEnabled = true;
+        saveConfiguration();
+        Serial.println("✓ Автоматичний вивід статусу УВІМКНЕНО");
+    }
     else if (command == "web") {
-        Serial.println("\nрџЊђ Р’Р•Р‘-РРќРўР•Р Р¤Р•Р™РЎ:");
-        Serial.printf("  РђРґСЂРµСЃ: http://%s\n", WiFi.localIP().toString().c_str());
-        Serial.println("  РљРѕРјР°РЅРґРЅР°СЏ СЃС‚СЂРѕРєР° РґРѕСЃС‚СѓРїРЅР° РЅР° РіР»Р°РІРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ");
-        Serial.println("  РќР°СЃС‚СЂРѕР№РєРё -> /settings");
-        Serial.println("  РЈРїСЂР°РІР»РµРЅРёРµ -> /control");
+        Serial.println("\n📡 ВЕБ-ІНТЕРФЕЙС:");
+        Serial.printf("  Адреса: http://%s\n", WiFi.localIP().toString().c_str());
+        Serial.println("  Командна сторінка доступна на головній сторінці");
+        Serial.println("  Налаштування -> /settings");
+        Serial.println("  Управління -> /control");
     }
     else {
-        Serial.println("вќЊ РќРµРёР·РІРµСЃС‚РЅР°СЏ РєРѕРјР°РЅРґР°. Р’РІРµРґРёС‚Рµ 'm' РґР»СЏ РјРµРЅСЋ");
+        Serial.println("✗ Невідома команда. Введіть 'm' для меню");
     }
 }
 
 // ============================================================================
-// РћР‘Р РђР‘РћРўРљРђ РљРћРњРђРќР” Р’ Р РђРЎРЁРР Р•РќРќРћРњ Р Р•Р–РРњР•
+// ОБРОБКА КОМАНД У ПОВНОМУ РЕЖИМІ
 // ============================================================================
 
 void processExtendedCommand(String command) {
@@ -241,23 +253,89 @@ void processExtendedCommand(String command) {
     }
     else if (command == "compact") {
         compactMode = true;
-        Serial.println("\nвњ… РџРµСЂРµРєР»СЋС‡РµРЅРѕ РІ РєРѕРјРїР°РєС‚РЅС‹Р№ СЂРµР¶РёРј");
+        Serial.println("\n✓ Переключено в КОМПАКТНИЙ РЕЖИМ");
         printCompactMode();
     }
     else if (command == "web") {
-        Serial.println("\nрџЊђ Р’Р•Р‘-РРќРўР•Р Р¤Р•Р™РЎ:");
-        Serial.printf("  РђРґСЂРµСЃ: http://%s\n", WiFi.localIP().toString().c_str());
-        Serial.printf("  РЎС‚Р°С‚СѓСЃ: /status\n");
-        Serial.printf("  РЈРїСЂР°РІР»РµРЅРёРµ: /control\n");
-        Serial.printf("  РќР°СЃС‚СЂРѕР№РєРё: /settings\n");
-        Serial.printf("  РСЃС‚РѕСЂРёСЏ: /history\n");
+        Serial.println("\n📡 ВЕБ-ІНТЕРФЕЙС:");
+        Serial.printf("  Адреса: http://%s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("  Статус: /status\n");
+        Serial.printf("  Управління: /control\n");
+        Serial.printf("  Налаштування: /settings\n");
+        Serial.printf("  Історія: /history\n");
     }
     else if (command == "save") {
         saveConfiguration();
-        Serial.println("вњ… РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅС‹");
+        Serial.println("✓ Налаштування збережені");
     }
-    else if (command == "reboot") {
-        Serial.println("рџ”„ РџРµСЂРµР·Р°РіСЂСѓР·РєР° СЃРёСЃС‚РµРјС‹...");
+    else if (command == "quiet") {
+        config.autoStatusEnabled = false;
+        saveConfiguration();
+        Serial.println("✓ Автоматичний вивід статусу ВИМКНЕНО");
+    }
+    else if (command == "verbose") {
+        config.autoStatusEnabled = true;
+        saveConfiguration();
+        Serial.println("✓ Автоматичний вивід статусу УВІМКНЕНО");
+    }
+    else if (command == "servo") {
+        Serial.println("\n⛔ КАЛІБРУВАННЯ СЕРВО:");
+        Serial.printf("  Поточне положення: %d\u00b0\n", ventState.currentAngle);
+        Serial.printf("  Закрито: %d\u00b0\n", config.servoClosedAngle);
+        Serial.printf("  Відкрито: %d\u00b0\n", config.servoOpenAngle);
+        Serial.println("\nКоманди:");        Serial.println("  ↑ / +      - збільшити кут на 1°");
+        Serial.println("  ↓ / -      - зменшити кут на 1°");
+        Serial.println("  > / ]      - збільшити кут на 5°");
+        Serial.println("  < / [      - зменшити кут на 5°");        Serial.println("  servo move <кут>    - перемістити в кут (0-180)");
+        Serial.println("  servo set closed - зберегти поточне як закрито");
+        Serial.println("  servo set open   - зберегти поточне як відкрито");
+        Serial.println("  servo test       - тест відкриття/закриття");
+    }
+    else if (command.startsWith("servo move ")) {
+        int angle = command.substring(11).toInt();
+        angle = constrain(angle, 0, 180);
+        moveServoSmooth(angle);
+        Serial.printf("✓ Серво переміщено в %d\u00b0\n", angle);
+    }
+    else if (command == "servo set closed") {
+        config.servoClosedAngle = ventState.currentAngle;
+        saveConfiguration();
+        Serial.printf("✓ Закрите положення: %d\u00b0\n", config.servoClosedAngle);
+    }
+    else if (command == "servo set open") {
+        config.servoOpenAngle = ventState.currentAngle;
+        saveConfiguration();
+        Serial.printf("✓ Відкрите положення: %d\u00b0\n", config.servoOpenAngle);
+    }
+    else if (command == "servo test") {
+        Serial.println("🔧 Тест серво...");
+        Serial.printf("  Відкриваю (%d\u00b0)...\n", config.servoOpenAngle);
+        moveServoSmooth(config.servoOpenAngle);
+        delay(2000);
+        Serial.printf("  Закриваю (%d\u00b0)...\n", config.servoClosedAngle);
+        moveServoSmooth(config.servoClosedAngle);
+        Serial.println("✓ Тест завершено");
+    }    else if (command == "+" || command == "up") {
+        int newAngle = constrain(ventState.currentAngle + 1, 0, 180);
+        moveServoSmooth(newAngle);
+        Serial.printf("→ %d°\n", newAngle);
+    }
+    else if (command == "-" || command == "down") {
+        int newAngle = constrain(ventState.currentAngle - 1, 0, 180);
+        moveServoSmooth(newAngle);
+        Serial.printf("→ %d°\n", newAngle);
+    }
+    else if (command == ">" || command == "]") {
+        int newAngle = constrain(ventState.currentAngle + 5, 0, 180);
+        moveServoSmooth(newAngle);
+        Serial.printf("→ %d°\n", newAngle);
+    }
+    else if (command == "<" || command == "[") {
+        int newAngle = constrain(ventState.currentAngle - 5, 0, 180);
+        moveServoSmooth(newAngle);
+        Serial.printf("→ %d°\n", newAngle);
+    }    else if (command == "reboot") {
+        Serial.println("🔄 Перезавантаження системи...");
         delay(1000);
         ESP.restart();
     }
@@ -265,72 +343,72 @@ void processExtendedCommand(String command) {
         int percent = command.substring(5).toInt();
         percent = constrain(percent, 0, 100);
         setPumpPercent(percent);
-        Serial.printf("вњ… РќР°СЃРѕСЃ: %d%%\n", percent);
+        Serial.printf("✓ Насос: %d%%\n", percent);
     }
     else if (command.startsWith("fan ")) {
         int percent = command.substring(4).toInt();
         percent = constrain(percent, 0, 100);
         setFanPercent(percent);
-        Serial.printf("вњ… Р’РµРЅС‚РёР»СЏС‚РѕСЂ: %d%%\n", percent);
+        Serial.printf("✓ Вентилятор: %d%%\n", percent);
     }
     else if (command.startsWith("extractor ")) {
         int percent = command.substring(10).toInt();
         percent = constrain(percent, 0, 100);
         setExtractorPercent(percent);
-        Serial.printf("вњ… Р’С‹С‚СЏР¶РєР°: %d%%\n", percent);
+        Serial.printf("✓ Витяжка: %d%%\n", percent);
     }
     else if (command == "auto") {
         heatingState.manualMode = false;
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
-        Serial.println("вњ… Р РµР¶РёРј: РђР’РўРћРњРђРўРР§Р•РЎРљРР™");
+        Serial.println("✓ Режим: АВТОМАТИЧНИЙ");
     }
     else if (command == "manual") {
         heatingState.manualMode = true;
         heatingState.forceMode = false;
-        Serial.println("вњ… Р РµР¶РёРј: Р РЈР§РќРћР™");
+        Serial.println("✓ Режим: РУЧНИЙ");
     }
     else if (command == "force") {
         heatingState.forceMode = true;
         heatingState.manualMode = false;
-        Serial.println("рџ”Ґ Р РµР¶РёРј: Р¤РћР РЎРђР–");
+        Serial.println("⚡ Режим: ФОРСОВАНИЙ");
     }
     else if (command.startsWith("tmin ")) {
         float temp = command.substring(5).toFloat();
         config.tempMin = temp;
-        Serial.printf("вњ… РњРёРЅ. С‚РµРјРїРµСЂР°С‚СѓСЂР°: %.1fВ°C\n", temp);
+        Serial.printf("✓ Мін. температура: %.1f°C\n", temp);
         saveConfiguration();
     }
     else if (command.startsWith("tmax ")) {
         float temp = command.substring(5).toFloat();
         config.tempMax = temp;
-        Serial.printf("вњ… РњР°РєСЃ. С‚РµРјРїРµСЂР°С‚СѓСЂР°: %.1fВ°C\n", temp);
+        Serial.printf("✓ Макс. температура: %.1f°C\n", temp);
         saveConfiguration();
     }
     else if (command.startsWith("temp ")) {
         float temp = command.substring(5).toFloat();
         config.tempMin = temp;
         config.tempMax = temp + 1.0f;
-        Serial.printf("вњ… РўРµРјРїРµСЂР°С‚СѓСЂР°: %.1f-%.1fВ°C\n", temp, temp + 1.0f);
+        Serial.printf("✓ Температура: %.1f-%.1f°C\n", temp, temp + 1.0f);
         saveConfiguration();
     }
     else if (command.startsWith("hmin ")) {
         float hum = command.substring(5).toFloat();
         config.humidityConfig.minHumidity = hum;
-        Serial.printf("вњ… РњРёРЅ. РІР»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%\n", hum);
+        Serial.printf("✓ Мін. вологість: %.1f%%\n", hum);
         saveConfiguration();
     }
     else if (command.startsWith("hmax ")) {
         float hum = command.substring(5).toFloat();
         config.humidityConfig.maxHumidity = hum;
-        Serial.printf("вњ… РњР°РєСЃ. РІР»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%\n", hum);
+        Serial.printf("✓ Макс. вологість: %.1f%%\n", hum);
         saveConfiguration();
     }
     else if (command.startsWith("hum ")) {
         float hum = command.substring(4).toFloat();
         config.humidityConfig.minHumidity = hum;
         config.humidityConfig.maxHumidity = hum + 5.0f;
-        Serial.printf("вњ… Р’Р»Р°Р¶РЅРѕСЃС‚СЊ: %.1f-%.1f%%\n", hum, hum + 5.0f);
+        Serial.printf("✓ Вологість: %.1f-%.1f%%\n", hum, hum + 5.0f);
         saveConfiguration();
     }
     else if (command.startsWith("timer on ")) {
@@ -340,13 +418,13 @@ void processExtendedCommand(String command) {
         config.extractorTimer.onMinutes = minutes;
         config.extractorTimer.offMinutes = 0;
         config.extractorTimer.cycleStart = millis();
-        Serial.printf("вњ… РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’РљР› РЅР° %d РјРёРЅ\n", minutes);
+        Serial.printf("✓ Таймер витяжки: ВКЛ на %d хв\n", minutes);
         saveConfiguration();
     }
     else if (command == "timer off") {
         config.extractorTimer.enabled = false;
         setExtractorPercent(0);
-        Serial.println("вњ… РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’Р«РљР›");
+        Serial.println("✓ Таймер витяжки: ВИМК");
         saveConfiguration();
     }
     else if (command.startsWith("timer set ")) {
@@ -364,7 +442,7 @@ void processExtendedCommand(String command) {
             config.extractorTimer.enabled = true;
             config.extractorTimer.cycleStart = millis();
             
-            Serial.printf("вњ… РўР°Р№РјРµСЂ: %d РјРёРЅ Р’РљР› / %d РјРёРЅ Р’Р«РљР›\n", onTime, offTime);
+            Serial.printf("✓ Таймер: %d хв ВКЛ / %d хв ВИМК\n", onTime, offTime);
             saveConfiguration();
         }
     }
@@ -372,7 +450,7 @@ void processExtendedCommand(String command) {
         int power = command.substring(12).toInt();
         power = constrain(power, 10, 100);
         config.extractorTimer.powerPercent = power;
-        Serial.printf("вњ… РњРѕС‰РЅРѕСЃС‚СЊ С‚Р°Р№РјРµСЂР°: %d%%\n", power);
+        Serial.printf("✓ Потужність таймера: %d%%\n", power);
         saveConfiguration();
     }
     else if (command.startsWith("mode ")) {
@@ -380,21 +458,21 @@ void processExtendedCommand(String command) {
         if (mode == "auto") {
             heatingState.manualMode = false;
             heatingState.forceMode = false;
-            Serial.println("вњ… Р РµР¶РёРј: РђР’РўРћРњРђРўРР§Р•РЎРљРР™");
+            Serial.println("✓ Режим: АВТОМАТИЧНИЙ");
         }
         else if (mode == "manual") {
             heatingState.manualMode = true;
             heatingState.forceMode = false;
-            Serial.println("вњ… Р РµР¶РёРј: Р РЈР§РќРћР™");
+            Serial.println("✓ Режим: РУЧНИЙ");
         }
         else if (mode == "compact") {
             compactMode = true;
-            Serial.println("вњ… Р РµР¶РёРј Serial: РљРћРњРџРђРљРўРќР«Р™");
+            Serial.println("✓ Режим Serial: КОМПАКТНИЙ");
             printCompactMode();
         }
         else if (mode == "full") {
             compactMode = false;
-            Serial.println("вњ… Р РµР¶РёРј Serial: РџРћР›РќР«Р™");
+            Serial.println("✓ Режим Serial: ПОВНИЙ");
             printExtendedMode();
         }
     }
@@ -402,26 +480,26 @@ void processExtendedCommand(String command) {
         testVentilation();
     }
     else if (command == "test pump") {
-        Serial.println("рџ”§ РўРµСЃС‚ РЅР°СЃРѕСЃР°: 10 СЃРµРєСѓРЅРґ РЅР° 50%");
+        Serial.println("🔧 Тест насоса: 10 секунд на 50%");
         setPumpPercent(50);
         delay(10000);
         setPumpPercent(0);
-        Serial.println("вњ… РўРµСЃС‚ Р·Р°РІРµСЂС€РµРЅ");
+        Serial.println("✓ Тест завершений");
     }
     else if (command == "test fan") {
-        Serial.println("рџ”§ РўРµСЃС‚ РІРµРЅС‚РёР»СЏС‚РѕСЂР°: 10 СЃРµРєСѓРЅРґ РЅР° 50%");
+        Serial.println("🔧 Тест вентилятора: 10 секунд на 50%");
         setFanPercent(50);
         delay(10000);
         setFanPercent(0);
-        Serial.println("вњ… РўРµСЃС‚ Р·Р°РІРµСЂС€РµРЅ");
+        Serial.println("✓ Тест завершений");
     }
     else {
-        Serial.println("вќЊ РќРµРёР·РІРµСЃС‚РЅР°СЏ РєРѕРјР°РЅРґР°. Р’РІРµРґРёС‚Рµ 'menu' РґР»СЏ СЃРїРёСЃРєР° РєРѕРјР°РЅРґ");
+        Serial.println("✗ Невідома команда. Введіть 'menu' для списку команд");
     }
 }
 
 // ============================================================================
-// РЈР›РЈР§РЁР•РќРќРђРЇ РћР‘Р РђР‘РћРўРљРђ РЎР•Р РР™РќР«РҐ РљРћРњРђРќР”
+// ОСНОВНА ОБРОБКА СЕРІЙНИХ КОМАНД
 // ============================================================================
 
 void processAdvancedSerialCommand() {
@@ -442,7 +520,7 @@ void processAdvancedSerialCommand() {
 }
 
 // ============================================================================
-// Р РђРЎРЁРР Р•РќРќРђРЇ Р›РћР“РРљРђ РЈРџР РђР’Р›Р•РќРРЇ РћР‘РћР“Р Р•Р’РћРњ
+// АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ
 // ============================================================================
 
 void smartHeatingControl() {
@@ -459,7 +537,7 @@ void smartHeatingControl() {
         xSemaphoreGive(getSensorMutex());
     }
     
-    // РџСЂРѕРІРµСЂСЏРµРј Р°РІР°СЂРёР№РЅС‹Рµ СЂРµР¶РёРјС‹
+    // Перевіряємо аварійні режими
     if (tempRoom <= TEMP_EMERGENCY_LOW) {
         if (!heatingState.emergencyMode) {
             setEmergencyStartTime(millis());
@@ -470,7 +548,7 @@ void smartHeatingControl() {
         heatingState.emergencyMode = true;
         setPumpPercent(100);
         setFanPercent(100);
-        Serial.println("рџљЁ РђР’РђР РР™РќР«Р™ Р Р•Р–РРњ: РљСЂРёС‚РёС‡РµСЃРєРё РЅРёР·РєР°СЏ С‚РµРјРїРµСЂР°С‚СѓСЂР°!");
+        Serial.println("⚠ АВАРІЙНИЙ РЕЖИМ: КРИТИЧНО НИЗЬКА ТЕМПЕРАТУРА!");
         return;
     }
     
@@ -478,11 +556,11 @@ void smartHeatingControl() {
         heatingState.forceMode = true;
         setPumpPercent(80);
         setFanPercent(80);
-        Serial.println("вљ  РљР РРўРР§Р•РЎРљРР™ Р Р•Р–РРњ: РќРёР·РєР°СЏ С‚РµРјРїРµСЂР°С‚СѓСЂР°!");
+        Serial.println("‼ ФОРСОВАНИЙ РЕЖИМ: НИЗЬКА ТЕМПЕРАТУРА!");
         return;
     }
     
-    // РђРґР°РїС‚РёРІРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ РѕР±РѕРіСЂРµРІРѕРј
+    // Адаптивне управління обігрівом
     if (tempRoom < config.tempMin) {
         float tempDiff = config.tempMin - tempRoom;
         int pumpPower = map(constrain(tempDiff * 10, 0, 20), 0, 20, config.pumpMinPercent, config.pumpMaxPercent);
@@ -491,8 +569,8 @@ void smartHeatingControl() {
         setPumpPercent(pumpPower);
         setFanPercent(fanPower);
         
-        if (now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-            Serial.printf("рџ”Ґ РћР±РѕРіСЂРµРІ: T=%.1fВ°C, РќР°СЃРѕСЃ=%d%%, Р’РµРЅС‚РёР»СЏС‚РѕСЂ=%d%%\n", 
+        if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
+            Serial.printf("⚡ Обігрів: T=%.1f°C, Насос=%d%, Вентилятор=%d%\n", 
                          tempRoom, pumpPower, fanPower);
             lastPowerUpdate = now;
         }
@@ -501,8 +579,8 @@ void smartHeatingControl() {
         setPumpPercent(0);
         setFanPercent(config.fanMinPercent);
         
-        if (now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-            Serial.printf("вќ„ РћС…Р»Р°Р¶РґРµРЅРёРµ: T=%.1fВ°C, РќР°СЃРѕСЃ=0%%, Р’РµРЅС‚РёР»СЏС‚РѕСЂ=%d%%\n", 
+        if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
+            Serial.printf("❄ Охолодження: T=%.1f°C, Насос=0%, Вентилятор=%d%\n", 
                          tempRoom, config.fanMinPercent);
             lastPowerUpdate = now;
         }
@@ -520,8 +598,8 @@ void smartHeatingControl() {
         setPumpPercent(pumpPower);
         setFanPercent(fanPower);
         
-        if (now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-            Serial.printf("вљ– РџРѕРґРґРµСЂР¶Р°РЅРёРµ: T=%.1fВ°C, РќР°СЃРѕСЃ=%d%%, Р’РµРЅС‚РёР»СЏС‚РѕСЂ=%d%%\n", 
+        if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
+            Serial.printf("📊 Підтримання: T=%.1f°C, Насос=%d%, Вентилятор=%d%\n", 
                          tempRoom, pumpPower, fanPower);
             lastPowerUpdate = now;
         }
@@ -529,7 +607,7 @@ void smartHeatingControl() {
 }
 
 // ============================================================================
-// РЈР›РЈР§РЁР•РќРќР«Р™ РљРћРќРўР РћР›Р¬ Р’Р›РђР–РќРћРЎРўР
+// АДАПТИВНЕ КЕРУВАННЯ ВОЛОГІСТЮ
 // ============================================================================
 
 void advancedHumidityControl(float humidity, float tempRoom) {
@@ -548,7 +626,7 @@ void advancedHumidityControl(float humidity, float tempRoom) {
         now - humidifierState.startTime > config.humidityConfig.maxRunTime) {
         digitalWrite(HUMIDIFIER_PIN, LOW);
         humidifierState.active = false;
-        Serial.println("вљ  РЈРІР»Р°Р¶РЅРёС‚РµР»СЊ: Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РІС‹РєР»СЋС‡РµРЅ С‡РµСЂРµР· РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РІСЂРµРјСЏ СЂР°Р±РѕС‚С‹");
+        Serial.println("⚠ Зволожувач: автоматично вимкнений через максимальний час роботи");
         return;
     }
     
@@ -562,20 +640,20 @@ void advancedHumidityControl(float humidity, float tempRoom) {
         humidifierState.active = true;
         humidifierState.startTime = now;
         humidifierState.cyclesToday++;
-        Serial.printf("вњ… РЈРІР»Р°Р¶РЅРёС‚РµР»СЊ: Р’РљР› (Р’Р»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%, Р¦РµР»СЊ: %.1f%%)\n", 
+        Serial.printf("✓ Зволожувач: ВКЛ (Вологість: %.1f%, Ціль: %.1f%)\n", 
                      humidity, adaptiveHumMin);
     } 
     else if (humidifierState.active && humidity > adaptiveHumMax) {
         digitalWrite(HUMIDIFIER_PIN, LOW);
         humidifierState.active = false;
         humidifierState.lastCycle = now;
-        Serial.printf("вњ… РЈРІР»Р°Р¶РЅРёС‚РµР»СЊ: Р’Р«РљР› (Р’Р»Р°Р¶РЅРѕСЃС‚СЊ: %.1f%%, Р¦РµР»СЊ: %.1f%%)\n", 
+        Serial.printf("✓ Зволожувач: ВИМК (Вологість: %.1f%, Ціль: %.1f%)\n", 
                      humidity, adaptiveHumMax);
     }
 }
 
 // ============================================================================
-// РЈР›РЈР§РЁР•РќРќР«Р™ РўРђР™РњР•Р  Р’Р«РўРЇР–РљР
+// АДАПТИВНЕ УПРАВЛІННЯ ТАЙМЕРОМ
 // ============================================================================
 
 void advancedUpdateExtractorTimer() {
@@ -591,7 +669,7 @@ void advancedUpdateExtractorTimer() {
         config.extractorTimer.lastChange = now;
         
         setExtractorPercent(config.extractorTimer.powerPercent);
-        Serial.println("вЏ° РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р—Р°РїСѓС‰РµРЅ, РІС‹С‚СЏР¶РєР° РІРєР»СЋС‡РµРЅР°");
+        Serial.println("🔧 Таймер витяжки: Запущений, витяжка увімкнена");
     }
     
     unsigned long cycleTime = now - config.extractorTimer.cycleStart;
@@ -621,16 +699,16 @@ void advancedUpdateExtractorTimer() {
         
         if (shouldBeOn) {
             setExtractorPercent(config.extractorTimer.powerPercent);
-            Serial.println("вЏ° РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’С‹С‚СЏР¶РєР° РІРєР»СЋС‡РµРЅР°");
+            Serial.println("🔧 Таймер витяжки: Витяжка увімкнена");
         } else {
             setExtractorPercent(0);
-            Serial.println("вЏ° РўР°Р№РјРµСЂ РІС‹С‚СЏР¶РєРё: Р’С‹С‚СЏР¶РєР° РІС‹РєР»СЋС‡РµРЅР°");
+            Serial.println("🔧 Таймер витяжки: Витяжка вимкнена");
         }
     }
 }
 
 // ============================================================================
-// РњРћРќРРўРћР РРќР“ Р Р”РРђР“РќРћРЎРўРРљРђ
+// МОНІТОРИНГ СТАНУ СИСТЕМИ
 // ============================================================================
 
 void monitorSystemHealth() {
@@ -641,33 +719,33 @@ void monitorSystemHealth() {
     lastHealthCheck = now;
     
     if (!sensorData.carrierValid || !sensorData.roomValid) {
-        Serial.println("вљ  Р’РќРРњРђРќРР•: РџСЂРѕР±Р»РµРјР° СЃ РґР°С‚С‡РёРєР°РјРё С‚РµРјРїРµСЂР°С‚СѓСЂС‹!");
+        Serial.println("⚠ Проблема: Проблема з датчиками температури!");
     }
     
     if (!sensorData.bmeValid) {
-        Serial.println("вљ  Р’РќРРњРђРќРР•: РџСЂРѕР±Р»РµРјР° СЃ РґР°С‚С‡РёРєРѕРј BME280!");
+        Serial.println("⚠ Проблема: Проблема з датчиком BME280!");
     }
     
     int freeHeap = ESP.getFreeHeap();
     if (freeHeap < 10000) {
-        Serial.printf("вљ  Р’РќРРњРђРќРР•: РњР°Р»Рѕ СЃРІРѕР±РѕРґРЅРѕР№ РїР°РјСЏС‚Рё: %d Р±Р°Р№С‚\n", freeHeap);
+        Serial.printf("⚠ Проблема: Мало вільної пам'яті: %d байт\n", freeHeap);
     }
     
     if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("вљ  Р’РќРРњРђРќРР•: РџРѕС‚РµСЂСЏРЅРѕ СЃРѕРµРґРёРЅРµРЅРёРµ Wi-Fi!");
+        Serial.println("⚠ Проблема: Втрачено з'єднання Wi-Fi!");
     }
     
     extern int historyIndex;
-    Serial.printf("рџ“Љ РЎС‚Р°С‚РёСЃС‚РёРєР°: РџР°РјСЏС‚СЊ=%dKB, Р—Р°РїРёСЃРµР№=%d, Р’СЂРµРјСЏ=%luСЃРµРє\n",
+    Serial.printf("📈 Статистика: Пам'ять=%dKB, Записів=%d, Час=%luсек\n",
                  freeHeap / 1024, historyIndex, now / 1000);
 }
 
 // ============================================================================
-// РРќРР¦РРђР›РР—РђР¦РРЇ Р РђРЎРЁРР Р•РќРќРћР™ Р›РћР“РРљР
+// ІНІЦІАЛІЗАЦІЯ РОЗШИРЕНОЇ ЛОГІКИ
 // ============================================================================
 
 void initAdvancedLogic() {
-    Serial.println("вњ“ Р Р°СЃС€РёСЂРµРЅРЅР°СЏ Р»РѕРіРёРєР° РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅР°");
+    Serial.println("✓ Розширена логіка ініціалізована");
     
     compactMode = true;
     lastModeSwitch = millis();
@@ -677,16 +755,16 @@ void initAdvancedLogic() {
     config.extractorTimer.state = false;
     config.extractorTimer.lastChange = 0;
     
-    Serial.println("вњ… Р”РІР° СЂРµР¶РёРјР° Serial Monitor РіРѕС‚РѕРІС‹ Рє СЂР°Р±РѕС‚Рµ");
+    Serial.println("✓ Новий режим Serial Monitor готовий до роботи");
     printCompactMode();
 }
 
 // ============================================================================
-// РћРЎРќРћР’РќРђРЇ Р—РђР”РђР§Рђ Р РђРЎРЁРР Р•РќРќРћР™ Р›РћР“РРљР
+// ОСНОВНА ЗАДАЧА РОЗШИРЕНОЇ ЛОГІКИ
 // ============================================================================
 
 void advancedLogicTask(void *parameter) {
-    Serial.println("вњ“ Р—Р°РґР°С‡Р° СЂР°СЃС€РёСЂРµРЅРЅРѕР№ Р»РѕРіРёРєРё Р·Р°РїСѓС‰РµРЅР°");
+    Serial.println("✓ Задача розширеної логіки запущена");
     
     vTaskDelay(pdMS_TO_TICKS(3000));
     

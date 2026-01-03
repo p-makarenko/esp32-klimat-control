@@ -1,4 +1,4 @@
-#ifndef SYSTEM_CORE_H
+﻿#ifndef SYSTEM_CORE_H
 #define SYSTEM_CORE_H
 
 #include <Arduino.h>
@@ -60,6 +60,13 @@ struct SystemConfig {
   bool manualVentControl;
   bool use24hFormat;
   
+  // Калібрування серво
+  int servoClosedAngle;
+  int servoOpenAngle;
+  
+  // Serial вивід
+  bool autoStatusEnabled;
+  
   HumidityConfig humidityConfig;
   
   uint8_t a_adaptive_min;
@@ -117,6 +124,13 @@ struct VentilationState {
   unsigned long lastMove;
   bool switchState;
   bool moving;
+  bool calibrationMode;  // Режим калібрування - ігнорує вимикач
+  
+  // Автокалібрування
+  unsigned long lastSwitchChange;
+  uint8_t switchChangeCount;
+  bool autoCalibrationActive;
+  uint8_t autoCalibrationStep;  // 0=idle, 1=move to first stop, 2=move to second stop, 3=test
 };
 
 struct HumidifierState {
@@ -152,6 +166,7 @@ extern VentilationState ventState;
 extern HumidifierState humidifierState;
 extern time_t currentTime;
 extern struct tm timeInfo;
+extern bool enableStatusOutput;
 
 // Прототипи функцій
 void loadConfiguration();
@@ -215,7 +230,7 @@ void timeTask(void *parameter);
 extern bool learningEnabled;
 extern int learningCount;
 
-// Прототип задачи расширенной логики
+// Прототип задачі розширеної логіки
 void advancedLogicTask(void *parameter);
 
 #endif

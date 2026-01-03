@@ -1,16 +1,16 @@
-#ifndef UTILITY_FUNCTIONS_H
+﻿#ifndef UTILITY_FUNCTIONS_H
 #define UTILITY_FUNCTIONS_H
 
 #include <Arduino.h>
 
-// Функции статуса
+// Функції статусу
 void autoPrintStatus();
-String getCurrentMode();  // Добавьте эту строку
+String getCurrentMode();  // Додайте цей рядок
 
-// Функция расчета адаптивной влажности
+// Функція розрахунку адаптивної вологості
 void calculateAdaptiveHumidity(float tempRoom, float &minHum, float &maxHum);
 
-// Тестирование
+// Тестування
 void testVentilation();
 
 #endif

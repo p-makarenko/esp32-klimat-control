@@ -130,7 +130,7 @@ void setEmergencyStartTempRoom(float temp) {
 // ============================================================================
 
 void initTime() {
-  // Serial.println("РЎРїСЂРѕР±СѓС”РјРѕ СЃРёРЅС…СЂРѕРЅС–Р·СѓРІР°С‚Рё С‡Р°СЃ...");  // RUS_REMOVED
+  Serial.println("РЎРїСЂРѕР±СѓС”РјРѕ СЃРёРЅС…СЂРѕРЅС–Р·СѓРІР°С‚Рё С‡Р°СЃ...");
   
   // РСЃРїРѕР»СЊР·СѓРµРј РЅРµСЃРєРѕР»СЊРєРѕ NTP СЃРµСЂРІРµСЂРѕРІ РґР»СЏ РЅР°РґРµР¶РЅРѕСЃС‚Рё
   const char* ntpServers[] = {
@@ -149,7 +149,7 @@ void initTime() {
   configTime(2 * 3600, 0, 
     ntpServers[0], ntpServers[1], ntpServers[2]);
   
-  // Serial.print("РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р· NTP СЃРµСЂРІРµСЂР°РјРё...");  // RUS_REMOVED
+  Serial.print("РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р· NTP СЃРµСЂРІРµСЂР°РјРё...");
   
   int maxAttempts = 30;  // 30 СЃРµРєСѓРЅРґ РѕР¶РёРґР°РЅРёСЏ
   bool ntpSuccess = false;
@@ -160,7 +160,7 @@ void initTime() {
       _lastTimeSync = millis();
       time(&currentTime);
       
-      // Serial.println("\nвњ“ Р§Р°СЃ СЃРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ С‡РµСЂРµР· NTP!");  // RUS_REMOVED
+      Serial.println("\nвњ“ Р§Р°СЃ СЃРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ С‡РµСЂРµР· NTP!");
       Serial.printf("РЎРµСЂРІРµСЂ: %s\n", ntpServers[0]);
       Serial.printf("РћС‚СЂРёРјР°РЅРѕ: %d-%02d-%02d %02d:%02d:%02d\n",
                     timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday,
@@ -168,11 +168,11 @@ void initTime() {
       
       // РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РІСЂРµРјСЏ Р°РґРµРєРІР°С‚РЅРѕРµ (РЅРµ РІ РїСЂРѕС€Р»РѕРј РІРµРєРµ)
       if (timeInfo.tm_year + 1900 >= 2024) {
-        // Serial.println("вњ“ Р§Р°СЃ РІР°Р»С–РґРЅРёР№ (РїС–СЃР»СЏ 2024 СЂРѕРєСѓ)");  // RUS_REMOVED
+        Serial.println("вњ“ Р§Р°СЃ РІР°Р»С–РґРЅРёР№ (РїС–СЃР»СЏ 2024 СЂРѕРєСѓ)");
         ntpSuccess = true;
         break;
       } else {
-        // Serial.println("вљ  NTP РїРѕРІРµСЂРЅСѓРІ СЃС‚Р°СЂРµ С‡Р°СЃ, РїСЂРѕР±СѓС”РјРѕ С–РЅС€РёР№ СЃРµСЂРІРµСЂ...");  // RUS_REMOVED
+        Serial.println("вљ  NTP РїРѕРІРµСЂРЅСѓРІ СЃС‚Р°СЂРµ С‡Р°СЃ, РїСЂРѕР±СѓС”РјРѕ С–РЅС€РёР№ СЃРµСЂРІРµСЂ...");
         
         // РџСЂРѕР±СѓРµРј СЃР»РµРґСѓСЋС‰РёР№ СЃРµСЂРІРµСЂ
         static int serverIndex = 1;
@@ -182,7 +182,6 @@ void initTime() {
           ntpServers[(serverIndex + 2) % 8]);
         serverIndex++;
       }
-      // Устанавливаем примерное время вручную
     }
     
     delay(1000);
@@ -195,9 +194,9 @@ void initTime() {
   }
   
   if (!ntpSuccess) {
-    // Serial.println("\nвљ  Р’СЃС– NTP СЃРµСЂРІРµСЂРё РЅРµ РІС–РґРїРѕРІС–РґР°СЋС‚СЊ");  // RUS_REMOVED
+    Serial.println("\nвљ  Р’СЃС– NTP СЃРµСЂРІРµСЂРё РЅРµ РІС–РґРїРѕРІС–РґР°СЋС‚СЊ");
     
-    // 
+    // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂРёРјРµСЂРЅРѕРµ РІСЂРµРјСЏ РІСЂСѓС‡РЅСѓСЋ
     struct tm tm;
     tm.tm_year = 2024 - 1900;   // 2024 РіРѕРґ
     tm.tm_mon = 2 - 1;          // Р¤РµРІСЂР°Р»СЊ (РµСЃР»Рё СЃРµР№С‡Р°СЃ С„РµРІСЂР°Р»СЊ)
@@ -216,7 +215,7 @@ void initTime() {
     timeSynced = true;
     
     Serial.printf("вњ“ Р›РѕРєР°Р»СЊРЅРёР№ С‡Р°СЃ РІСЃС‚Р°РЅРѕРІР»РµРЅРѕ: %s\n", getTimeString().c_str());
-    // Serial.println("в„№ Р’РёРєРѕСЂРёСЃС‚Р°Р№С‚Рµ РІРµР±-С–РЅС‚РµСЂС„РµР№СЃ (/settime) РґР»СЏ С‚РѕС‡РЅРѕРіРѕ С‡Р°СЃСѓ");  // RUS_REMOVED
+    Serial.println("в„№ Р’РёРєРѕСЂРёСЃС‚Р°Р№С‚Рµ РІРµР±-С–РЅС‚РµСЂС„РµР№СЃ (/settime) РґР»СЏ С‚РѕС‡РЅРѕРіРѕ С‡Р°СЃСѓ");
   }
 }
 
@@ -238,7 +237,7 @@ void syncTime() {
         xSemaphoreGive(timeMutex);
       }
       
-      // Serial.println("вњ“ Р§Р°СЃ РѕРЅРѕРІР»РµРЅРѕ");  // RUS_REMOVED
+      Serial.println("вњ“ Р§Р°СЃ РѕРЅРѕРІР»РµРЅРѕ");
     }
   }
 }
@@ -325,12 +324,6 @@ void loadConfiguration() {
   config.extractorMinPercent = preferences.getUChar("extractorMin", EXTRACTOR_MIN_DEFAULT);
   config.extractorMaxPercent = preferences.getUChar("extractorMax", EXTRACTOR_MAX_DEFAULT);
   
-  // Servo calibration
-  config.servoClosedAngle = preferences.getInt("servoClosed", SERVO_CLOSED_ANGLE);
-  config.servoOpenAngle = preferences.getInt("servoOpen", SERVO_OPEN_ANGLE);
-  
-  config.autoStatusEnabled = preferences.getBool("autoStatus", false);
-  
   
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
   config.humidityConfig.minHumidity = preferences.getFloat("humMin", HUM_MIN_DEFAULT);
@@ -377,7 +370,7 @@ void loadConfiguration() {
   _emergencyStartTempCarrier = 0;
   _emergencyStartTempRoom = 0;
   
-  // Serial.println("=== РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р°РІР°РЅС‚Р°Р¶РµРЅРѕ ===");  // RUS_REMOVED
+  Serial.println("=== РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р°РІР°РЅС‚Р°Р¶РµРЅРѕ ===");
 }
 
 void saveConfiguration() {
@@ -400,12 +393,6 @@ void saveConfiguration() {
   preferences.putUChar("fanMax", config.fanMaxPercent);
   preferences.putUChar("extractorMin", config.extractorMinPercent);
   preferences.putUChar("extractorMax", config.extractorMaxPercent);
-  
-  // Servo calibration
-  preferences.putInt("servoClosed", config.servoClosedAngle);
-  preferences.putInt("servoOpen", config.servoOpenAngle);
-  
-  preferences.putBool("autoStatus", config.autoStatusEnabled);
   
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
   preferences.putFloat("humMin", config.humidityConfig.minHumidity);
@@ -439,7 +426,7 @@ void saveConfiguration() {
   
   preferences.end();
   
-  // Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");  // RUS_REMOVED
+  Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");
 }
 
 // ============================================================================
@@ -456,9 +443,9 @@ void initMutexes() {
   if (sensorMutex == NULL || configMutex == NULL || 
       heatingMutex == NULL || historyMutex == NULL || 
       timeMutex == NULL) {
-    // Serial.println("вљ  РџРѕРјРёР»РєР° СЃС‚РІРѕСЂРµРЅРЅСЏ РјКјСЋС‚РµРєСЃС–РІ!");  // RUS_REMOVED
+    Serial.println("вљ  РџРѕРјРёР»РєР° СЃС‚РІРѕСЂРµРЅРЅСЏ РјКјСЋС‚РµРєСЃС–РІ!");
   } else {
-    // Serial.println("вњ“ РњКјСЋС‚РµРєСЃРё СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
+    Serial.println("вњ“ РњКјСЋС‚РµРєСЃРё СЃС‚РІРѕСЂРµРЅС–");
   }
 }
 
@@ -531,7 +518,7 @@ void createTasks() {
     1                         // РЇРґСЂРѕ
   );
   
-  // Serial.println("вњ“ Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
+  Serial.println("вњ“ Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");
   
   // Р”Р°С”РјРѕ С‡Р°СЃ Р·Р°РґР°С‡Р°Рј Р·Р°РїСѓСЃС‚РёС‚РёСЃСЏ
   delay(100);
@@ -631,8 +618,8 @@ void checkEmergencyTimeout() {
                 digitalWrite(HUMIDIFIER_PIN, LOW);
                 heatingState.emergencyMode = false;
                 
-                // Serial.println("рџљЁ РђР’РђР РР™РќРР™ Р Р•Р–РРњ: РІРёРјРєРЅРµРЅРѕ С‡РµСЂРµР· РІС–РґСЃСѓС‚РЅС–СЃС‚СЊ РїСЂРѕРіСЂС–РІСѓ!");  // RUS_REMOVED
-                Serial.printf("  Р—Р±С–Р»СЊС€РµРЅРЅСЏ С‚РµРјРїРµСЂР°С‚СѓСЂРё: С‚РµРїР»РѕРЅРѕСЃС–Р№ +%.1fВC, РєС–РјРЅР°С‚Р° +%.1fВC\n", 
+                Serial.println("рџљЁ РђР’РђР РР™РќРР™ Р Р•Р–РРњ: РІРёРјРєРЅРµРЅРѕ С‡РµСЂРµР· РІС–РґСЃСѓС‚РЅС–СЃС‚СЊ РїСЂРѕРіСЂС–РІСѓ!");
+                Serial.printf("  Р—Р±С–Р»СЊС€РµРЅРЅСЏ С‚РµРјРїРµСЂР°С‚СѓСЂРё: С‚РµРїР»РѕРЅРѕСЃС–Р№ +%.1fВ°C, РєС–РјРЅР°С‚Р° +%.1fВ°C\n", 
                               tempCarrierDiff, tempRoomDiff);
                 
                 setEmergencyStartTime(0);
@@ -646,6 +633,4 @@ void checkEmergencyTimeout() {
         }
     }
 }
-
-
 

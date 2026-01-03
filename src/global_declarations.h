@@ -1,11 +1,11 @@
-// global_declarations.h
+﻿// global_declarations.h
 #ifndef GLOBAL_DECLARATIONS_H
 #define GLOBAL_DECLARATIONS_H
 
 #include <Preferences.h>
 #include "learning_system.h"
 
-// Объявления всех глобальных переменных
+// Оголошення всіх глобальних змінних
 extern Preferences prefs;
 extern LearningEntry learnings[MAX_LEARNINGS];
 extern int learningCount;

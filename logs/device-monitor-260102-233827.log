@@ -1,0 +1,509 @@
+Знайдено 5 мереж:
+  1: Redmi Note 14 (-29 dBm) захищена
+  2: Smart-539874 (-38 dBm) відкрита
+  3: Redmi 10C (-71 dBm) захищена
+  4: Redmi Note 9 (-77 dBm) захищена
+  5: Kievctar (-89 dBm) відкрита
+
+📡 Збережена мережа знайдена: Redmi Note 9 (сигнал: -77 dBm)
+Пробуємо підключитись до збереженої мережі: Redmi Note 9
+...
+✅ Успішно підключено до збереженої мережі: Redmi Note 9
+SSID: Redmi Note 9 | IP адреса: 192.168.128.166 | Сигнал: -76 dBm
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+✅ Веб-сервер запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+РЎРµСЂРІРµСЂ: pool.ntp.org
+РћС‚СЂРёРјР°РЅРѕ: 2026-01-02 23:38:33
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (18°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X Y - цикл X хв вкл, Y хв викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс: http://192.168.128.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+📊 Підтримання: T=28.6°C, Насос=15, Вентилятор=18
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+📊 Підтримання: T=28.9°C, Насос=12, Вентилятор=6
+WEB COMMAND: manual
+WEB COMMAND: extractor 0
+WEB COMMAND: fan 0
+WEB COMMAND: pump 0
+WEB COMMAND: extractor 30
+WEB COMMAND: extractor 50
+WEB COMMAND: extractor 80
+WEB COMMAND: extractor 16
+WEB COMMAND: extractor 15
+WEB COMMAND: extractor 14
+WEB COMMAND: extractor 13
+WEB COMMAND: extractor 12
+WEB COMMAND: extractor 11
+WEB COMMAND: extractor 10
+WEB COMMAND: extractor 9
+WEB COMMAND: extractor 8
+WEB COMMAND: extractor 7
+✓ Зволожувач: УВІМКНЕНО (Вологість: 64.7%, Ціль: 66.2%)
+[TIME] Синхронізовано: 02.01.2026 23:38:51
+[SENSOR] T:28.4/63.2°C H:64.5% P:978.0hPa
+WEB COMMAND: extractor 6
+WEB COMMAND: extractor 5
+WEB COMMAND: extractor 4
+WEB COMMAND: extractor 3
+WEB COMMAND: extractor 4
+WEB COMMAND: extractor 6
+WEB COMMAND: extractor 11
+WEB COMMAND: extractor 8
+WEB COMMAND: extractor 15
+WEB COMMAND: extractor 18
+WEB COMMAND: extractor 21
+WEB COMMAND: extractor 24
+WEB COMMAND: extractor 25
+WEB COMMAND: extractor 26
+WEB COMMAND: extractor 27
+WEB COMMAND: extractor 28
+WEB COMMAND: extractor 29
+WEB COMMAND: extractor 30
+WEB COMMAND: extractor 31
+WEB COMMAND: extractor 32
+WEB COMMAND: extractor 33
+WEB COMMAND: extractor 34
+WEB COMMAND: extractor 35
+WEB COMMAND: extractor 36
+WEB COMMAND: extractor 37
+WEB COMMAND: extractor 38
+WEB COMMAND: extractor 39
+WEB COMMAND: extractor 40
+WEB COMMAND: extractor 41
+WEB COMMAND: extractor 42
+WEB COMMAND: extractor 43
+WEB COMMAND: extractor 44
+WEB COMMAND: extractor 45
+WEB COMMAND: extractor 46
+WEB COMMAND: extractor 47
+WEB COMMAND: extractor 48
+WEB COMMAND: extractor 49
+WEB COMMAND: extractor 50
+WEB COMMAND: extractor 51
+WEB COMMAND: extractor 52
+WEB COMMAND: extractor 53
+WEB COMMAND: extractor 54
+WEB COMMAND: extractor 55
+WEB COMMAND: extractor 56
+WEB COMMAND: extractor 57
+WEB COMMAND: extractor 58
+WEB COMMAND: extractor 59
+WEB COMMAND: extractor 60
+WEB COMMAND: extractor 61
+WEB COMMAND: extractor 62
+WEB COMMAND: extractor 63
+WEB COMMAND: extractor 64
+WEB COMMAND: extractor 65
+WEB COMMAND: extractor 66
+WEB COMMAND: extractor 67
+WEB COMMAND: extractor 68
+WEB COMMAND: extractor 69
+WEB COMMAND: extractor 70
+WEB COMMAND: extractor 71
+WEB COMMAND: extractor 72
+WEB COMMAND: extractor 73
+WEB COMMAND: extractor 74
+WEB COMMAND: extractor 75
+WEB COMMAND: extractor 76
+WEB COMMAND: extractor 77
+WEB COMMAND: extractor 78
+WEB COMMAND: extractor 79
+WEB COMMAND: extractor 80
+WEB COMMAND: extractor 81
+WEB COMMAND: extractor 82
+WEB COMMAND: extractor 83
+WEB COMMAND: extractor 84
+WEB COMMAND: extractor 85
+WEB COMMAND: extractor 86
+WEB COMMAND: extractor 87
+WEB COMMAND: extractor 88
+WEB COMMAND: extractor 89
+WEB COMMAND: extractor 90
+WEB COMMAND: extractor 91
+WEB COMMAND: extractor 92
+WEB COMMAND: extractor 93
+WEB COMMAND: extractor 94
+WEB COMMAND: extractor 95
+WEB COMMAND: extractor 96
+WEB COMMAND: extractor 97
+WEB COMMAND: extractor 98
+WEB COMMAND: extractor 99
+WEB COMMAND: extractor 100
+WEB COMMAND: extractor 99
+WEB COMMAND: extractor 97
+WEB COMMAND: extractor 98
+WEB COMMAND: extractor 96
+WEB COMMAND: extractor 95
+WEB COMMAND: extractor 94
+WEB COMMAND: extractor 93
+WEB COMMAND: extractor 92
+WEB COMMAND: extractor 91
+WEB COMMAND: extractor 89
+WEB COMMAND: extractor 90
+WEB COMMAND: extractor 87
+WEB COMMAND: extractor 86
+WEB COMMAND: extractor 84
+WEB COMMAND: extractor 85
+WEB COMMAND: extractor 83
+WEB COMMAND: extractor 82
+WEB COMMAND: extractor 81
+WEB COMMAND: extractor 80
+WEB COMMAND: extractor 79
+WEB COMMAND: extractor 78
+WEB COMMAND: extractor 77
+WEB COMMAND: extractor 76
+WEB COMMAND: extractor 75
+WEB COMMAND: extractor 74
+WEB COMMAND: extractor 73
+WEB COMMAND: extractor 72
+WEB COMMAND: extractor 70
+WEB COMMAND: extractor 69
+WEB COMMAND: extractor 67
+WEB COMMAND: extractor 68
+WEB COMMAND: extractor 66
+WEB COMMAND: extractor 65
+WEB COMMAND: extractor 64
+WEB COMMAND: extractor 63
+WEB COMMAND: extractor 62
+WEB COMMAND: extractor 60
+WEB COMMAND: extractor 61
+WEB COMMAND: extractor 59
+WEB COMMAND: extractor 58
+WEB COMMAND: extractor 57
+WEB COMMAND: extractor 56
+WEB COMMAND: extractor 55
+WEB COMMAND: extractor 54
+WEB COMMAND: extractor 53
+WEB COMMAND: extractor 51
+WEB COMMAND: extractor 50
+WEB COMMAND: extractor 49
+WEB COMMAND: extractor 48
+WEB COMMAND: extractor 47
+WEB COMMAND: extractor 41
+WEB COMMAND: extractor 42
+WEB COMMAND: extractor 44
+WEB COMMAND: extractor 45
+WEB COMMAND: extractor 40
+WEB COMMAND: extractor 39
+WEB COMMAND: extractor 38
+WEB COMMAND: extractor 36
+WEB COMMAND: extractor 34
+WEB COMMAND: extractor 31
+WEB COMMAND: extractor 29
+WEB COMMAND: extractor 27
+WEB COMMAND: extractor 0
+WEB COMMAND: fan 1
+WEB COMMAND: fan 2
+WEB COMMAND: fan 3
+WEB COMMAND: fan 4
+WEB COMMAND: fan 5
+WEB COMMAND: fan 6
+WEB COMMAND: fan 7
+WEB COMMAND: fan 9
+WEB COMMAND: fan 8
+WEB COMMAND: fan 10
+WEB COMMAND: fan 11
+WEB COMMAND: fan 12
+WEB COMMAND: fan 13
+WEB COMMAND: fan 14
+WEB COMMAND: fan 15
+WEB COMMAND: fan 17
+WEB COMMAND: fan 18
+WEB COMMAND: fan 19
+WEB COMMAND: fan 20
+WEB COMMAND: fan 22
+WEB COMMAND: fan 23
+WEB COMMAND: fan 26
+WEB COMMAND: fan 27
+WEB COMMAND: fan 28
+WEB COMMAND: fan 29
+WEB COMMAND: fan 30
+WEB COMMAND: fan 32
+WEB COMMAND: fan 34
+WEB COMMAND: fan 36
+WEB COMMAND: fan 37
+WEB COMMAND: fan 38
+WEB COMMAND: fan 41
+WEB COMMAND: fan 39
+WEB COMMAND: fan 43
+WEB COMMAND: fan 45
+WEB COMMAND: fan 48
+WEB COMMAND: fan 55
+WEB COMMAND: fan 51
+WEB COMMAND: fan 58
+WEB COMMAND: fan 60
+WEB COMMAND: fan 61
+WEB COMMAND: fan 66
+WEB COMMAND: fan 75
+WEB COMMAND: fan 87
+WEB COMMAND: fan 97
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:39:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 29.4°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.4°C
+  Вологість: 64.4% (ціль: 68.0-70.0%)
+  Тиск: 977.9 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+[TIME] Синхронізовано: 02.01.2026 23:39:21
+  Вентилятор (B): 96% (247)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-76 dBm)
+  Пам'ять: 148 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+[SENSOR] T:29.4/63.3°C H:64.4% P:978.0hPa
+📈 Статистика: Пам'ять=145KB, Записів=1, Час=61сек
+WEB COMMAND: fan 100
+🔧 Таймер витяжки: Витяжка вимкнена
+[TIME] Синхронізовано: 02.01.2026 23:39:51
+[SENSOR] T:30.0/60.0°C H:64.0% P:978.0hPa
+WEB COMMAND: fan 0
+WEB COMMAND: pump 80
+WEB COMMAND: pump 80
+WEB COMMAND: pump 50
+WEB COMMAND: pump 30
+WEB COMMAND: pump 0
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:40:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 30.4°C (ціль: 28.0-29.0°C)
+  Теплоносій: 59.6°C
+  Вологість: 63.8% (ціль: 68.0-70.0%)
+  Тиск: 978.0 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-77 dBm)
+  Пам'ять: 148 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=148KB, Записів=2, Час=121сек
+[TIME] Синхронізовано: 02.01.2026 23:40:22
+[SENSOR] T:30.3/59.8°C H:63.9% P:978.0hPa
+[SENSOR] T:28.9/61.8°C H:63.6% P:978.0hPa
+[TIME] Синхронізовано: 02.01.2026 23:40:53
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:41:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: 62.7°C
+  Вологість: 63.2% (ціль: 68.0-70.0%)
+  Тиск: 978.0 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-74 dBm)
+  Пам'ять: 150 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=150KB, Записів=3, Час=181сек
+[TIME] Синхронізовано: 02.01.2026 23:41:23
+[SENSOR] T:27.6/62.6°C H:63.0% P:978.0hPa
+[SENSOR] T:28.6/61.8°C H:59.7% P:978.0hPa
+[TIME] Синхронізовано: 02.01.2026 23:41:54
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:42:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 29.6°C (ціль: 28.0-29.0°C)
+  Теплоносій: -127.0°C
+  Вологість: 59.4% (ціль: 68.0-70.0%)
+  Тиск: 978.0 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-78 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 3
+══════════════════════════════════════════════════════════
+
+⚠ Проблема: Проблема з датчиками температури!
+📈 Статистика: Пам'ять=151KB, Записів=4, Час=241сек
+[TIME] Синхронізовано: 02.01.2026 23:42:24
+[SENSOR] T:29.5/62.1°C H:59.2% P:978.0hPa
+[SENSOR] T:29.1/63.2°C H:57.3% P:978.0hPa
+[TIME] Синхронізовано: 02.01.2026 23:42:55
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:43:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 28.4°C (ціль: 28.0-29.0°C)
+  Теплоносій: 63.9°C
+  Вологість: 57.8% (ціль: 68.0-70.0%)
+  Тиск: 977.9 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-79 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 4
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=151KB, Записів=5, Час=301сек
+[TIME] Синхронізовано: 02.01.2026 23:43:25
+[SENSOR] T:28.2/64.1°C H:58.0% P:977.9hPa
+[SENSOR] T:27.1/64.8°C H:59.6% P:977.9hPa
+[TIME] Синхронізовано: 02.01.2026 23:43:56
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:44:21
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 27.5°C (ціль: 28.0-29.0°C)
+  Теплоносій: 64.3°C
+  Вологість: 60.6% (ціль: 68.0-70.0%)
+  Тиск: 978.0 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 0% (0)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-87 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 5
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=151KB, Записів=6, Час=361сек
+[TIME] Синхронізовано: 02.01.2026 23:44:26
+[SENSOR] T:27.9/64.1°C H:60.2% P:978.0hPa
+🔧 Таймер витяжки: Витяжка увімкнена
+[SENSOR] T:29.5/64.5°C H:60.7% P:977.9hPa
+[TIME] Синхронізовано: 02.01.2026 23:44:57
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 02.01.2026 23:45:22
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 30.2°C (ціль: 28.0-29.0°C)
+  Теплоносій: 65.2°C
+  Вологість: 62.0% (ціль: 68.0-70.0%)
+  Тиск: 977.9 hPa
+----------------------------------------------
+  Насос (A): 0% (0)
+  Вентилятор (B): 0% (0)
+  Витяжка (C): 9% (25)
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 9 (-83 dBm)
+  Пам'ять: 151 KB
+  Записів в історії: 6
+══════════════════════════════════════════════════════════
+
+📈 Статистика: Пам'ять=151KB, Записів=7, Час=421сек
+[SENSOR] T:30.3/65.4°C H:62.2% P:977.8hPa
+[TIME] Синхронізовано: 02.01.2026 23:45:28
+🔧 Таймер витяжки: Витяжка вимкнена

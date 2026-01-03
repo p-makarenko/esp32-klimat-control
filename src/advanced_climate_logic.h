@@ -1,14 +1,14 @@
-#ifndef ADVANCED_CLIMATE_LOGIC_H
+﻿#ifndef ADVANCED_CLIMATE_LOGIC_H
 #define ADVANCED_CLIMATE_LOGIC_H
 
 #include <Arduino.h>
 #include "system_core.h"
-#include "utility_functions.h"  // Добавьте этот инклюд
+#include "utility_functions.h"  // Додайте цей інклуд
 
-// Два режима работы Serial Monitor
+// Два режими роботи Serial Monitor
 extern bool compactMode;
 
-// Функции управления режимами
+// Функції керування режимами
 void printCompactMode();
 void printExtendedMode();
 void toggleMode();
@@ -16,13 +16,13 @@ void processCompactCommand(String command);
 void processExtendedCommand(String command);
 void processAdvancedSerialCommand();
 
-// Расширенная логика управления
+// Розширена логіка керування
 void smartHeatingControl();
 void advancedHumidityControl(float humidity, float tempRoom);
-void advancedUpdateExtractorTimer();  // Переименовали, чтобы избежать конфликта
+void advancedUpdateExtractorTimer();  // Перейменували, щоб уникнути конфлікту
 void monitorSystemHealth();
 
-// Инициализация и задачи
+// Ініціалізація та завдання
 void initAdvancedLogic();
 void advancedLogicTask(void *parameter);
 
