@@ -35,7 +35,7 @@ void printCompactMode() {
     Serial.println("\nТАЙМЕРИ:");
     Serial.println("  ton XX  - вкл на XX хв (приклад: ton 30)");
     Serial.println("  toff    - вимкнути таймер");
-    Serial.println("  tcycle X Y - цикл X хв вкл, Y хв викл");
+    Serial.println("  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл");
     Serial.println("\nСЕРВІС:");
     Serial.println("  s      - статус системи");
     Serial.println("  m      - повне меню");
@@ -191,18 +191,43 @@ void processCompactCommand(String command) {
         String params = command.substring(7);
         int spaceIndex = params.indexOf(' ');
         if (spaceIndex > 0) {
-            int onTime = params.substring(0, spaceIndex).toInt();
-            int offTime = params.substring(spaceIndex + 1).toInt();
+            String onTime = params.substring(0, spaceIndex);
+            String offTime = params.substring(spaceIndex + 1);
             
-            onTime = constrain(onTime, 1, 120);
-            offTime = constrain(offTime, 1, 120);
+            // Парсимо формат M:S (хвилини:секунди) або просто M (хвилини)
+            int onMin = 0, onSec = 0, offMin = 0, offSec = 0;
             
-            config.extractorTimer.onMinutes = onTime;
-            config.extractorTimer.offMinutes = offTime;
+            int colonOn = onTime.indexOf(':');
+            if (colonOn > 0) {
+                onMin = onTime.substring(0, colonOn).toInt();
+                onSec = onTime.substring(colonOn + 1).toInt();
+            } else {
+                onMin = onTime.toInt();
+            }
+            
+            int colonOff = offTime.indexOf(':');
+            if (colonOff > 0) {
+                offMin = offTime.substring(0, colonOff).toInt();
+                offSec = offTime.substring(colonOff + 1).toInt();
+            } else {
+                offMin = offTime.toInt();
+            }
+            
+            // Обмеження значень
+            onMin = constrain(onMin, 0, 120);
+            onSec = constrain(onSec, 0, 59);
+            offMin = constrain(offMin, 0, 120);
+            offSec = constrain(offSec, 0, 59);
+            
+            config.extractorTimer.onMinutes = onMin;
+            config.extractorTimer.onSeconds = onSec;
+            config.extractorTimer.offMinutes = offMin;
+            config.extractorTimer.offSeconds = offSec;
             config.extractorTimer.enabled = true;
             config.extractorTimer.cycleStart = millis();
             
-            Serial.printf("✓ Таймер: %d хв ВКЛ / %d хв ВИМК\n", onTime, offTime);
+            Serial.printf("✓ Таймер: %d:%02d ВКЛ / %d:%02d ВИМК\n", 
+                         onMin, onSec, offMin, offSec);
             saveConfiguration();
         }
     }
@@ -673,13 +698,16 @@ void advancedUpdateExtractorTimer() {
     }
     
     unsigned long cycleTime = now - config.extractorTimer.cycleStart;
-    unsigned long cycleDuration = (config.extractorTimer.onMinutes + 
-                                  config.extractorTimer.offMinutes) * 60000;
+    
+    // Перераховуємо час у мілісекундах з хвилин і секунд
+    unsigned long onDuration = (config.extractorTimer.onMinutes * 60 + config.extractorTimer.onSeconds) * 1000;
+    unsigned long offDuration = (config.extractorTimer.offMinutes * 60 + config.extractorTimer.offSeconds) * 1000;
+    unsigned long cycleDuration = onDuration + offDuration;
     
     bool shouldBeOn = true;
     
     if (cycleDuration == 0) {
-        if (cycleTime > config.extractorTimer.onMinutes * 60000) {
+        if (cycleTime > onDuration) {
             config.extractorTimer.cycleStart = now;
             cycleTime = 0;
         }
@@ -690,7 +718,7 @@ void advancedUpdateExtractorTimer() {
             cycleTime = 0;
         }
         
-        shouldBeOn = (cycleTime < (config.extractorTimer.onMinutes * 60000));
+        shouldBeOn = (cycleTime < onDuration);
     }
     
     if (shouldBeOn != config.extractorTimer.state) {

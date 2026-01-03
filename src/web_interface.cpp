@@ -51,119 +51,66 @@ void initWiFi() {
     bool connected = false;
     String connectedSSID = "";
     
-    // Пробуємо підключитись до збережених налаштувань
-    preferences.begin("wifi", true);
-    String savedSSID = preferences.getString("ssid", "");
-    String savedPassword = preferences.getString("password", "");
-    preferences.end();
-    
-    if (savedSSID.length() > 0 && savedPassword.length() > 0) {
-        // Перевіряємо, чи збережена мережа є в списку доступних
-        bool savedNetworkAvailable = false;
-        for (int i = 0; i < n; i++) {
-            if (WiFi.SSID(i) == savedSSID) {
-                savedNetworkAvailable = true;
-                Serial.printf("\n📡 Збережена мережа знайдена: %s (сигнал: %d dBm)\n", 
-                    savedSSID.c_str(), WiFi.RSSI(i));
+    // Збираємо список доступних відомих мереж
+    struct AvailableNetwork {
+        String ssid;
+        String password;
+        int rssi;
+    };
+
+    std::vector<AvailableNetwork> availableNetworks;
+
+    for (int i = 0; i < sizeof(networks)/sizeof(networks[0]); i++) {
+        for (int j = 0; j < n; j++) {
+            if (WiFi.SSID(j) == networks[i].ssid && networks[i].password != NULL && strlen(networks[i].password) > 0) {
+                availableNetworks.push_back({networks[i].ssid, networks[i].password, WiFi.RSSI(j)});
                 break;
             }
-        }
-        
-        if (savedNetworkAvailable) {
-            Serial.printf("Пробуємо підключитись до збереженої мережі: %s\n", savedSSID.c_str());
-            
-            WiFi.disconnect(true);
-            delay(100);
-            WiFi.begin(savedSSID.c_str(), savedPassword.c_str());
-            
-            int attempts = 0;
-            while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-                delay(500);
-                Serial.print(".");
-                attempts++;
-                
-                if (attempts % 5 == 0) {
-                    Serial.printf(" [Статус: %d]", WiFi.status());
-                }
-            }
-            
-            if (WiFi.status() == WL_CONNECTED) {
-                connected = true;
-                connectedSSID = savedSSID;
-                Serial.printf("\n✅ Успішно підключено до збереженої мережі: %s\n", savedSSID.c_str());
-            } else {
-                Serial.printf("\n❌ Не вдалося підключитись до збереженої мережі: %s\n", savedSSID.c_str());
-                WiFi.disconnect(true);
-                delay(500);
-            }
-        } else {
-            Serial.printf("Збережена мережа %s не знайдена\n", savedSSID.c_str());
         }
     }
-    
-    // Якщо не підключились до збереженої, пробуємо відомі мережі з найкращим сигналом
-    if (!connected) {
-        // Збираємо список доступних відомих мереж
-        struct AvailableNetwork {
-            String ssid;
-            String password;
-            int rssi;
-        };
 
-        std::vector<AvailableNetwork> availableNetworks;
+    // Сортуємо по сигналу (кращий сигнал - більше RSSI)
+    std::sort(availableNetworks.begin(), availableNetworks.end(), [](const AvailableNetwork& a, const AvailableNetwork& b) {
+        return a.rssi > b.rssi;
+    });
 
-        for (int i = 0; i < sizeof(networks)/sizeof(networks[0]); i++) {
-            for (int j = 0; j < n; j++) {
-                if (WiFi.SSID(j) == networks[i].ssid && networks[i].password != NULL && strlen(networks[i].password) > 0) {
-                    availableNetworks.push_back({networks[i].ssid, networks[i].password, WiFi.RSSI(j)});
-                    break;
-                }
+    // Пробуємо підключитись до мереж в порядку кращого сигналу
+    for (const auto& net : availableNetworks) {
+        Serial.printf("\n📡 Пробуємо підключитись до мережі: %s (сигнал: %d dBm)\n",
+            net.ssid.c_str(), net.rssi);
+
+        WiFi.disconnect(true);
+        delay(100);
+        WiFi.begin(net.ssid.c_str(), net.password.c_str());
+
+        int attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+
+            if (attempts % 5 == 0) {
+                Serial.printf(" [Статус: %d]", WiFi.status());
             }
         }
 
-        // Сортуємо по сигналу (кращий сигнал - більше RSSI)
-        std::sort(availableNetworks.begin(), availableNetworks.end(), [](const AvailableNetwork& a, const AvailableNetwork& b) {
-            return a.rssi > b.rssi;
-        });
+        if (WiFi.status() == WL_CONNECTED) {
+            connected = true;
+            connectedSSID = net.ssid;
+            Serial.printf("\n✅ Успішно підключено до: %s\n", net.ssid.c_str());
 
-        // Пробуємо підключитись до мереж в порядку кращого сигналу
-        for (const auto& net : availableNetworks) {
-            Serial.printf("\n📡 Пробуємо підключитись до мережі: %s (сигнал: %d dBm)\n",
-                net.ssid.c_str(), net.rssi);
+            // Зберігаємо успішні налаштування
+            preferences.begin("wifi", false);
+            preferences.putString("ssid", net.ssid);
+            preferences.putString("password", net.password);
+            preferences.end();
 
+            Serial.printf("Налаштування збережені для мережі: %s\n", net.ssid.c_str());
+            break;
+        } else {
+            Serial.printf("\n❌ Не вдалося підключитись до: %s\n", net.ssid.c_str());
             WiFi.disconnect(true);
-            delay(100);
-            WiFi.begin(net.ssid.c_str(), net.password.c_str());
-
-            int attempts = 0;
-            while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-                delay(500);
-                Serial.print(".");
-                attempts++;
-
-                if (attempts % 5 == 0) {
-                    Serial.printf(" [Статус: %d]", WiFi.status());
-                }
-            }
-
-            if (WiFi.status() == WL_CONNECTED) {
-                connected = true;
-                connectedSSID = net.ssid;
-                Serial.printf("\n✅ Успішно підключено до: %s\n", net.ssid.c_str());
-
-                // Зберігаємо успішні налаштування
-                preferences.begin("wifi", false);
-                preferences.putString("ssid", net.ssid);
-                preferences.putString("password", net.password);
-                preferences.end();
-
-                Serial.printf("Налаштування збережені для мережі: %s\n", net.ssid.c_str());
-                break;
-            } else {
-                Serial.printf("\n❌ Не вдалося підключитись до: %s\n", net.ssid.c_str());
-                WiFi.disconnect(true);
-                delay(500);
-            }
+            delay(500);
         }
     }
     
@@ -679,20 +626,51 @@ String processWebCommand(const String& cmd) {
         String params = cmd.substring(10);
         int spaceIndex = params.indexOf(' ');
         if (spaceIndex > 0) {
-            int onTime = params.substring(0, spaceIndex).toInt();
-            int offTime = params.substring(spaceIndex + 1).toInt();
+            String onTime = params.substring(0, spaceIndex);
+            String offTime = params.substring(spaceIndex + 1);
             
-            onTime = constrain(onTime, 1, 120);
-            offTime = constrain(offTime, 1, 120);
+            // Парсимо формат M:S (хвилини:секунди) або просто M (хвилини)
+            int onMin = 0, onSec = 0, offMin = 0, offSec = 0;
             
-            config.extractorTimer.onMinutes = onTime;
-            config.extractorTimer.offMinutes = offTime;
+            int colonOn = onTime.indexOf(':');
+            if (colonOn > 0) {
+                onMin = onTime.substring(0, colonOn).toInt();
+                onSec = onTime.substring(colonOn + 1).toInt();
+            } else {
+                onMin = onTime.toInt();
+            }
+            
+            int colonOff = offTime.indexOf(':');
+            if (colonOff > 0) {
+                offMin = offTime.substring(0, colonOff).toInt();
+                offSec = offTime.substring(colonOff + 1).toInt();
+            } else {
+                offMin = offTime.toInt();
+            }
+            
+            // Обмеження значень
+            onMin = constrain(onMin, 0, 120);
+            onSec = constrain(onSec, 0, 59);
+            offMin = constrain(offMin, 0, 120);
+            offSec = constrain(offSec, 0, 59);
+            
+            config.extractorTimer.onMinutes = onMin;
+            config.extractorTimer.onSeconds = onSec;
+            config.extractorTimer.offMinutes = offMin;
+            config.extractorTimer.offSeconds = offSec;
             config.extractorTimer.enabled = true;
             config.extractorTimer.cycleStart = millis();
             
-            return "⏰ Таймер: " + String(onTime) + " хв ВКЛ / " + String(offTime) + " хв ВИМК";
+            String result = "⏰ Таймер: ";
+            if (onMin > 0) result += String(onMin) + " хв ";
+            if (onSec > 0) result += String(onSec) + " сек ";
+            result += "ВКЛ / ";
+            if (offMin > 0) result += String(offMin) + " хв ";
+            if (offSec > 0) result += String(offSec) + " сек ";
+            result += "ВИМК";
+            return result;
         }
-        return "❌ Формат: timer set <хв_вкл> <хв_викл>";
+        return "❌ Формат: timer set <M:S або M> <M:S або M>";
     }
     else if (lowerCmd.startsWith("timer power ")) {
         int power = cmd.substring(12).toInt();
@@ -918,28 +896,58 @@ void handleWiFiSettingsPage() {
     html += "</button>";
     html += "<div class='network-list'>";
     
-    // Показати збережені мережі з preferences
-    preferences.begin("wifi", true);
-    String savedSSID = preferences.getString("ssid", "");
-    preferences.end();
-    
-    if (savedSSID.length() > 0) {
+    // Показати результати сканування якщо є параметр scanned
+    if (server.hasArg("scanned")) {
+        int n = WiFi.scanComplete();
+        if (n >= 0) {
+            Serial.printf("Відображення %d знайдених мереж\n", n);
+            
+            for (int i = 0; i < n; i++) {
+                String ssid = WiFi.SSID(i);
+                int rssi = WiFi.RSSI(i);
+                bool encrypted = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN);
+                
+                html += "<div class='network-item'>";
+                html += "<div>";
+                html += "<div class='network-ssid'>" + ssid + "</div>";
+                html += "<div class='network-details'>";
+                html += "Сигнал: " + String(rssi) + " dBm | ";
+                html += encrypted ? "🔒 Захищена" : "🔓 Відкрита";
+                html += "</div>";
+                html += "</div>";
+                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + ssid + "', '" + String(encrypted ? "true" : "false") + "')\">Підключити</button>";
+                html += "</div>";
+            }
+            
+            WiFi.scanDelete();
+        } else {
+            html += "<div class='network-item'>";
+            html += "<div class='network-ssid'>Сканування...</div>";
+            html += "</div>";
+        }
+    } else {
+        // Показати збережені мережі з preferences
+        preferences.begin("wifi", true);
+        String savedSSID = preferences.getString("ssid", "");
+        preferences.end();
+        
+        if (savedSSID.length() > 0) {
+            html += "<div class='network-item'>";
+            html += "<div>";
+            html += "<div class='network-ssid'>" + savedSSID + " (збережена)</div>";
+            html += "<div class='network-details'>Збережена мережа - натисніть кнопку вище для сканування</div>";
+            html += "</div>";
+            html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
+            html += "</div>";
+        }
+        
         html += "<div class='network-item'>";
         html += "<div>";
-        html += "<div class='network-ssid'>" + savedSSID + " (збережена)</div>";
-        html += "<div class='network-details'>Збережена мережа - використовуйте форму нижче для підключення</div>";
+        html += "<div class='network-ssid'>📡 Натисніть кнопку сканування</div>";
+        html += "<div class='network-details'>Щоб побачити доступні мережі</div>";
         html += "</div>";
-        html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
         html += "</div>";
     }
-    
-    html += "<div class='network-item'>";
-    html += "<div>";
-    html += "<div class='network-ssid'>Введіть вручну</div>";
-    html += "<div class='network-details'>Якщо вашої мережі немає в списку</div>";
-    html += "</div>";
-    html += "<button class='connect-btn' onclick=\"showManualForm()\">Вручну</button>";
-    html += "</div>";
     
     html += "</div>"; // network-list
     html += "</div>"; // section
@@ -960,7 +968,8 @@ void handleWiFiSettingsPage() {
         html += "</div>";
     }
     
-    html += "<form id='wifiForm' method='POST' action='/save-wifi' class='hidden' id='manualForm'>";
+    html += "<form id='wifiForm' method='POST' action='/save-wifi'>";
+    html += "<div id='manualForm' class='hidden'>";
     html += "<div class='form-group'>";
     html += "<label for='connectSsid'>Назва мережі (SSID):</label>";
     html += "<input type='text' id='connectSsid' name='ssid' placeholder='Введіть назву мережі' required>";
@@ -979,7 +988,8 @@ void handleWiFiSettingsPage() {
     html += "</div>";
     
     html += "<button type='submit' class='btn btn-save'>🔗 Підключитися</button>";
-    html += "<button type='button' class='btn' onclick=\"window.location.href='/wifi-settings'\">Скасувати</button>";
+    html += "<button type='button' class='btn' onclick=\"document.getElementById('manualForm').classList.add('hidden')\">Скасувати</button>";
+    html += "</div>"; // manualForm
     html += "</form>";
     
     // Кнопка для показу форми
@@ -1018,33 +1028,18 @@ void handleWiFiSettingsPage() {
 // ============================================================================
 
 void handleScanWiFi() {
-    String html = "";
     Serial.println("📶 Сканування Wi-Fi мереж...");
 
-    WiFi.disconnect();
-    delay(100);
-    WiFi.mode(WIFI_STA);
-    delay(100);
-    
-    int n = WiFi.scanNetworks();
+    // Не відключаємось від поточної мережі - ESP32 може сканувати в режимі STA
+    int n = WiFi.scanNetworks(false, false);  // async=false, show_hidden=false
     Serial.printf("Знайдено %d мереж\n", n);
     
-    html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
-    html += "<meta http-equiv='refresh' content='3;url=/wifi-settings'>";
-    html += "<title>Сканування Wi-Fi</title>";
-    html += "<style>";
-    html += "body { font-family: Arial; text-align: center; padding: 50px; }";
-    html += ".spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 20px auto; }";
-    html += "@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }";
-    html += "</style>";
+    // Перенаправляємо на сторінку налаштувань з параметром scanned
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+    html += "<meta http-equiv='refresh' content='0;url=/wifi-settings?scanned=true'>";
+    html += "<title>Сканування завершено</title>";
     html += "</head><body>";
-    html += "<div class='spinner'></div>";
-    html += "<h1>📶 Сканування Wi-Fi мереж...</h1>";
-    html += "<p>Знайдено мереж: " + String(n) + "</p>";
-    html += "<p>Перенаправлення на сторінку налаштувань...</p>";
-    html += "<script>";
-    html += "setTimeout(function() { window.location.href = '/wifi-settings?scanned=true'; }, 3000);";
-    html += "</script>";
+    html += "<p>Сканування завершено. Перенаправлення...</p>";
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1231,11 +1226,19 @@ void handleSettingsPage() {
     html += "<h3>⏰ ТАЙМЕР ВИТЯЖКИ</h3>";
     html += "<div class='form-group'>";
     html += "<label>Час роботи (хвилини):</label>";
-    html += "<input type='number' name='extOn' value='" + String(config.extractorTimer.onMinutes) + "' min='1' max='240'>";
+    html += "<input type='number' name='extOnMin' value='" + String(config.extractorTimer.onMinutes) + "' min='0' max='120'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час роботи (секунди):</label>";
+    html += "<input type='number' name='extOnSec' value='" + String(config.extractorTimer.onSeconds) + "' min='0' max='59'>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Час паузи (хвилини):</label>";
-    html += "<input type='number' name='extOff' value='" + String(config.extractorTimer.offMinutes) + "' min='0' max='240'>";
+    html += "<input type='number' name='extOffMin' value='" + String(config.extractorTimer.offMinutes) + "' min='0' max='120'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час паузи (секунди):</label>";
+    html += "<input type='number' name='extOffSec' value='" + String(config.extractorTimer.offSeconds) + "' min='0' max='59'>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Потужність таймера (%):</label>";
@@ -1320,11 +1323,17 @@ void handleSaveSettings() {
     if (server.hasArg("extractorMax")) {
         config.extractorMaxPercent = server.arg("extractorMax").toInt();
     }
-    if (server.hasArg("extOn")) {
-        config.extractorTimer.onMinutes = server.arg("extOn").toInt();
+    if (server.hasArg("extOnMin")) {
+        config.extractorTimer.onMinutes = server.arg("extOnMin").toInt();
     }
-    if (server.hasArg("extOff")) {
-        config.extractorTimer.offMinutes = server.arg("extOff").toInt();
+    if (server.hasArg("extOnSec")) {
+        config.extractorTimer.onSeconds = server.arg("extOnSec").toInt();
+    }
+    if (server.hasArg("extOffMin")) {
+        config.extractorTimer.offMinutes = server.arg("extOffMin").toInt();
+    }
+    if (server.hasArg("extOffSec")) {
+        config.extractorTimer.offSeconds = server.arg("extOffSec").toInt();
     }
     if (server.hasArg("extPower")) {
         config.extractorTimer.powerPercent = server.arg("extPower").toInt();

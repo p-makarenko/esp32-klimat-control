@@ -161,8 +161,9 @@ void initTime() {
       time(&currentTime);
       
       // Serial.println("\nвњ“ Р§Р°СЃ СЃРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ С‡РµСЂРµР· NTP!");  // RUS_REMOVED
-      Serial.printf("РЎРµСЂРІРµСЂ: %s\n", ntpServers[0]);
-      Serial.printf("РћС‚СЂРёРјР°РЅРѕ: %d-%02d-%02d %02d:%02d:%02d\n",
+      Serial.print("Сервер: ");
+      Serial.println(ntpServers[0]);
+      Serial.printf("Отримано: %d-%02d-%02d %02d:%02d:%02d\n",
                     timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday,
                     timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
       
@@ -190,7 +191,7 @@ void initTime() {
     
     // РљР°Р¶РґС‹Рµ 10 СЃРµРєСѓРЅРґ РјРµРЅСЏРµРј СЃРµСЂРІРµСЂ
     if (i > 0 && i % 10 == 0) {
-      Serial.printf("\nРЎРїСЂРѕР±Р° %d/30, РјС–РЅСЏСЋ СЃРµСЂРІРµСЂ...\n", i);
+      Serial.printf("\nСпроба %d/30, міняю сервер...\n", i);
     }
   }
   
@@ -354,10 +355,12 @@ void loadConfiguration() {
   config.adaptive_temp_step = preferences.getUChar("tempStep", 1);
   config.adaptive_hum_step = preferences.getUChar("humStep", 1);
   
-  // РўР°Р№РјРµСЂ РІРёС‚СЏР¶РєРё
+  // Таймер витяжки
   config.extractorTimer.enabled = preferences.getBool("extTimer", false);
   config.extractorTimer.onMinutes = preferences.getUShort("extOnMin", 30);
+  config.extractorTimer.onSeconds = preferences.getUShort("extOnSec", 0);
   config.extractorTimer.offMinutes = preferences.getUShort("extOffMin", 30);
+  config.extractorTimer.offSeconds = preferences.getUShort("extOffSec", 0);
   config.extractorTimer.powerPercent = preferences.getUChar("extPower", 70);
   config.extractorTimer.state = false;
   config.extractorTimer.cycleStart = 0;
@@ -429,10 +432,12 @@ void saveConfiguration() {
   preferences.putUChar("tempStep", config.adaptive_temp_step);
   preferences.putUChar("humStep", config.adaptive_hum_step);
   
-  // РўР°Р№РјРµСЂ РІРёС‚СЏР¶РєРё
+  // Таймер витяжки
   preferences.putBool("extTimer", config.extractorTimer.enabled);
   preferences.putUShort("extOnMin", config.extractorTimer.onMinutes);
+  preferences.putUShort("extOnSec", config.extractorTimer.onSeconds);
   preferences.putUShort("extOffMin", config.extractorTimer.offMinutes);
+  preferences.putUShort("extOffSec", config.extractorTimer.offSeconds);
   preferences.putUChar("extPower", config.extractorTimer.powerPercent);
   
   preferences.putUShort("historySize", config.history_size);

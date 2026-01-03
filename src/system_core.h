@@ -36,7 +36,9 @@ struct HumidityConfig {
 struct ExtractorTimer {
   bool enabled;
   uint16_t onMinutes;
+  uint16_t onSeconds;
   uint16_t offMinutes;
+  uint16_t offSeconds;
   bool state;
   unsigned long cycleStart;
   unsigned long lastChange;
