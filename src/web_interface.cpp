@@ -6,11 +6,29 @@
 #include <ArduinoJson.h>
 #include "advanced_climate_logic.h"
 #include "data_storage.h"
+#include <WiFi.h>
+#include <WebServer.h>
+#include <Preferences.h>
+#include <ESPmDNS.h>
 #include <vector>
 #include <algorithm>
 
 extern int historyIndex;
 extern bool historyInitialized;
+
+// ============================================================================
+// АВТЕНТИФІКАЦІЯ
+// ============================================================================
+
+bool checkAuth() {
+    if (!config.useAuth) return true;
+    
+    if (!server.authenticate(config.authLogin.c_str(), config.authPassword.c_str())) {
+        server.requestAuthentication();
+        return false;
+    }
+    return true;
+}
 
 // ============================================================================
 // ІНІЦІАЛІЗАЦІЯ WI-FI ТА ВЕБ-СЕРВЕРА
@@ -81,6 +99,24 @@ void initWiFi() {
 
         WiFi.disconnect(true);
         delay(100);
+        
+        // Налаштування статичної IP якщо увімкнено
+        if (config.useStaticIP) {
+            IPAddress ip, gateway, subnet, dns;
+            if (ip.fromString(config.staticIP) && 
+                gateway.fromString(config.gateway) && 
+                subnet.fromString(config.subnet) &&
+                dns.fromString(config.dns)) {
+                
+                Serial.println("⚙️  Використовується статична IP-адреса");
+                if (!WiFi.config(ip, gateway, subnet, dns)) {
+                    Serial.println("⚠️  Помилка налаштування статичної IP");
+                }
+            } else {
+                Serial.println("⚠️  Невірний формат IP-адрес, використовуємо DHCP");
+            }
+        }
+        
         WiFi.begin(net.ssid.c_str(), net.password.c_str());
 
         int attempts = 0;
@@ -116,13 +152,30 @@ void initWiFi() {
     
     // Якщо підключились - показуємо інформацію
     if (connected) {
-        Serial.print("SSID: ");
-        Serial.print(connectedSSID);
-        Serial.print(" | IP адреса: ");
-        Serial.print(WiFi.localIP());
-        Serial.print(" | Сигнал: ");
-        Serial.print(WiFi.RSSI());
-        Serial.println(" dBm");
+        Serial.println("\n╔════════════════════════════════════════════════════════╗");
+        Serial.println("║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║");
+        Serial.println("╠════════════════════════════════════════════════════════╣");
+        Serial.printf("║  📡 SSID:         %-33s║\n", connectedSSID.c_str());
+        Serial.printf("║  🌐 IP адреса:    %-33s║\n", WiFi.localIP().toString().c_str());
+        Serial.printf("║  📶 Сигнал:       %-33s║\n", (String(WiFi.RSSI()) + " dBm").c_str());
+        Serial.println("╠════════════════════════════════════════════════════════╣");
+        Serial.println("║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║");
+        
+        // Ініціалізація mDNS
+        if (MDNS.begin("klimat")) {
+            Serial.println("║  💻 З ноутбука:   http://klimat.local                 ║");
+            MDNS.addService("http", "tcp", 80);
+        } else {
+            Serial.println("║  ⚠️  mDNS не запущено                                 ║");
+        }
+        
+        Serial.printf("║  📱 З телефону:   http://%-25s║\n", WiFi.localIP().toString().c_str());
+        Serial.println("╠════════════════════════════════════════════════════════╣");
+        Serial.println("║  💡 ПОРАДА:                                            ║");
+        Serial.println("║  Android: Використовуйте IP-адресу                     ║");
+        Serial.println("║  iOS/Windows/Mac: Можна використати klimat.local      ║");
+        Serial.println("║  📸 На головній сторінці є QR-код для швидкого доступу ║");
+        Serial.println("╚════════════════════════════════════════════════════════╝\n");
         
         // Перевіряємо, правильний чи пароль (по силі сигналу)
         if (WiFi.RSSI() < -80) {
@@ -177,7 +230,9 @@ void initWiFi() {
     server.on("/learning/api", HTTP_POST, handleLearningAPI);
     server.on("/time", HTTP_GET, handleTimePage);
     server.on("/wifi", HTTP_GET, handleWiFiPage);
+    server.on("/saveNetwork", HTTP_POST, handleSaveNetworkSettings);
     server.on("/history", HTTP_GET, handleHistoryPage);
+    server.on("/help", HTTP_GET, handleHelpPage);
     server.on("/debug", HTTP_GET, handleDebugPage);
     server.on("/servo", HTTP_GET, handleServoPage);
     server.on("/servo/api", HTTP_POST, handleServoAPI);
@@ -216,7 +271,16 @@ String wifiStrengthToHTML(int rssi) {
         color = "#cc0000"; // темно-червоний
     }
     
-    return "<span style='color:" + color + "; font-weight:bold;'>" + strength + " (" + String(rssi) + " dBm)</span>";
+    return "<span style='color:" + color + "; font-weight:600;'>" + strength + " (" + String(rssi) + " dBm)</span>";
+}
+
+String getUkraineMarquee() {
+    String txt = "🇺🇦 СЛАВА УКРАЇНІ! | 💪 ГЕРОЯМ СЛАВА! | 🔥 москалі - ПІДАРИ! | ✊ Україна переможе! | 💩 рашисти - терористи | 💙💛 Разом до Перемоги! | ⚔️ Смерть ворогам! | 🛡️ ЗСУ - найсильніша! | 🤮 хуйло - злочинець! | 🗡️ За Україну! | 🚀 Крим - наш! | 🔴 moscow delenda est! | 💀 кацапи - genocid | ⚡ Слава Нації! | 🎖️ Честь і Воля! | 🔥 россія - терорист! | 💪 Воля або Смерть! | 🖕 всі москалі - ПІДАРИ на болотах! | 🇺🇦 Україна понад усе! &nbsp;&nbsp;&nbsp;";
+    String marquee = "<div style='background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 10px 0; margin-top: 20px; overflow: hidden;'>";
+    marquee += "<div style='white-space: nowrap; animation: scroll 60s linear infinite; font-weight: bold;'>" + txt + txt + txt + "</div>";
+    marquee += "</div>";
+    marquee += "<style>@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-33.333%); } }</style>";
+    return marquee;
 }
 
 String encryptionTypeToString(wifi_auth_mode_t type) {
@@ -243,8 +307,8 @@ void handleRoot() {
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
     html += "<title>Клімат-контроль</title>";
     html += "<style>";
-    html += "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');";
-    html += "body { font-family: 'Roboto', sans-serif; margin: 20px; background: #f0f0f0; }";
+    html += "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');";
+    html += "body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }";
     html += ".container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }";
     html += ".header { text-align: center; margin-bottom: 30px; }";
     html += ".status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 30px 0; }";
@@ -253,32 +317,65 @@ void handleRoot() {
     html += ".power-indicators { display: flex; justify-content: space-between; margin: 20px 0; background: #e8f5e9; padding: 15px; border-radius: 8px; }";
     html += ".power-item { text-align: center; flex: 1; padding: 10px; }";
     html += ".power-label { font-size: 0.9em; color: #666; margin-bottom: 5px; }";
-    html += ".power-value { font-size: 1.8em; font-weight: bold; color: #2c3e50; }";
+    html += ".power-value { font-size: 1.8em; font-weight: 600; color: #2c3e50; }";
     
     html += ".command-section { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }";
-    html += "#commandOutput { background: white; padding: 10px; border-radius: 5px; font-family: 'Consolas', monospace; min-height: 50px; white-space: pre-wrap; overflow-y: auto; max-height: 200px; }";
+    html += "#commandOutput { background: white; padding: 10px; border-radius: 5px; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; min-height: 50px; white-space: pre-wrap; overflow-y: auto; max-height: 200px; }";
     html += ".quick-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }";
     html += ".quick-btn { background: #e0e0e0; padding: 8px 12px; border-radius: 4px; cursor: pointer; border: none; transition: background 0.2s; }";
     html += ".quick-btn:hover { background: #bdbdbd; }";
     
-    html += ".status-value { font-size: 1.2em; font-weight: bold; }";
+    html += ".status-value { font-size: 1.2em; font-weight: 600; }";
     html += ".temp-status { color: #e74c3c; }";
     html += ".hum-status { color: #3498db; }";
     html += ".sys-status { color: #2c3e50; }";
     
     html += ".nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 30px 0; }";
-    html += ".nav-btn { background: #4CAF50; color: white; padding: 15px; text-align: center; text-decoration: none; border-radius: 5px; display: block; transition: background 0.3s; }";
+    html += ".nav-btn { background: #4CAF50; color: white; padding: 15px; text-align: center; text-decoration: none; border-radius: 5px; display: block; transition: background 0.3s; font-weight: 500; }";
     html += ".nav-btn:hover { background: #45a049; }";
-    html += ".btn { background: #2196F3; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; transition: background 0.2s; }";
+    html += ".btn { background: #2196F3; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; transition: background 0.2s; font-weight: 500; }";
     html += ".btn:hover { background: #1976D2; }";
+    html += ".tooltip { position: relative; display: inline-block; cursor: help; }";
+    html += ".tooltip .tooltiptext { visibility: hidden; width: 250px; background-color: #555; color: #fff; text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -125px; opacity: 0; transition: opacity 0.3s; font-size: 0.85em; line-height: 1.4; }";
+    html += ".tooltip .tooltiptext::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #555 transparent transparent transparent; }";
+    html += ".tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }";
+    html += ".help-icon { display: inline-block; width: 20px; height: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 13px; font-weight: 600; margin-left: 8px; cursor: help; box-shadow: 0 2px 4px rgba(102,126,234,0.4); transition: transform 0.2s; }";
+    html += ".help-icon:hover { transform: scale(1.2); box-shadow: 0 3px 6px rgba(102,126,234,0.6); }";
+    html += ".faq-section { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196F3; }";
+    html += ".faq-item { margin: 10px 0; }";
+    html += ".faq-q { font-weight: 600; color: #2196F3; margin-bottom: 5px; }";
+    html += ".faq-a { color: #666; font-size: 0.9em; margin-left: 15px; }";
     html += "</style>";
     html += "</head><body>";
     
     html += "<div class='container'>";
     html += "<div class='header'>";
-    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ v4.0</h1>";
-    html += "<p>IP: " + WiFi.localIP().toString() + " | " + getTimeString() + "</p>";
-    html += "<div style='display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: bold; margin-top: 10px;'>";
+    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ v" VERSION "</h1>";
+    
+    // Інформація про мережу
+    html += "<div style='background: #e8f5e9; padding: 10px 15px; border-radius: 5px; margin: 10px 0; font-size: 0.85em;'>";
+    html += "📡 <strong>Підключено до:</strong> " + WiFi.SSID() + " | ";
+    html += "<strong>IP:</strong> " + WiFi.localIP().toString();
+    html += "</div>";
+    
+    html += "<p style='font-size: 0.9em; color: #666;'>";
+    html += "📱 <strong>Доступ з телефону:</strong> ";
+    html += "<span style='background: #fff3cd; padding: 2px 8px; border-radius: 3px; font-family: monospace;'>" + WiFi.localIP().toString() + "</span>";
+    html += "</p>";
+    html += "<p style='font-size: 0.9em; color: #666;'>";
+    html += "💻 <strong>Доступ з ноутбука:</strong> ";
+    html += "<span style='background: #d1ecf1; padding: 2px 8px; border-radius: 3px; font-family: monospace;'>http://klimat.local</span>";
+    html += " <span style='color: #999; font-size: 0.85em;'>(тільки в цій мережі)</span>";
+    html += "</p>";
+    html += "<div style='margin: 15px 0; text-align: center;'>";
+    // QR код через Google Charts API (працює офлайн після першого завантаження)
+    html += "<div style='background: white; display: inline-block; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>";
+    html += "<div style='font-size: 0.8em; color: #666; margin-bottom: 5px;'>Відскануйте для швидкого доступу з телефону:</div>";
+    html += "<img src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://" + WiFi.localIP().toString() + "' alt='QR Code' style='display: block;' />";
+    html += "</div>";
+    html += "</div>";
+    html += "<p style='font-size: 0.8em; color: #999;'>⏰ " + getTimeString() + "</p>";
+    html += "<div style='display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: 600; margin-top: 10px;'>";
     html += "Режим: <span id='currentMode'>";
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
     html += "</span></div>";
@@ -365,6 +462,7 @@ void handleRoot() {
     html += "<a href='/servo' class='nav-btn'>⚙ КАЛІБРУВАННЯ СЕРВО</a>";
     html += "<a href='/wifi-settings' class='nav-btn'>📶 WI-FI</a>";
     html += "<a href='/learning' class='nav-btn'>🧠 СИСТЕМА НАВЧАННЯ</a>";
+    html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
     html += "<a href='/status' class='nav-btn'>📊 JSON СТАТУС</a>";
     html += "<a href='/time' class='nav-btn'>🕒 ЧАС</a>";
     html += "<a href='/history' class='nav-btn'>📈 ІСТОРІЯ</a>";
@@ -377,6 +475,8 @@ void handleRoot() {
     html += "</div>";
     
     html += "</div>";
+    
+    html += getUkraineMarquee();
     
     html += "<script>";
     html += "let updateInterval = 3000;";
@@ -545,6 +645,8 @@ void handleStatus() {
 // ============================================================================
 
 void handleWebCommand() {
+    if (!checkAuth()) return;
+    
     if (server.method() != HTTP_POST) {
         server.send(405, "text/plain", "Method Not Allowed");
         return;
@@ -867,7 +969,7 @@ void handleWiFiSettingsPage() {
     html += ".network-list { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px; background: white; }";
     html += ".network-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }";
     html += ".network-item:hover { background: #f0f0f0; }";
-    html += ".network-ssid { font-weight: bold; }";
+    html += ".network-ssid { font-weight: 600; }";
     html += ".network-details { font-size: 0.9em; color: #666; }";
     html += ".connect-btn { background: #4CAF50; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 0.9em; }";
     html += ".connect-btn:hover { background: #45a049; }";
@@ -1012,12 +1114,12 @@ void handleWiFiSettingsPage() {
     html += "<div id='manualForm' class='hidden'>";
     html += "<div class='form-group'>";
     html += "<label for='connectSsid'>Назва мережі (SSID):</label>";
-    html += "<input type='text' id='connectSsid' name='ssid' placeholder='Введіть назву мережі' required>";
+    html += "<input type='text' id='connectSsid' name='ssid' placeholder='Введіть назву мережі' title='Заповніть це поле' required>";
     html += "</div>";
     
     html += "<div class='form-group'>";
     html += "<label for='connectPassword'>Пароль:</label>";
-    html += "<input type='password' id='connectPassword' name='password' placeholder='Введіть пароль'>";
+    html += "<input type='password' id='connectPassword' name='password' placeholder='Введіть пароль' title='Введіть пароль для мережі'>";
     html += "<small>Залиште пустим для відкритих мереж</small>";
     html += "</div>";
     
@@ -1034,6 +1136,7 @@ void handleWiFiSettingsPage() {
     
     // Кнопка для показу форми
     html += "<button class='btn' onclick=\"showManualForm()\" id='showFormBtn'>📝 Ввести дані вручну</button>";
+    html += "<a href='/wifi' class='btn' style='display: inline-block; text-decoration: none; margin-left: 10px;'>⚙️ Розширені налаштування (IP, DNS, Авторизація)</a>";
     
     html += "</div>"; // section
     
@@ -1057,7 +1160,10 @@ void handleWiFiSettingsPage() {
     html += "</div>";
     html += "</div>";
     
+    html += "<div style='text-align: center; margin-top: 30px;'><a href='/' style='background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>← На головну</a></div>";
+    
     html += "</div>"; // container
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1303,7 +1409,7 @@ void handleSettingsPage() {
     
     html += "<div style='margin-top: 30px;'>";
     html += "<button type='submit' class='btn'>💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>";
-    html += "<button type='button' class='btn btn-secondary' onclick='window.location.href=\"/\"'>СКАСУВАТИ</button>";
+    html += "<button type='button' class='btn btn-secondary' onclick='window.location.href=\"/\"'>← НА ГОЛОВНУ</button>";
     html += "</div>";
     
     html += "</form>";
@@ -1326,6 +1432,9 @@ void handleSettingsPage() {
     html += "  }";
     html += "});";
     html += "</script>";
+    
+    html += "<div style='text-align: center; margin-top: 30px;'><a href='/' style='background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>← На головну</a></div>";
+    html += getUkraineMarquee();
     
     html += "</body></html>";
     
@@ -1400,6 +1509,7 @@ void handleSaveSettings() {
     html += "</head><body>";
     html += "<h1>✅ Налаштування успішно збережені!</h1>";
     html += "<p>Перенаправлення обернено на сторінку налаштувань...</p>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1410,25 +1520,27 @@ void handleSaveSettings() {
 // ============================================================================
 
 void handleControlPage() {
+    if (!checkAuth()) return;
+    
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
     html += "<title>Керування</title>";
     html += "<style>";
-    html += "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');";
-    html += "body { font-family: 'Roboto', sans-serif; margin: 20px; background: #f5f5f5; }";
+    html += "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');";
+    html += "body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f5f5f5; }";
     html += ".container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }";
     html += ".slider { width: 100%; margin: 10px 0; }";
     html += ".btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 5px; cursor: pointer; transition: all 0.3s; }";
     html += ".btn:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }";
-    html += ".slider-value { display: inline-block; width: 50px; text-align: center; font-weight: bold; }";
+    html += ".slider-value { display: inline-block; width: 50px; text-align: center; font-weight: 600; }";
     html += ".control-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; }";
     html += ".mode-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }";
     html += ".mode-btn { padding: 15px 20px; border: 2px solid #ddd; background: #f5f5f5; color: #333; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; position: relative; overflow: hidden; }";
     html += ".mode-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }";
     html += ".mode-btn.active { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border-color: #4CAF50; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); animation: pulse 2s infinite; }";
     html += "@keyframes pulse { 0%, 100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); } 50% { box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6); } }";
-    html += ".mode-btn.active::before { content: '✓ '; font-weight: bold; margin-right: 5px; }";
+    html += ".mode-btn.active::before { content: '✓ '; font-weight: 600; margin-right: 5px; }";
     html += "</style>";
     html += "</head><body>";
     
@@ -1508,6 +1620,12 @@ void handleControlPage() {
     html += "}";
     html += "</script>";
     
+    html += "<div style='text-align: center; margin: 30px 0; padding-top: 20px; border-top: 1px solid #ddd;'>";
+    html += "<a href='/' style='background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>← На головну</a>";
+    html += "</div>";
+    
+    html += getUkraineMarquee();
+    
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1530,6 +1648,7 @@ void handleTimePage() {
     html += "</div>";
     html += "<p><a href='/'>← На головну</a></p>";
     html += "</div>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1537,19 +1656,205 @@ void handleTimePage() {
 
 void handleWiFiPage() {
     String html = "";
-    html = "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
-    html += "<div style='max-width: 600px; margin: 0 auto; padding: 20px;'>";
-    html += "<h1>📶 WI-FI ІНФОРМАЦІЯ</h1>";
-    html += "<div style='background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;'>";
-    html += "<p><strong>SSID:</strong> " + WiFi.SSID() + "</p>";
-    html += "<p><strong>IP адреса:</strong> " + WiFi.localIP().toString() + "</p>";
-    html += "<p><strong>MAC адреса:</strong> " + WiFi.macAddress() + "</p>";
-    html += "<p><strong>Сигнал (RSSI):</strong> " + String(WiFi.RSSI()) + " dBm</p>";
-    html += "<p><strong>Статус:</strong> " + String(WiFi.status() == WL_CONNECTED ? "Підключено" : "Відключено") + "</p>";
+    html = "<!DOCTYPE html><html><head>";
+    html += "<meta charset='UTF-8'>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    html += "<title>WiFi налаштування</title>";
+    html += "<style>";
+    html += "body { font-family: Arial; margin: 20px; background: #f0f0f0; }";
+    html += ".container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }";
+    html += "h1 { color: #333; text-align: center; }";
+    html += ".info-box { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0; }";
+    html += ".info-item { display: flex; justify-content: space-between; padding: 5px 0; }";
+    html += ".form-group { margin: 15px 0; }";
+    html += ".form-group label { display: block; margin-bottom: 5px; font-weight: bold; }";
+    html += ".form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }";
+    html += ".btn { padding: 12px 24px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }";
+    html += ".btn-primary { background: #2196F3; color: white; }";
+    html += ".btn-secondary { background: #666; color: white; }";
+    html += ".nav { text-align: center; margin-top: 20px; }";
+    // CSS для tooltips
+    html += ".help-icon { display: inline-block; width: 22px; height: 22px; line-height: 22px; background: #9c27b0; color: #fff; border-radius: 50%; text-align: center; font-size: 14px; font-weight: bold; cursor: pointer; margin-left: 8px; vertical-align: middle; }";
+    html += ".help-icon:hover { background: #7b1fa2; }";
+    html += "</style></head><body>";
+    html += "<div class='container'>";
+    html += "<h1>📶 WiFi налаштування</h1>";
+    
+    // Попередження про різні мережі
+    html += "<div style='background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;'>";
+    html += "<strong>⚠️ ВАЖЛИВО:</strong><br>";
+    html += "Для доступу ваш пристрій (ноутбук/телефон) і ESP32 мають бути підключені до <strong>ОДНІЄЇ WiFi мережі!</strong><br><br>";
+    html += "Якщо ви не бачите цю сторінку з іншої мережі - це нормально. Підключіться до мережі <strong>" + WiFi.SSID() + "</strong>";
     html += "</div>";
-    html += "<p><a href='/'>← На головну</a></p>";
+    
+    html += "<div class='info-box'>";
+    html += "<div class='info-item'><span><strong>SSID:</strong></span><span>" + WiFi.SSID() + "</span></div>";
+    html += "<div class='info-item'><span><strong>IP адреса:</strong></span><span>" + WiFi.localIP().toString() + "</span></div>";
+    html += "<div class='info-item'><span><strong>mDNS:</strong></span><span>http://klimat.local</span></div>";
+    html += "<div class='info-item'><span><strong>MAC адреса:</strong></span><span>" + WiFi.macAddress() + "</span></div>";
+    html += "<div class='info-item'><span><strong>Сигнал (RSSI):</strong></span><span>" + String(WiFi.RSSI()) + " dBm</span></div>";
+    html += "<div class='info-item'><span><strong>Статус:</strong></span><span>" + String(WiFi.status() == WL_CONNECTED ? "Підключено ✅" : "Відключено ❌") + "</span></div>";
     html += "</div>";
+    
+    html += "<h2>⚙ Налаштування статичної IP <span class='help-icon' onclick='alert(\"Статична IP дозволяє ESP32 завжди мати одну адресу в вашій домашній мережі. Корисно для закладок та автоматизації.\")'>?</span></h2>";
+    html += "<form action='/saveNetwork' method='POST'>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='useStaticIP' value='1' " + String(config.useStaticIP ? "checked" : "") + "> Використовувати статичну IP <span class='help-icon' onclick='alert(\"Якщо увімкнено, ESP32 буде використовувати фіксовану IP замість автоматичної (DHCP). Потрібна перезагрузка після зміни.\")'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>IP адреса: <span class='help-icon' onclick='alert(\"Виберіть вільну IP в діапазоні вашої мережі (наприклад 192.168.1.100). Перевірте що вона не зайнята іншим пристроєм!\")'>?</span></label>";
+    html += "<input type='text' name='staticIP' value='" + config.staticIP + "' placeholder='192.168.1.100'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Шлюз (Gateway): <span class='help-icon' onclick='alert(\"Адреса вашого роутера. Дізнатись: Windows - ipconfig (Default Gateway), Linux/Mac - ip route | grep default\")'>?</span></label>";
+    html += "<input type='text' name='gateway' value='" + config.gateway + "' placeholder='192.168.1.1'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Маска підмережі (Subnet): <span class='help-icon' onclick='alert(\"Зазвичай 255.255.255.0 для домашніх мереж. Не змінюйте якщо не впевнені.\")'>?</span></label>";
+    html += "<input type='text' name='subnet' value='" + config.subnet + "' placeholder='255.255.255.0'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>DNS сервер: <span class='help-icon' onclick='alert(\"8.8.8.8 - Google DNS (рекомендовано). Або використайте DNS вашого провайдера.\")'>?</span></label>";
+    html += "<input type='text' name='dns' value='" + config.dns + "' placeholder='8.8.8.8'>";
+    html += "</div>";
+    
+    html += "<h2>🔐 Безпека (для доступу через інтернет) <span class='help-icon' onclick='alert(\"Обов'язково увімкніть автентифікацію якщо плануєте відкрити доступ через інтернет (Port Forwarding)! Інакше хто завгодно зможе керувати вашою системою.\")'>?</span></h2>";
+    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em;'>";
+    html += "⚠️ Увімкніть автентифікацію якщо плануєте відкрити доступ через інтернет!";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='useAuth' value='1' " + String(config.useAuth ? "checked" : "") + "> Увімкнути автентифікацію <span class='help-icon' onclick='alert(\"Коли увімкнено, браузер запитуватиме логін та пароль перед доступом до інтерфейсу. Рекомендовано для безпеки!\")'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Логін: <span class='help-icon' onclick='alert(\"Ім'я користувача для входу. За замовчуванням: admin\")'>?</span></label>";
+    html += "<input type='text' name='authLogin' value='" + config.authLogin + "' placeholder='admin'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Пароль: <span class='help-icon' onclick='alert(\"Використовуйте складний пароль (мінімум 8 символів)! НЕ використовуйте 12345, password, admin тощо.\")'>?</span></label>";
+    html += "<input type='password' name='authPassword' value='" + config.authPassword + "' placeholder='Введіть пароль'>";
+    html += "</div>";
+    
+    html += "<div style='text-align: center;'>";
+    html += "<button type='submit' class='btn btn-primary'>Зберегти налаштування</button>";
+    html += "</div>";
+    html += "</form>";
+    
+    html += "<h2>🌐 Доступ через інтернет";
+    html += "<span class='tooltip'><span class='help-icon'>?</span>";
+    html += "<span class='tooltiptext'>Дозволяє керувати системою з будь-якої точки світу через інтернет. Вимагає налаштування роутера.</span>";
+    html += "</span></h2>";
+    html += "<div style='background: #f0f0f0; padding: 15px; border-radius: 5px; font-size: 0.9em;'>";
+    html += "<p><strong>Швидкий гайд:</strong></p>";
+    html += "<ol style='margin: 10px 0; padding-left: 20px; line-height: 1.8;'>";
+    html += "<li>✅ Увімкнути автентифікацію вище ☝️ <span style='color: red; font-weight: 600;'>(ОБОВ'ЯЗКОВО!)</span></li>";
+    html += "<li>🔧 Налаштувати Port Forwarding на роутері:<br>";
+    html += "   <div style='background: white; padding: 8px; margin: 5px 0; border-radius: 3px; font-family: monospace;'>";
+    html += "   Внутрішня IP: <strong>" + WiFi.localIP().toString() + "</strong><br>";
+    html += "   Внутрішній порт: <strong>80</strong><br>";
+    html += "   Зовнішній порт: <strong>8080</strong> (можна інший)";
+    html += "   </div></li>";
+    html += "<li>🌍 Дізнатися свою зовнішню IP: <a href='https://myip.com.ua' target='_blank' style='color: #2196F3;'>myip.com.ua</a></li>";
+    html += "<li>🚀 Доступ звідки завгодно: <code style='background: white; padding: 2px 6px;'>http://[ваша_IP]:8080</code></li>";
+    html += "</ol>";
+    html += "<div style='background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 10px;'>";
+    html += "<strong>💡 Корисні поради:</strong><br>";
+    html += "• Для динамічної IP → DynDNS, No-IP, DuckDNS<br>";
+    html += "• Для максимальної безпеки → VPN на роутері<br>";
+    html += "• Детальна інструкція в документації проекту";
+    html += "</div>";
+    html += "</div>";
+    
+    html += "<div class='nav'>";
+    html += "<a href='/'>← На головну</a>";
+    html += "</div>";
+    html += "</div>";
+    
+    html += getUkraineMarquee();
+    
     html += "</body></html>";
+    
+    server.send(200, "text/html", html);
+}
+
+void handleSaveNetworkSettings() {
+    bool needRestart = false;
+    
+    // Зчитуємо налаштування з форми
+    if (server.hasArg("useStaticIP")) {
+        config.useStaticIP = true;
+        needRestart = true;
+    } else {
+        if (config.useStaticIP) {
+            needRestart = true;
+        }
+        config.useStaticIP = false;
+    }
+    
+    if (server.hasArg("staticIP") && server.arg("staticIP") != config.staticIP) {
+        config.staticIP = server.arg("staticIP");
+        needRestart = true;
+    }
+    
+    if (server.hasArg("gateway") && server.arg("gateway") != config.gateway) {
+        config.gateway = server.arg("gateway");
+        needRestart = true;
+    }
+    
+    if (server.hasArg("subnet") && server.arg("subnet") != config.subnet) {
+        config.subnet = server.arg("subnet");
+        needRestart = true;
+    }
+    
+    if (server.hasArg("dns") && server.arg("dns") != config.dns) {
+        config.dns = server.arg("dns");
+        needRestart = true;
+    }
+    
+    // Налаштування безпеки
+    if (server.hasArg("useAuth")) {
+        config.useAuth = true;
+    } else {
+        config.useAuth = false;
+    }
+    
+    if (server.hasArg("authLogin")) {
+        config.authLogin = server.arg("authLogin");
+    }
+    
+    if (server.hasArg("authPassword") && server.arg("authPassword").length() > 0) {
+        config.authPassword = server.arg("authPassword");
+    }
+    
+    // Зберігаємо в Preferences
+    preferences.begin("climate", false);
+    preferences.putBool("useStaticIP", config.useStaticIP);
+    preferences.putString("staticIP", config.staticIP);
+    preferences.putString("gateway", config.gateway);
+    preferences.putString("subnet", config.subnet);
+    preferences.putString("dns", config.dns);
+    preferences.putBool("useAuth", config.useAuth);
+    preferences.putString("authLogin", config.authLogin);
+    preferences.putString("authPass", config.authPassword);
+    preferences.end();
+    
+    Serial.println("✅ Мережеві налаштування та безпека збережено");
+    
+    // Відправляємо відповідь
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+    html += "<meta http-equiv='refresh' content='3;url=/wifi'>";
+    html += "</head><body>";
+    html += "<div style='max-width: 600px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; text-align: center;'>";
+    html += "<h1>✅ Налаштування збережено!</h1>";
+    
+    if (needRestart) {
+        html += "<p>⚠️ Для застосування змін необхідно перезавантажити пристрій.</p>";
+        html += "<p>Автоматичне перенаправлення через 3 секунди...</p>";
+    } else {
+        html += "<p>Перенаправлення через 3 секунди...</p>";
+    }
+    
+    html += "<p><a href='/wifi'>← Повернутись до налаштувань WiFi</a></p>";
+    html += "</div></body></html>";
     
     server.send(200, "text/html", html);
 }
@@ -1567,10 +1872,412 @@ void handleHistoryPage() {
     html += "</div>";
     html += "<p><a href='/'>← На головну</a></p>";
     html += "</div>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
 }
+
+// ============================================================================
+// СТОРІНКА ДОПОМОГИ
+// ============================================================================
+
+void handleHelpPage() {
+    String html = "<!DOCTYPE html><html lang='uk'><head>";
+    html += "<meta charset='UTF-8'>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    html += "<title>📖 Допомога</title>";
+    html += "<style>";
+    html += "body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }";
+    html += ".container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }";
+    html += "h1 { color: #333; text-align: center; border-bottom: 3px solid #9c27b0; padding-bottom: 15px; }";
+    html += "h2 { color: #9c27b0; margin-top: 30px; }";
+    html += "h3 { color: #666; margin-top: 20px; }";
+    html += ".section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9c27b0; }";
+    html += ".tip { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4caf50; }";
+    html += ".warning { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }";
+    html += ".danger { background: #ffebee; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #f44336; }";
+    html += ".code { background: #263238; color: #aed581; padding: 10px; border-radius: 5px; font-family: monospace; margin: 10px 0; }";
+    html += ".faq-item { margin: 20px 0; }";
+    html += ".faq-q { font-weight: 600; color: #9c27b0; font-size: 1.1em; margin-bottom: 8px; }";
+    html += ".faq-a { color: #555; line-height: 1.6; margin-left: 20px; }";
+    html += ".back-btn { display: inline-block; background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }";
+    html += "ul, ol { line-height: 1.8; }";
+    html += "code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #e91e63; }";
+    html += "</style></head><body>";
+    
+    html += "<div class='container'>";
+    html += "<h1>📖 ДОВІДКА - КЛІМАТ-КОНТРОЛЬ</h1>";
+    
+    // Швидкі відповіді
+    html += "<h2>❓ Найчастіші питання (FAQ)</h2>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>📱 Не працює з телефону Android?</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Проблема:</strong> Android не підтримує mDNS (адреси типу <code>klimat.local</code>)<br>";
+    html += "<strong>Рішення:</strong><br>";
+    html += "1️⃣ Використовуйте IP-адресу: <code>" + WiFi.localIP().toString() + "</code><br>";
+    html += "2️⃣ Відскануйте QR-код на головній сторінці (з ноутбука)<br>";
+    html += "3️⃣ Встановіть додаток BonjourBrowser для підтримки mDNS";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>💻 Не працює з іншої мережі WiFi?</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Проблема:</strong> Ваш пристрій і ESP32 в різних мережах<br>";
+    html += "<strong>Рішення:</strong><br>";
+    html += "1️⃣ Підключіть обидва до однієї WiFi мережі<br>";
+    html += "2️⃣ Або налаштуйте доступ через інтернет (WiFi → Налаштування → Інтернет-доступ)<br>";
+    html += "<div class='tip'>💡 Поточна мережа ESP32: <strong>" + WiFi.SSID() + "</strong></div>";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>🔐 Як захистити від сторонніх?</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Рішення:</strong><br>";
+    html += "1️⃣ Перейдіть: WiFi → Налаштування<br>";
+    html += "2️⃣ Увімкніть автентифікацію<br>";
+    html += "3️⃣ Встановіть складний пароль<br>";
+    html += "<div class='warning'>⚠️ Обов'язково для інтернет-доступу!</div>";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>❓ Що означають іконки \"?\"</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Як використовувати:</strong><br>";
+    html += "Наведіть курсор миші (або торкніться на сенсорному екрані) на фіолетову іконку \"?\" біля налаштувань<br>";
+    html += "З'явиться підказка з поясненням що робить це налаштування<br>";
+    html += "<div class='tip'>💡 Шукайте такі іконки на сторінці WiFi налаштувань!</div>";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>🌐 IP-адреса постійно змінюється</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Рішення:</strong> Налаштуйте статичну IP<br>";
+    html += "1️⃣ WiFi → Налаштування<br>";
+    html += "2️⃣ Встановіть галочку \"Використовувати статичну IP\"<br>";
+    html += "3️⃣ Введіть вільну IP з вашої мережі (наприклад 192.168.1.100)<br>";
+    html += "4️⃣ Шлюз = адреса роутера (зазвичай 192.168.1.1)<br>";
+    html += "5️⃣ Збережіть та перезавантажте ESP32";
+    html += "</div></div>";
+    
+    // Доступ до системи
+    html += "<h2>🔗 Доступ до системи</h2>";
+    html += "<div class='section'>";
+    html += "<h3>З ноутбука (Windows/Mac/Linux):</h3>";
+    html += "<div class='code'>http://klimat.local</div>";
+    html += "<p>✅ Працює в будь-якій мережі автоматично</p>";
+    
+    html += "<h3>З телефону iOS (iPhone/iPad):</h3>";
+    html += "<div class='code'>http://klimat.local</div>";
+    html += "<p>✅ Працює в будь-якій мережі автоматично</p>";
+    
+    html += "<h3>З телефону Android:</h3>";
+    html += "<div class='code'>http://" + WiFi.localIP().toString() + "</div>";
+    html += "<p>⚠️ Використовуйте IP-адресу (Android не підтримує mDNS)</p>";
+    
+    html += "<div class='tip'>";
+    html += "<strong>💡 Корисно:</strong><br>";
+    html += "• Додайте сторінку в закладки для швидкого доступу<br>";
+    html += "• На Android: додайте на головний екран (Chrome → Меню → Додати на головний екран)<br>";
+    html += "• Відскануйте QR-код на головній сторінці";
+    html += "</div>";
+    html += "</div>";
+    
+    // Статична IP
+    html += "<h2>⚙️ Налаштування статичної IP</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Навіщо потрібно:</strong> ESP32 завжди матиме одну IP-адресу в домашній мережі</p>";
+    html += "<p><strong>Як налаштувати:</strong></p>";
+    html += "<ol>";
+    html += "<li>WiFi → Налаштування</li>";
+    html += "<li>☑️ Використовувати статичну IP</li>";
+    html += "<li>Заповніть поля (наведіть на \"?\" для підказок)</li>";
+    html += "<li>Збережіть та перезавантажте</li>";
+    html += "</ol>";
+    html += "<p><strong>Як дізнатися параметри:</strong></p>";
+    html += "<div class='code'>";
+    html += "Windows: ipconfig<br>";
+    html += "Linux/Mac: ip route | grep default";
+    html += "</div>";
+    html += "</div>";
+    
+    // Безпека
+    html += "<h2>🔐 Безпека</h2>";
+    html += "<div class='section'>";
+    html += "<div class='danger'>";
+    html += "<strong>⚠️ ВАЖЛИВО:</strong> Обов'язково увімкніть автентифікацію якщо налаштовуєте доступ через інтернет!";
+    html += "</div>";
+    html += "<p><strong>Як увімкнути:</strong></p>";
+    html += "<ol>";
+    html += "<li>WiFi → Налаштування</li>";
+    html += "<li>☑️ Увімкнути автентифікацію</li>";
+    html += "<li>Встановіть логін (за замовчуванням: admin)</li>";
+    html += "<li>Встановіть СКЛАДНИЙ пароль (не 12345!)</li>";
+    html += "<li>Збережіть налаштування</li>";
+    html += "</ol>";
+    html += "<div class='tip'>";
+    html += "<strong>💡 Вимоги до пароля:</strong><br>";
+    html += "• Мінімум 8 символів<br>";
+    html += "• Використовуйте букви, цифри, спецсимволи<br>";
+    html += "• НЕ використовуйте: 12345, password, admin, qwerty";
+    html += "</div>";
+    html += "</div>";
+    
+    // Доступ через інтернет
+    html += "<h2>🌐 Доступ через інтернет</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Швидкі кроки:</strong></p>";
+    html += "<ol>";
+    html += "<li>✅ Увімкніть автентифікацію (див. вище)</li>";
+    html += "<li>🔧 Налаштуйте Port Forwarding на роутері</li>";
+    html += "<li>🌍 Дізнайтесь зовнішню IP на <a href='https://myip.com.ua' target='_blank'>myip.com.ua</a></li>";
+    html += "<li>🚀 Підключайтесь: http://[ваша_IP]:8080</li>";
+    html += "</ol>";
+    html += "<p><strong>Port Forwarding:</strong></p>";
+    html += "<div class='code'>";
+    html += "Внутрішня IP: " + WiFi.localIP().toString() + "<br>";
+    html += "Внутрішній порт: 80<br>";
+    html += "Зовнішній порт: 8080";
+    html += "</div>";
+    html += "<div class='warning'>";
+    html += "⚠️ Детальну інструкцію для різних роутерів дивіться на сторінці WiFi → Налаштування";
+    html += "</div>";
+    html += "</div>";
+    
+    // Усунення проблем
+    html += "<h2>🔧 Усунення проблем</h2>";
+    html += "<div class='section'>";
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>Сторінка не відкривається взагалі</div>";
+    html += "<div class='faq-a'>";
+    html += "1. Перевірте підключення ESP32 до WiFi (подивіться Serial Monitor)<br>";
+    html += "2. Перевірте що ваш пристрій в тій же мережі<br>";
+    html += "3. Спробуйте перезавантажити ESP32<br>";
+    html += "4. Спробуйте обидві адреси: klimat.local та IP";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>Повільно працює або зависає</div>";
+    html += "<div class='faq-a'>";
+    html += "1. Перевірте сигнал WiFi (має бути >-70 dBm)<br>";
+    html += "2. Підійдіть ближче до роутера<br>";
+    html += "3. Перезавантажте роутер та ESP32<br>";
+    html += "4. Перевірте що мережа не перевантажена";
+    html += "</div></div>";
+    
+    html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>Запитує пароль хоча я його не встановлював</div>";
+    html += "<div class='faq-a'>";
+    html += "Автентифікація увімкнена. За замовчуванням:<br>";
+    html += "Логін: <code>admin</code><br>";
+    html += "Пароль: <code>12345</code><br>";
+    html += "Змініть пароль в WiFi → Налаштування!";
+    html += "</div></div>";
+    html += "</div>";
+    
+    // Корисні поради
+    html += "<h2>💡 Корисні поради</h2>";
+    html += "<div class='section'>";
+    html += "<ul>";
+    html += "<li>📱 <strong>QR-код:</strong> На головній сторінці є QR-код для швидкого доступу з телефону</li>";
+    html += "<li>🔖 <strong>Закладки:</strong> Додайте сторінку в закладки браузера</li>";
+    html += "<li>🏠 <strong>Головний екран:</strong> На мобільному можна додати ярлик на робочий стіл</li>";
+    html += "<li>📊 <strong>Історія:</strong> Система зберігає останні 24 години даних</li>";
+    html += "<li>🤖 <strong>Авто-режим:</strong> Система сама підтримує температуру та вологість</li>";
+    html += "<li>🔄 <strong>Оновлення:</strong> Дані оновлюються автоматично кожні 5 секунд</li>";
+    html += "</ul>";
+    html += "</div>";
+    
+    // Контакти
+    html += "<h2>📞 Додаткова інформація</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Поточний стан системи:</strong></p>";
+    html += "<ul>";
+    html += "<li>Мережа: <strong>" + WiFi.SSID() + "</strong></li>";
+    html += "<li>IP-адреса: <strong>" + WiFi.localIP().toString() + "</strong></li>";
+    html += "<li>mDNS: <strong>klimat.local</strong></li>";
+    html += "<li>Сигнал: <strong>" + String(WiFi.RSSI()) + " dBm</strong></li>";
+    html += "<li>Версія: <strong>v" VERSION "</strong></li>";
+    html += "<li>Дата збірки: <strong>" BUILD_DATE " " BUILD_TIME "</strong></li>";
+    html += "<li>Рядків коду: <strong>" + String(TOTAL_CODE_LINES) + "</strong></li>";
+    html += "<li>Токенів сесії: <strong>" + String(SESSION_TOKENS) + "</strong></li>";
+    html += "</ul>";
+    html += "</div>";
+    
+    // Керування системою
+    html += "<h2>🎛️ Керування системою</h2>";
+    html += "<div class='section'>";
+    html += "<h3>Режими роботи:</h3>";
+    html += "<ul>";
+    html += "<li><strong>🤖 АВТО:</strong> Система автоматично підтримує задані температуру та вологість</li>";
+    html += "<li><strong>🔥 ОБІГРІВ:</strong> Тільки обігрів, охолодження вимкнено</li>";
+    html += "<li><strong>❄️ ОХОЛОДЖЕННЯ:</strong> Тільки охолодження, обігрів вимкнено</li>";
+    html += "<li><strong>💧 ЗВОЛОЖЕННЯ:</strong> Тільки зволоження повітря</li>";
+    html += "<li><strong>🌬️ ОСУШЕННЯ:</strong> Тільки видалення вологості</li>";
+    html += "<li><strong>🌀 ВЕНТИЛЯЦІЯ:</strong> Тільки циркуляція повітря</li>";
+    html += "<li><strong>⏸️ ВИМКНЕНО:</strong> Всі пристрої вимкнені</li>";
+    html += "</ul>";
+    
+    html += "<h3>🎚️ Регулювання:</h3>";
+    html += "<p><strong>Температура:</strong> 10-35°C (рекомендовано: 20-24°C)</p>";
+    html += "<p><strong>Вологість:</strong> 30-80% (рекомендовано: 40-60%)</p>";
+    html += "<p><strong>Швидкість вентилятора:</strong> 0-100%</p>";
+    
+    html += "<div class='tip'>";
+    html += "💡 <strong>Гістерезис:</strong> Система має \"мертву зону\" ±1°C та ±5% для запобігання частому перемиканню";
+    html += "</div>";
+    html += "</div>";
+    
+    // Датчики
+    html += "<h2>📊 Датчики</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Система використовує:</strong></p>";
+    html += "<ul>";
+    html += "<li><strong>BME280:</strong> Температура, вологість, атмосферний тиск (всередині)</li>";
+    html += "<li><strong>DS18B20:</strong> Температура (зовні/додатково)</li>";
+    html += "</ul>";
+    
+    html += "<h3>🔍 Що означають показники:</h3>";
+    html += "<ul>";
+    html += "<li><strong>Температура:</strong> Поточна температура повітря в °C</li>";
+    html += "<li><strong>Вологість:</strong> Відносна вологість повітря в %</li>";
+    html += "<li><strong>Тиск:</strong> Атмосферний тиск в гПа (мм рт.ст.)</li>";
+    html += "<li><strong>Потужність:</strong> Поточна потужність обігрівача 0-100%</li>";
+    html += "</ul>";
+    
+    html += "<div class='warning'>";
+    html += "⚠️ Якщо датчик показує -127°C або 0% - перевірте підключення датчика";
+    html += "</div>";
+    html += "</div>";
+    
+    // Налаштування
+    html += "<h2>⚙️ Основні налаштування</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Сторінка Налаштування:</strong></p>";
+    html += "<ul>";
+    html += "<li><strong>Цільова температура:</strong> Яку температуру підтримувати</li>";
+    html += "<li><strong>Цільова вологість:</strong> Яку вологість підтримувати</li>";
+    html += "<li><strong>Гістерезис:</strong> \"Мертва зона\" для запобігання частому вмиканню/вимиканню</li>";
+    html += "<li><strong>Період оновлення:</strong> Як часто зчитувати датчики (2-60 сек)</li>";
+    html += "<li><strong>Калібрування:</strong> Корекція показань датчиків (якщо потрібно)</li>";
+    html += "</ul>";
+    
+    html += "<div class='tip'>";
+    html += "💡 Після зміни налаштувань натисніть <strong>\"Зберегти\"</strong> - вони зберігаються навіть після вимкнення живлення";
+    html += "</div>";
+    html += "</div>";
+    
+    // Історія даних
+    html += "<h2>📈 Історія даних</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Що зберігається:</strong></p>";
+    html += "<ul>";
+    html += "<li>Температура (внутрішня та зовнішня)</li>";
+    html += "<li>Вологість</li>";
+    html += "<li>Атмосферний тиск</li>";
+    html += "<li>Режим роботи системи</li>";
+    html += "</ul>";
+    
+    html += "<p><strong>Період зберігання:</strong> Останні 24 години (288 записів по 5 хвилин)</p>";
+    
+    html += "<div class='warning'>";
+    html += "⚠️ При вимкненні живлення історія очищується (дані зберігаються тільки в оперативній пам'яті)";
+    html += "</div>";
+    
+    html += "<p><strong>Як переглянути:</strong></p>";
+    html += "<ol>";
+    html += "<li>Перейдіть на сторінку <strong>Історія</strong></li>";
+    html += "<li>Виберіть період перегляду</li>";
+    html += "<li>Графіки покажуть зміну параметрів за обраний час</li>";
+    html += "<li>Натисніть <strong>\"Оновити\"</strong> для актуалізації даних</li>";
+    html += "</ol>";
+    html += "</div>";
+    
+    // Навчання системи
+    html += "<h2>🧠 Самонавчання</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Що робить:</strong> Система аналізує ваші налаштування і адаптується до звичок</p>";
+    
+    html += "<ul>";
+    html += "<li>Запам'ятовує улюблені режими та налаштування</li>";
+    html += "<li>Оптимізує енергоспоживання</li>";
+    html += "<li>Пропонує рекомендації на основі історії</li>";
+    html += "</ul>";
+    
+    html += "<div class='tip'>";
+    html += "💡 Функція активується автоматично після тижня використання системи";
+    html += "</div>";
+    html += "</div>";
+    
+    // Сервоприводи
+    html += "<h2>🎚️ Сервоприводи (заслінки)</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Призначення:</strong> Керування повітряними заслінками для розподілу повітря</p>";
+    
+    html += "<p><strong>Налаштування кута:</strong></p>";
+    html += "<ul>";
+    html += "<li>0° - заслінка закрита</li>";
+    html += "<li>90° - заслінка відкрита наполовину</li>";
+    html += "<li>180° - заслінка повністю відкрита</li>";
+    html += "</ul>";
+    
+    html += "<p><strong>Режими:</strong></p>";
+    html += "<ul>";
+    html += "<li><strong>Ручний:</strong> Встановіть кут вручну повзунком</li>";
+    html += "<li><strong>Вимикач:</strong> Відкрити (180°) або закрити (0°)</li>";
+    html += "</ul>";
+    
+    html += "<div class='warning'>";
+    html += "⚠️ Не змінюйте кут надто часто - це зменшує термін служби сервоприводу";
+    html += "</div>";
+    html += "</div>";
+    
+    // Енергозбереження
+    html += "<h2>⚡ Енергозбереження</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Поради для економії електроенергії:</strong></p>";
+    html += "<ul>";
+    html += "<li>🎯 Використовуйте режим <strong>АВТО</strong> - він найефективніший</li>";
+    html += "<li>🌡️ Не встановлюйте занадто високу/низьку температуру</li>";
+    html += "<li>💨 Регулюйте швидкість вентилятора - не завжди потрібна максимальна</li>";
+    html += "<li>🔄 Збільште гістерезис до 2-3°C для рідших перемикань</li>";
+    html += "<li>🏠 Утеплюйте приміщення для зменшення втрат тепла/холоду</li>";
+    html += "<li>📊 Аналізуйте історію споживання для оптимізації</li>";
+    html += "</ul>";
+    html += "</div>";
+    
+    // Техобслуговування
+    html += "<h2>🔧 Технічне обслуговування</h2>";
+    html += "<div class='section'>";
+    html += "<p><strong>Регулярне обслуговування:</strong></p>";
+    html += "<ul>";
+    html += "<li>🧹 <strong>Раз на місяць:</strong> Очистіть датчики від пилу</li>";
+    html += "<li>🌀 <strong>Раз на 3 місяці:</strong> Перевірте вентилятори та заслінки</li>";
+    html += "<li>📏 <strong>Раз на 6 місяців:</strong> Калібруйте датчики температури/вологості</li>";
+    html += "<li>🔌 <strong>За потреби:</strong> Перевіряйте з'єднання проводів</li>";
+    html += "</ul>";
+    
+    html += "<div class='danger'>";
+    html += "⚠️ <strong>УВАГА:</strong> Перед будь-яким обслуговуванням вимкніть живлення!";
+    html += "</div>";
+    html += "</div>";
+    
+    html += "<div style='text-align: center; margin-top: 30px;'>";
+    html += "<a href='/' class='back-btn'>← Повернутись на головну</a>";
+    html += "</div>";
+    
+    html += "</div>";
+    html += getUkraineMarquee();
+    html += "</body></html>";
+    
+    server.send(200, "text/html", html);
+}
+
+// ============================================================================
+// СТОРІНКА НАЛАГОДЖЕННЯ
+// ============================================================================
 
 void handleDebugPage() {
     String html = "";
@@ -1588,6 +2295,7 @@ void handleDebugPage() {
     html += "</div>";
     html += "<p><a href='/'>← На головну</a></p>";
     html += "</div>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1609,6 +2317,7 @@ void handleLearningPage() {
     html += "</div>";
     html += "<p><a href='/'>← На головну</a></p>";
     html += "</div>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
@@ -1647,7 +2356,7 @@ void handleServoPage() {
     html += ".btn-big { background: #FF9800; color: white; }";
     html += ".btn-save { background: #4CAF50; color: white; grid-column: span 2; }";
     html += ".btn-test { background: #9C27B0; color: white; grid-column: span 2; }";
-    html += ".angle-display { font-size: 48px; font-weight: bold; text-align: center; color: #2196F3; margin: 20px 0; }";
+    html += ".angle-display { font-size: 48px; font-weight: 600; text-align: center; color: #2196F3; margin: 20px 0; }";
     html += ".nav { text-align: center; margin-top: 20px; }";
     html += ".nav a { color: #2196F3; text-decoration: none; margin: 0 10px; }";
     html += "</style></head><body>";
@@ -1658,10 +2367,10 @@ void handleServoPage() {
     html += "<div class='status-item'><span>Поточний кут:</span><span id='current'>" + String(ventState.currentAngle) + "°</span></div>";
     html += "<div class='status-item'><span>Закрито:</span><span id='closed'>" + String(config.servoClosedAngle) + "°</span></div>";
     html += "<div class='status-item'><span>Відкрито:</span><span id='open'>" + String(config.servoOpenAngle) + "°</span></div>";
-    html += "<div class='status-item'><span>Вимикач:</span><span id='switch' style='font-weight:bold;color:";
+    html += "<div class='status-item'><span>Вимикач:</span><span id='switch' style='font-weight:600;color:";
     html += ventState.switchState ? "#4CAF50'>УВІМКНЕНО" : "#f44336'>ВИМКНЕНО";
     html += "</span></div>";
-    html += "<div class='status-item'><span>Режим:</span><span id='mode' style='font-weight:bold;color:";
+    html += "<div class='status-item'><span>Режим:</span><span id='mode' style='font-weight:600;color:";
     html += ventState.calibrationMode ? "#FF9800'>КАЛІБРУВАННЯ" : "#2196F3'>НОРМАЛЬНИЙ";
     html += "</span></div>";
     html += "</div>";
@@ -1723,6 +2432,8 @@ void handleServoPage() {
     html += "function testServo() { if(confirm('Тест відкриє і закриє заслонку. Продовжити?')) sendCommand('test'); }";
     html += "setInterval(() => location.reload(), 5000);";
     html += "</script>";
+    html += "<div style='text-align: center; margin-top: 30px;'><a href='/' style='background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>← На головну</a></div>";
+    html += getUkraineMarquee();
     html += "</body></html>";
     
     server.send(200, "text/html", html);
