@@ -31,7 +31,6 @@ bool initTemperatureSensors() {
 
   sensors.setResolution(tempCarrierAddr, 12);
   sensors.setResolution(tempRoomAddr, 12);
-  sensors.setWaitForConversion(true); // Чекаємо завершення конвертації
 
   Serial.println("✓ DS18B20 датчики ініціалізовано");
   return true;
@@ -62,13 +61,9 @@ bool initBME280() {
 }
 
 void readTemperatureSensors() {
-  // Читаємо кожен датчик окремо
-  sensors.requestTemperaturesByAddress(tempCarrierAddr);
-  while (!sensors.isConversionComplete()) { delay(10); }
-  float carrier = sensors.getTempC(tempCarrierAddr);
+  sensors.requestTemperatures();
   
-  sensors.requestTemperaturesByAddress(tempRoomAddr);
-  while (!sensors.isConversionComplete()) { delay(10); }
+  float carrier = sensors.getTempC(tempCarrierAddr);
   float room = sensors.getTempC(tempRoomAddr);
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
