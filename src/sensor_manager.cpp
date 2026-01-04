@@ -19,18 +19,24 @@ bool initTemperatureSensors() {
     return false;
   }
 
-  if (!sensors.getAddress(tempCarrierAddr, 1)) {
+  if (!sensors.getAddress(tempCarrierAddr, 0)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика теплоносія!");
     return false;
   }
   
-  if (!sensors.getAddress(tempRoomAddr, 0)) {
+  if (!sensors.getAddress(tempRoomAddr, 1)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика кімнати!");
     return false;
   }
 
   sensors.setResolution(tempCarrierAddr, 12);
   sensors.setResolution(tempRoomAddr, 12);
+  
+  // Перше читання щоб скинути стандартне значення 85°C
+  sensors.requestTemperatures();
+  delay(750); // 12-bit конвертація потребує 750ms
+  sensors.getTempC(tempCarrierAddr);
+  sensors.getTempC(tempRoomAddr);
 
   Serial.println("✓ DS18B20 датчики ініціалізовано");
   return true;
