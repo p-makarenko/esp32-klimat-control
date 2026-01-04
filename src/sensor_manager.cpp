@@ -62,25 +62,10 @@ bool initBME280() {
 
 void readTemperatureSensors() {
   sensors.requestTemperatures();
-  delay(100); // Даємо час датчикам на конвертацію (750ms для 12-bit, але зазвичай швидше)
+  delay(200); // Збільшено до 200ms для надійності конвертації (12-bit потребує ~750ms, але async mode швидше)
   
   float carrier = sensors.getTempC(tempCarrierAddr);
   float room = sensors.getTempC(tempRoomAddr);
-  
-  // Якщо отримали -127, спробуємо ще раз
-  if (carrier == -127.0f || carrier == 85.0f) {
-    delay(50);
-    sensors.requestTemperatures();
-    delay(100);
-    carrier = sensors.getTempC(tempCarrierAddr);
-  }
-  
-  if (room == -127.0f || room == 85.0f) {
-    delay(50);
-    sensors.requestTemperatures();
-    delay(100);
-    room = sensors.getTempC(tempRoomAddr);
-  }
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
     // Перевірка на помилкові значення DS18B20: -127, 85, та поза допустимим діапазоном

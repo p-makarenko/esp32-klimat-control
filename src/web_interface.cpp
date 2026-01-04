@@ -39,10 +39,29 @@ bool checkAuth() {
 void initWiFi() {
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true);  // Повне відключення
-    delay(100);
+    delay(500);  // Збільшено затримку
     
     // Спочатку скануємо мережі
+    Serial.print("Сканую WiFi мережі...");
     int n = WiFi.scanNetworks();
+    Serial.printf(" знайдено %d мереж\n", n);
+    
+    // Якщо помилка сканування - повторюємо
+    if (n < 0) {
+        Serial.println("Помилка сканування, повторна спроба...");
+        delay(1000);
+        n = WiFi.scanNetworks();
+        Serial.printf("Знайдено %d мереж\n", n);
+    }
+    
+    if (n <= 0) {
+        Serial.println("⚠️ Не знайдено жодної WiFi мережі!");
+        // Запускаємо точку доступу
+        WiFi.softAP("ESP32-Klimat", "12345678");
+        Serial.println("✅ Точка доступу запущена: ESP32-Klimat");
+        Serial.printf("✅ IP адреса: %s\n", WiFi.softAPIP().toString().c_str());
+        return;
+    }
     
     for (int i = 0; i < n; i++) {
         // Пропускаємо вивід у монітор

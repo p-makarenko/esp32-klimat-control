@@ -181,12 +181,22 @@ void loop() {
       
       // Відключаємося від поточної мережі перед скануванням
       WiFi.disconnect();
-      delay(100);
+      delay(500);  // Збільшено затримку
       
       // Скануємо доступні мережі
+      Serial.print("Сканую мережі...");
       int n = WiFi.scanNetworks();
+      Serial.printf(" %d\n", n);
       
       if (n < 0) {
+        Serial.println("Помилка сканування");
+        delay(10000);
+        lastWiFiCheck = millis();
+        return;
+      }
+      
+      if (n == 0) {
+        Serial.println("Жодної мережі не знайдено");
         delay(10000);
         lastWiFiCheck = millis();
         return;

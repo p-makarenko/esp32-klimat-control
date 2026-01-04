@@ -11,8 +11,8 @@
 #define VERSION_COMMENT "День 28 розробки"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 6694
-#define FIRMWARE_SIZE_KB 1042
+#define TOTAL_CODE_LINES 6710
+#define FIRMWARE_SIZE_KB 1045
 
 // Оголошення всіх глобальних змінних
 extern Preferences prefs;
