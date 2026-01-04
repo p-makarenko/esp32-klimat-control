@@ -329,23 +329,48 @@ void loadConfiguration() {
   // Servo calibration
   config.servoClosedAngle = preferences.getInt("servoClosed", SERVO_CLOSED_ANGLE);
   config.servoOpenAngle = preferences.getInt("servoOpen", SERVO_OPEN_ANGLE);
+  config.servoSpeed = preferences.getInt("servoSpeed", 20);  // За замовчуванням 20мс
   
   config.autoStatusEnabled = preferences.getBool("autoStatus", false);
   
   // Мережеві налаштування
   config.useStaticIP = preferences.getBool("useStaticIP", false);
-  config.staticIP = preferences.getString("staticIP", "192.168.1.100");
-  config.gateway = preferences.getString("gateway", "192.168.1.1");
-  config.subnet = preferences.getString("subnet", "255.255.255.0");
-  config.dns = preferences.getString("dns", "8.8.8.8");
+  if (preferences.isKey("staticIP")) {
+    config.staticIP = preferences.getString("staticIP", "192.168.1.100");
+  } else {
+    config.staticIP = "192.168.1.100";
+  }
+  if (preferences.isKey("gateway")) {
+    config.gateway = preferences.getString("gateway", "192.168.1.1");
+  } else {
+    config.gateway = "192.168.1.1";
+  }
+  if (preferences.isKey("subnet")) {
+    config.subnet = preferences.getString("subnet", "255.255.255.0");
+  } else {
+    config.subnet = "255.255.255.0";
+  }
+  if (preferences.isKey("dns")) {
+    config.dns = preferences.getString("dns", "8.8.8.8");
+  } else {
+    config.dns = "8.8.8.8";
+  }
   
   // Безпека
   config.useAuth = preferences.getBool("useAuth", false);
-  config.authLogin = preferences.getString("authLogin", "admin");
-  config.authPassword = preferences.getString("authPass", "12345");
+  if (preferences.isKey("authLogin")) {
+    config.authLogin = preferences.getString("authLogin", "admin");
+  } else {
+    config.authLogin = "admin";
+  }
+  if (preferences.isKey("authPass")) {
+    config.authPassword = preferences.getString("authPass", "admin");
+  } else {
+    config.authPassword = "admin";
+  }
   
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
+  // Налаштування вологості
   config.humidityConfig.minHumidity = preferences.getFloat("humMin", HUM_MIN_DEFAULT);
   config.humidityConfig.maxHumidity = preferences.getFloat("humMax", HUM_MAX_DEFAULT);
   config.humidityConfig.tempCoefficient = preferences.getFloat("humCoeff", HUM_TEMP_COEFF);
@@ -419,6 +444,7 @@ void saveConfiguration() {
   // Servo calibration
   preferences.putInt("servoClosed", config.servoClosedAngle);
   preferences.putInt("servoOpen", config.servoOpenAngle);
+  preferences.putInt("servoSpeed", config.servoSpeed);
   
   preferences.putBool("autoStatus", config.autoStatusEnabled);
   

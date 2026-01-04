@@ -204,7 +204,7 @@ void moveServoSmooth(int targetAngle) {
   
   for (int angle = startAngle; angle != targetAngle; angle += step) {
     ventServo.write(angle);
-    delay(20);
+    delay(config.servoSpeed);
   }
   
   ventServo.write(targetAngle);
@@ -344,7 +344,7 @@ void ventilationTask(void *parameter) {
   Serial.println("✓ Задачу вентиляції запущено");
   
   while (1) {
-    if (!config.manualVentControl) {
+    if (!config.manualVentControl && !ventState.autoCalibrationActive) {
       controlVentilation();
     }
     
@@ -356,16 +356,27 @@ void ventilationTask(void *parameter) {
       // Детекція швидких перемикань для автокалібрування
       if (now - ventState.lastSwitchChange < 1000) {
         ventState.switchChangeCount++;
-        if (ventState.switchChangeCount >= 3 && !ventState.autoCalibrationActive) {
+        Serial.printf("⚡ Швидке перемикання %d/3\n", ventState.switchChangeCount);
+        
+        if (ventState.switchChangeCount >= 2 && !ventState.autoCalibrationActive) {
+          Serial.println("🎯 Детектовано 3 швидких перемикання!");
+          // НЕ викликаємо controlVentilation, одразу запускаємо калібрування
           startAutoCalibration();
+          ventState.switchChangeCount = 0;
+          continue; // Пропускаємо звичайну обробку
         }
       } else {
+        if (ventState.switchChangeCount > 0) {
+          Serial.println("⏱️ Таймаут - лічильник скинуто");
+        }
         ventState.switchChangeCount = 0;
       }
       ventState.lastSwitchChange = now;
       
       ventState.switchState = newSwitchState;
-      if (!config.manualVentControl) {
+      
+      // Викликаємо controlVentilation тільки якщо НЕ в режимі детекції або калібрування
+      if (!config.manualVentControl && !ventState.autoCalibrationActive && ventState.switchChangeCount == 0) {
         controlVentilation();
       }
     }
@@ -385,63 +396,136 @@ void ventilationTask(void *parameter) {
 
 void startAutoCalibration() {
   Serial.println("\n🔧 АВТОКАЛІБРУВАННЯ: СТАРТ");
-  Serial.println("  Швидко перемикайте вимикач для зміни напряму");
-  Serial.println("  Заслонка рухається до упору автоматично");
+  Serial.println("  Заслонка їде в крайнє НИЖНЄ положення (0°)");
+  Serial.println("  ПЕРЕМКНИ ВИМИКАЧ ВГОРУ коли доїде");
   
   ventState.autoCalibrationActive = true;
-  ventState.autoCalibrationStep = 1;
+  ventState.autoCalibrationStep = 0;
   ventState.calibrationMode = true;
   
-  // Рух до першого упору (закрите положення = 0°)
-  Serial.println("  → Рух до ЗАКРИТОГО положення...");
-  moveServoSmooth(0);
-  delay(2000);  // Час для досягнення упору
+  // Після швидких перемикань ВНИЗ→ВГОРУ→ВНИЗ вимикач в положенні ВНИЗ
+  ventState.switchState = LOW;
   
-  config.servoClosedAngle = 0;
-  Serial.printf("  ✓ ЗАКРИТО = %d°\n", config.servoClosedAngle);
+  // Підключаємо серво
+  if (!ventState.servoAttached) {
+    ventServo.attach(SERVO_PIN);
+    ventState.servoAttached = true;
+    delay(50);
+  }
+  
+  // Їдемо в крайнє нижнє положення (0°)
+  for (int angle = ventState.currentAngle; angle >= 0; angle--) {
+    ventServo.write(angle);
+    ventState.currentAngle = angle;
+    delay(config.servoSpeed);
+  }
+  
+  Serial.println("  → Заслонка в крайньому НИЖНЬОМУ положенні (0°)");
+  Serial.println("  ⏳ Чекаю перемикання ВГОРУ...");
 }
 
 void processAutoCalibration() {
   if (!ventState.autoCalibrationActive) return;
   
-  bool newSwitchState = digitalRead(VENT_SWITCH_PIN);
+  bool currentSwitch = digitalRead(VENT_SWITCH_PIN);
   
-  if (ventState.autoCalibrationStep == 1) {
-    // Чекаємо перемикання для руху до відкритого
-    if (newSwitchState != ventState.switchState) {
-      ventState.switchState = newSwitchState;
-      ventState.autoCalibrationStep = 2;
+  // Крок 0: Чекаємо перемикання ВГОРУ (HIGH) для підтвердження нижнього положення
+  if (ventState.autoCalibrationStep == 0) {
+    if (currentSwitch != ventState.switchState) {
+      ventState.switchState = currentSwitch;
       
-      Serial.println("  → Рух до ВІДКРИТОГО положення...");
-      moveServoSmooth(180);
-      delay(2000);  // Час для досягнення упору
-      
-      config.servoOpenAngle = 180;
-      Serial.printf("  ✓ ВІДКРИТО = %d°\n", config.servoOpenAngle);
-      
-      // Зберігаємо конфігурацію
-      saveConfiguration();
-      
-      // Тест - помахати заслонкою
-      ventState.autoCalibrationStep = 3;
-      Serial.println("  🎉 Тест: махаємо заслонкою...");
-      
-      for (int i = 0; i < 3; i++) {
-        moveServoSmooth(config.servoOpenAngle);
-        delay(500);
-        moveServoSmooth(config.servoClosedAngle);
-        delay(500);
+      if (currentSwitch == HIGH) {
+        // Перемкнули ВГОРУ - зберігаємо як ЗАКРИТО (нижнє)
+        config.servoClosedAngle = 0;
+        Serial.printf("  ✓ ЗАКРИТО (нижнє) = %d°\n", config.servoClosedAngle);
+        
+        ventState.autoCalibrationStep = 1;
+        
+        // Тепер їдемо в крайнє верхнє положення (180°)
+        Serial.println("  → Заслонка їде в крайнє ВЕРХНЄ положення (180°)");
+        for (int angle = 0; angle <= 180; angle++) {
+          ventServo.write(angle);
+          ventState.currentAngle = angle;
+          delay(config.servoSpeed);
+        }
+        
+        Serial.println("  → Заслонка в крайньому ВЕРХНЬОМУ положенні (180°)");
+        Serial.println("  ⏳ Чекаю перемикання ВНИЗ...");
       }
+    }
+  }
+  // Крок 1: Чекаємо перемикання ВНИЗ (LOW) для підтвердження верхнього положення
+  else if (ventState.autoCalibrationStep == 1) {
+    if (currentSwitch != ventState.switchState) {
+      ventState.switchState = currentSwitch;
       
-      Serial.println("\n✅ АВТОКАЛІБРУВАННЯ ЗАВЕРШЕНО!");
-      Serial.printf("  Закрито: %d°, Відкрито: %d°\n", config.servoClosedAngle, config.servoOpenAngle);
-      
-      // Встановлюємо в положення відповідно до вимикача
-      moveServoSmooth(ventState.switchState ? config.servoOpenAngle : config.servoClosedAngle);
-      
-      ventState.autoCalibrationActive = false;
-      ventState.calibrationMode = false;
-      ventState.switchChangeCount = 0;
+      if (currentSwitch == LOW) {
+        // Перемкнули ВНИЗ - зберігаємо як ВІДКРИТО (верхнє)
+        config.servoOpenAngle = 180;
+        Serial.printf("  ✓ ВІДКРИТО (верхнє) = %d°\n", config.servoOpenAngle);
+        
+        // Зберігаємо конфігурацію
+        saveConfiguration();
+        
+        // Тест - махання в середині діапазону
+        Serial.println("  🎉 Тест: 3 махи в середині діапазону...");
+        int centerAngle = (config.servoClosedAngle + config.servoOpenAngle) / 2;
+        int amplitude = 30;
+        
+        // Їдемо в центр
+        for (int a = 180; a >= centerAngle; a--) {
+          ventServo.write(a);
+          delay(10);
+        }
+        delay(300);
+        
+        // Махаємо 3 рази
+        for (int i = 0; i < 3; i++) {
+          // Вправо
+          for (int a = centerAngle; a <= centerAngle + amplitude; a++) {
+            ventServo.write(a);
+            delay(10);
+          }
+          delay(100);
+          // Вліво
+          for (int a = centerAngle + amplitude; a >= centerAngle - amplitude; a--) {
+            ventServo.write(a);
+            delay(10);
+          }
+          delay(100);
+          // Назад в центр
+          for (int a = centerAngle - amplitude; a <= centerAngle; a++) {
+            ventServo.write(a);
+            delay(10);
+          }
+          delay(200);
+        }
+        
+        Serial.println("\n✅ АВТОКАЛІБРУВАННЯ ЗАВЕРШЕНО!");
+        Serial.printf("  Закрито (нижнє): %d°, Відкрито (верхнє): %d°\n", config.servoClosedAngle, config.servoOpenAngle);
+        
+        // Встановлюємо в дійсне положення відповідно до поточного стану вимикача
+        bool finalSwitch = digitalRead(VENT_SWITCH_PIN);
+        int targetAngle = finalSwitch ? config.servoOpenAngle : config.servoClosedAngle;
+        
+        Serial.printf("  → Встановлення в дійсне положення: %s (%d°)\n", 
+                      finalSwitch ? "ВІДКРИТО" : "ЗАКРИТО", targetAngle);
+        
+        for (int a = centerAngle; a != targetAngle; a += (targetAngle > a ? 1 : -1)) {
+          ventServo.write(a);
+          delay(10);
+        }
+        ventState.currentAngle = targetAngle;
+        ventState.switchState = finalSwitch;
+        
+        delay(500);
+        ventServo.detach();
+        ventState.servoAttached = false;
+        
+        ventState.autoCalibrationActive = false;
+        ventState.calibrationMode = false;
+        ventState.switchChangeCount = 0;
+      }
     }
   }
 }

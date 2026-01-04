@@ -65,6 +65,7 @@ struct SystemConfig {
   // Калібрування серво
   int servoClosedAngle;
   int servoOpenAngle;
+  int servoSpeed;  // Швидкість руху серво (затримка в мс між градусами)
   
   // Serial вивід
   bool autoStatusEnabled;
