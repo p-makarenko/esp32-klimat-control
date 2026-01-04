@@ -62,15 +62,70 @@ bool initBME280() {
 
 void readTemperatureSensors() {
   sensors.requestTemperatures();
+  delay(100); // Даємо час датчикам на конвертацію (750ms для 12-bit, але зазвичай швидше)
   
   float carrier = sensors.getTempC(tempCarrierAddr);
   float room = sensors.getTempC(tempRoomAddr);
   
+  // Якщо отримали -127, спробуємо ще раз
+  if (carrier == -127.0f || carrier == 85.0f) {
+    delay(50);
+    sensors.requestTemperatures();
+    delay(100);
+    carrier = sensors.getTempC(tempCarrierAddr);
+  }
+  
+  if (room == -127.0f || room == 85.0f) {
+    delay(50);
+    sensors.requestTemperatures();
+    delay(100);
+    room = sensors.getTempC(tempRoomAddr);
+  }
+  
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
-    sensorData.tempCarrier = carrier;
-    sensorData.tempRoom = room;
-    sensorData.carrierValid = (carrier > -50.0f && carrier < 125.0f && carrier != -127.0f);
-    sensorData.roomValid = (room > -50.0f && room < 125.0f && room != -127.0f);
+    // Перевірка на помилкові значення DS18B20: -127, 85, та поза допустимим діапазоном
+    bool carrierOk = (carrier > -50.0f && carrier < 125.0f && carrier != -127.0f && carrier != 85.0f);
+    bool roomOk = (room > -50.0f && room < 125.0f && room != -127.0f && room != 85.0f);
+    
+    // Лічильники помилок
+    static uint8_t carrierErrorCount = 0;
+    static uint8_t roomErrorCount = 0;
+    const uint8_t MAX_ERRORS = 10; // 10 помилок підряд = аварія
+    
+    // Оновлюємо лічильники
+    if (!carrierOk) {
+      carrierErrorCount++;
+      if (carrierErrorCount == 1) {
+        Serial.printf("⚠ Датчик теплоносія: помилка %.1f°C\n", carrier);
+      } else if (carrierErrorCount >= MAX_ERRORS) {
+        Serial.println("🚨 АВАРІЯ: Датчик теплоносія не відповідає!");
+      }
+    } else {
+      if (carrierErrorCount > 0) {
+        Serial.println("✓ Датчик теплоносія відновлено");
+      }
+      carrierErrorCount = 0;
+      sensorData.tempCarrier = carrier;
+    }
+    
+    if (!roomOk) {
+      roomErrorCount++;
+      if (roomErrorCount == 1) {
+        Serial.printf("⚠ Датчик кімнати: помилка %.1f°C\n", room);
+      } else if (roomErrorCount >= MAX_ERRORS) {
+        Serial.println("🚨 АВАРІЯ: Датчик кімнати не відповідає!");
+      }
+    } else {
+      if (roomErrorCount > 0) {
+        Serial.println("✓ Датчик кімнати відновлено");
+      }
+      roomErrorCount = 0;
+      sensorData.tempRoom = room;
+    }
+    
+    // Встановлюємо статус: валідний тільки якщо помилок менше порогу
+    sensorData.carrierValid = (carrierErrorCount < MAX_ERRORS);
+    sensorData.roomValid = (roomErrorCount < MAX_ERRORS);
     sensorData.timestamp = millis();
     
     // Оновлення буфера тренду
@@ -95,10 +150,36 @@ void readBME280() {
   float pres = bme.readPressure() / 100.0f;
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
-    sensorData.tempBME = temp;
-    sensorData.humidity = hum;
-    sensorData.pressure = pres;
-    sensorData.bmeValid = (!isnan(temp) && !isnan(hum) && !isnan(pres));
+    // Перевірка на коректність даних
+    bool tempOk = (!isnan(temp) && temp > -40.0f && temp < 85.0f);
+    bool humOk = (!isnan(hum) && hum >= 0.0f && hum <= 100.0f);
+    bool presOk = (!isnan(pres) && pres > 300.0f && pres < 1100.0f);
+    bool allOk = (tempOk && humOk && presOk);
+    
+    // Лічильник помилок
+    static uint8_t bmeErrorCount = 0;
+    const uint8_t MAX_ERRORS = 10;
+    
+    if (!allOk) {
+      bmeErrorCount++;
+      if (bmeErrorCount == 1) {
+        Serial.printf("⚠ BME280 помилка: T=%.1f H=%.1f P=%.1f\n", temp, hum, pres);
+      } else if (bmeErrorCount >= MAX_ERRORS) {
+        Serial.println("🚨 АВАРІЯ: BME280 не відповідає!");
+      }
+    } else {
+      if (bmeErrorCount > 0) {
+        Serial.println("✓ BME280 відновлено");
+      }
+      bmeErrorCount = 0;
+      // Оновлюємо тільки валідні значення
+      if (tempOk) sensorData.tempBME = temp;
+      if (humOk) sensorData.humidity = hum;
+      if (presOk) sensorData.pressure = pres;
+    }
+    
+    sensorData.bmeValid = (bmeErrorCount < MAX_ERRORS);
+    
     xSemaphoreGive(getSensorMutex());
   }
 }

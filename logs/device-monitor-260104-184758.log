@@ -1,0 +1,879 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[   218][V][WiFiServer.h:42] WiFiServer(): WiFiServer::WiFiServer(port=80, ...)
+[   225][V][WebServer.cpp:88] WebServer(): WebServer::Webserver(port=80)
+[   282][V][esp32-hal-uart.c:330] uartBegin(): UART0 baud(115200) Mode(800001c) rxPin(44) txPin(43)
+[   291][V][esp32-hal-uart.c:416] uartBegin(): UART0 not installed. Starting installation
+[   299][V][esp32-hal-uart.c:467] uartBegin(): UART0 initialization done.
+
+
+==========================================
+  Клімат-контроль системи вентиляції
+  v4.5-D28
+  День 28 розробки
+  Зібрано: Jan  4 2026 18:45:34
+  Рядків коду: 6541
+  Розмір прошивки: 1089 KB
+==========================================
+[   832][V][Preferences.cpp:352] getUChar(): nvs_get_u8 fail: useStaticIP NOT_FOUND
+[   841][V][Preferences.cpp:352] getUChar(): nvs_get_u8 fail: useAuth NOT_FOUND
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+[   871][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 0 - WIFI_READY
+[   912][V][WiFiGeneric.cpp:341] _arduino_event_cb(): STA Started
+[   919][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event:E  (16024) w ifi_-init _defSaultT: esAp_wi_fi_gSet_mTac fAaileRdT
+ with 12289
+[   921][V][WiFiGeneric.cpp:344] _arduino_event_cb(): STA Stopped
+[   938][E][WiFiGeneric.cpp:1047] _eventCallback(): esp_wifi_set_ps failed
+[   945][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 3 - STA_STOP
+[  1030][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 0 - WIFI_READY
+[  1039][V][WiFiGeneric.cpp:341] _arduino_event_cb(): STA Started
+[  1046][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 2 - STA_START
+[  7046][V][WiFiGeneric.cpp:384] _arduino_event_cb(): SCAN Done: ID: 128, Status: 0, Results: 4
+[  7055][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 1 - SCAN_DONE
+[  7063][V][WiFiGeneric.cpp:344] _arduino_event_cb(): STA Stopped
+[  7070][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 3 - STA_STOP
+[  7180][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 0 - WIFI_READY
+[  7189][V][WiFiGeneric.cpp:341] _arduino_event_cb(): STA Started
+[  7202][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 2 - STA_START
+[  7210][V][WiFiGeneric.cpp:97] set_esp_interface_ip(): Configuring Station static IP: 0.0.0.0, MASK: 0.0.0.0, GW: 0.0.0.0
+[  7326][V][WiFiGeneric.cpp:356] _arduino_event_cb(): STA Connected: SSID: Redmi Note 14, BSSID: 92:13:4a:59:6f:a7, Channel: 6, Auth: WPA2_PSK
+[  7339][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 4 - STA_CONNECTED
+[  7377][V][WiFiGeneric.cpp:370] _arduino_event_cb(): STA Got New IP:10.193.26.166
+[  7384][D][WiFiGeneric.cpp:1040] _eventCallback(): Arduino Event: 7 - STA_GOT_IP
+[  7392][D][WiFiGeneric.cpp:1103] _eventCallback(): STA IP: 10.193.26.166, MASK: 255.255.255.0, GW: 10.193.26.37
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 SSID:         Redmi Note 14                    ║
+║  🌐 IP адреса:    10.193.26.166                    ║
+║  🔌 Gateway:      10.193.26.37                     ║
+║  🎭 MAC:          90:70:69:18:9D:88                ║
+║  📶 Сигнал:       -36 dBm                          ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+🔧 Ініціалізація mDNS... ✅
+║  💻 З ноутбука:   http://klimat.local                 ║
+║                    або http://klimat.local:80          ║
+║  📱 З телефону:   http://10.193.26.166            ║
+╠════════════════════════════════════════════════════════╣
+║  💡 ПОРАДА:                                            ║
+║  Android: Використовуйте IP-адресу                     ║
+║  iOS/Windows/Mac: Можна використати klimat.local      ║
+║  📸 На головній сторінці є QR-код для швидкого доступу ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-04 18:48:28
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+[ 11494][I][esp32-hal-i2c.c:75] i2cInit(): Initialising I2C Master: sda=1 scl=2 freq=100000
+[ 11612][W][Wire.cpp:301] begin(): Bus already started in Master Mode.
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+[ 11754][W][ESP32Servo.cpp:84] attach(): [ESP32Servo] Attempting to Attach servo on pin=14 min=544 max=2400
+[ 11766][I][ESP32PWM.cpp:339] attachPin(): [ESP32PWM] Pin Setup 14 with code 50
+[ 11773][W][ESP32Servo.cpp:134] attach(): [ESP32Servo] Success to Attach servo : 14 on PWM 0
+[ 12331][I][ESP32PWM.cpp:142] deallocate(): [ESP32PWM] PWM deallocating LEDc #0
+✓ GPIO ініціалізовано. Серво: ВІДКРИТО (180°)
+✓ PWM канали ініціалізовано
+[ 12339][W][ESP32Servo.cpp:84] attach(): [ESP32Servo] Attempting to Attach servo on pin=14 min=544 max=2400
+[ 12359][I][ESP32PWM.cpp:339] attachPin(): [ESP32PWM] Pin Setup 14 with code 50
+[ 12367][W][ESP32Servo.cpp:134] attach(): [ESP32Servo] Success to Attach servo : 14 on PWM 6
+[ 13374][I][ESP32PWM.cpp:142] deallocate(): [ESP32PWM] PWM deallocating LEDc #6
+✓ Сервопривід ініціалізовано: ВІДКРИТА (180°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задача розширеної логіки запущена
+✅ Веб-завдання запущено
+✓ Задачу обігріву запущено
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Використовуйте:
+  'm' - Меню керування
+  's' - Статус системи
+  Веб-інтерфейс:
+    http://klimat.local (рекомендовано)
+    http://10.193.26.166
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[TIME] Синхронізовано: 04.01.2026 18:48:47
+✓ Зволожувач: ВКЛ (Вологість: 65.2, Ціль: 65.8)
+[SENSOR] T:29.4/62.9°C H:65.1% P:985.5hPa
+🔧 Таймер витяжки: Витяжка вимкнена
+📈 Статистика: Пам'ять=143KB, Записів=1, Час=60сек
+[TIME] Синхронізовано: 04.01.2026 18:49:18
+[SENSOR] T:30.5/63.9°C H:65.4% P:985.5hPa
+[TIME] Синхронізовано: 04.01.2026 18:49:48
+[SENSOR] T:29.1/64.7°C H:65.4% P:985.5hPa
+[114880][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[114888][V][Parsing.cpp:122] _parseRequest(): method: GET url: / search: 
+[114895][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[114901][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[114907][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[114913][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[114920][V][Parsing.cpp:249] _parseRequest(): headerName: Upgrade-Insecure-Requests
+[114927][V][Parsing.cpp:250] _parseRequest(): headerValue: 1
+[114933][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[114940][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[114955][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[114961][V][Parsing.cpp:250] _parseRequest(): headerValue: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+[114978][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[114985][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[114991][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[114998][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[115006][V][Parsing.cpp:277] _parseArguments(): args: 
+[115011][V][Parsing.cpp:260] _parseRequest(): Request: /
+[115017][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[115900][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[115918][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[115926][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[115931][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[115938][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[115944][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[115951][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[115957][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[115973][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[115978][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[115984][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[115990][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[115998][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[116004][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[116011][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[116018][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[116026][V][Parsing.cpp:277] _parseArguments(): args: 
+[116031][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[116037][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[116059][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[116067][V][Parsing.cpp:122] _parseRequest(): method: GET url: /favicon.ico search: 
+[116075][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[116081][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[116087][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[116094][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[116100][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[116106][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[116122][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[116128][V][Parsing.cpp:250] _parseRequest(): headerValue: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+[116139][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[116144][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[116152][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[116158][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[116165][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[116172][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[116180][V][Parsing.cpp:277] _parseArguments(): args: 
+[116185][V][Parsing.cpp:260] _parseRequest(): Request: /favicon.ico
+[116191][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[116197][E][WebServer.cpp:638] _handleRequest(): request handler not found
+⚠ Проблема: Проблема з датчиками температури!
+📈 Статистика: Пам'ять=142KB, Записів=2, Час=120сек
+[TIME] Синхронізовано: 04.01.2026 18:50:19
+[SENSOR] T:27.7/65.0°C H:67.2% P:985.5hPa
+[124492][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[124501][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[124508][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[124514][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[124520][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[124527][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[124533][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[124539][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[124555][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[124561][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[124566][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[124572][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[124580][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[124586][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[124593][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[124599][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[124608][V][Parsing.cpp:277] _parseArguments(): args: 
+[124613][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[124618][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[125112][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[125121][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[125128][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[125134][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[125141][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[125147][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[125153][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[125160][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[125175][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[125181][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[125186][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[125215][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[125222][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[125229][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[125235][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[125242][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[125250][V][Parsing.cpp:277] _parseArguments(): args: 
+[125255][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[125261][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[127971][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[127979][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[127987][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[127992][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[127999][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[128005][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[128012][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[128018][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[128033][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[128039][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[128045][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[128050][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[128058][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[128065][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[128071][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[128078][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[128086][V][Parsing.cpp:277] _parseArguments(): args: 
+[128091][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[128097][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+✓ Зволожувач: ВИМКНЕНО (Вологість: 67.8%, Ціль: 67.8%)
+[131045][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[131054][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[131061][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[131067][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[131073][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[131080][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[131086][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[131092][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[131107][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[131113][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[131119][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[131125][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[131133][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[131139][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[131146][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[131153][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[131161][V][Parsing.cpp:277] _parseArguments(): args: 
+[131166][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[131172][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[134533][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[134542][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[134549][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[134555][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[134562][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[134568][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[134574][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[134580][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[134596][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[134602][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[134607][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[134613][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[134621][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[134627][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[134634][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[134641][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[134649][V][Parsing.cpp:277] _parseArguments(): args: 
+[134654][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[134660][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[137603][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[137612][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[137619][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[137625][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[137632][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[137638][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[137644][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[137651][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[137666][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[137671][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[137677][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[137683][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[137691][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[137697][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[137704][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[137710][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[137719][V][Parsing.cpp:277] _parseArguments(): args: 
+[137724][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[137729][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[140470][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[140479][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[140486][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[140492][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[140498][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[140505][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[140511][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[140517][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[140533][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[140538][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[140544][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[140550][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[140557][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[140564][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[140571][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[140577][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[140586][V][Parsing.cpp:277] _parseArguments(): args: 
+[140591][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[140596][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[143540][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[143549][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[143556][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[143562][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[143569][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[143575][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[143581][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[143588][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[143603][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[143609][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[143614][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[143620][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[143628][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[143634][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[143641][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[143648][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[143656][V][Parsing.cpp:277] _parseArguments(): args: 
+[143661][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[143667][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[146824][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[146833][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[146840][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[146846][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[146853][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[146859][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[146866][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[146873][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[146888][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[146893][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[146899][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[146905][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[146912][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[146919][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[146926][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[146933][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[146941][V][Parsing.cpp:277] _parseArguments(): args: 
+[146946][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[146952][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[149482][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[149491][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[149498][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[149504][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[149510][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[149517][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[149523][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[149529][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[149545][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[149576][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[149582][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[149588][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[149595][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[149601][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[149608][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[149615][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[149623][V][Parsing.cpp:277] _parseArguments(): args: 
+[149628][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[149634][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[151946][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[151955][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[151962][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[151968][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[151975][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[151981][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[151987][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[151993][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[152009][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[152014][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[152020][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[152026][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[152033][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[152040][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[152047][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[152053][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[152062][V][Parsing.cpp:277] _parseArguments(): args: 
+[152067][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[152072][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[TIME] Синхронізовано: 04.01.2026 18:50:49
+[SENSOR] T:28.1/62.9°C H:67.1% P:985.6hPa
+[155637][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[155667][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[155675][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[155680][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[155687][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[155693][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[155700][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[155706][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[155721][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[155727][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[155733][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[155739][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[155746][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[155752][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[155759][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[155766][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[155774][V][Parsing.cpp:277] _parseArguments(): args: 
+[155779][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[155785][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[158488][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[158497][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[158504][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[158510][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[158517][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[158523][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[158529][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[158536][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[158551][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[158557][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[158562][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[158568][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[158576][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[158582][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[158589][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[158595][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[158604][V][Parsing.cpp:277] _parseArguments(): args: 
+[158609][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[158614][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[161563][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[161572][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[161579][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[161585][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[161592][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[161598][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[161604][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[161611][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[161626][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[161632][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[161637][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[161643][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[161651][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[161657][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[161664][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[161671][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[161679][V][Parsing.cpp:277] _parseArguments(): args: 
+[161684][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[161690][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[164645][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[164654][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[164661][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[164667][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[164673][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[164679][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[164686][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[164692][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[164707][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[164713][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[164719][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[164725][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[164732][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[164739][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[164745][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[164752][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[164760][V][Parsing.cpp:277] _parseArguments(): args: 
+[164765][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[164771][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[167500][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[167509][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[167516][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[167522][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[167529][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[167535][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[167541][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[167548][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[167563][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[167569][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[167574][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[167580][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[167588][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[167594][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[167601][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[167607][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[167616][V][Parsing.cpp:277] _parseArguments(): args: 
+[167621][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[167627][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+✓ Зволожувач: ВКЛ (Вологість: 66.0, Ціль: 66.0)
+[170580][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[170589][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[170596][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[170602][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[170608][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[170615][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[170621][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[170628][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[170643][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[170648][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[170654][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[170660][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[170668][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[170674][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[170681][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[170688][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[170696][V][Parsing.cpp:277] _parseArguments(): args: 
+[170701][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[170707][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[173646][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[173654][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[173662][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[173667][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[173674][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[173680][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[173687][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[173693][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[173708][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[173714][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[173719][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[173725][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[173733][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[173739][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[173746][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[173753][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[173761][V][Parsing.cpp:277] _parseArguments(): args: 
+[173766][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[173772][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[176516][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[176525][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[176532][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[176538][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[176544][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[176551][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[176557][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[176563][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[176579][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[176584][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[176590][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[176596][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[176603][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[176610][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[176617][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[176624][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[176633][V][Parsing.cpp:277] _parseArguments(): args: 
+[176638][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[176643][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[179603][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[179612][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[179619][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[179625][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[179632][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[179638][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[179644][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[179651][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[179666][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[179671][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[179677][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[179683][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[179691][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[179697][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[179704][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[179711][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[179719][V][Parsing.cpp:277] _parseArguments(): args: 
+[179724][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[179730][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+📈 Статистика: Пам'ять=139KB, Записів=3, Час=180сек
+[182452][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[182461][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[182468][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[182474][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[182481][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[182487][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[182493][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[182500][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[182515][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[182521][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[182526][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[182532][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[182539][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[182546][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[182553][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[182559][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[182568][V][Parsing.cpp:277] _parseArguments(): args: 
+[182573][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[182578][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[TIME] Синхронізовано: 04.01.2026 18:51:20
+[SENSOR] T:28.6/62.9°C H:65.2% P:985.5hPa
+[185529][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[185538][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[185545][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[185551][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[185558][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[185564][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[185570][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[185577][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[185592][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[185598][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[185603][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[185609][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[185617][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[185624][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[185631][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[185637][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[185646][V][Parsing.cpp:277] _parseArguments(): args: 
+[185651][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[185657][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[188598][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[188607][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[188614][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[188620][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[188627][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[188633][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[188639][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[188646][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[188661][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[188666][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[188672][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[188678][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[188686][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[188692][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[188699][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[188705][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[188714][V][Parsing.cpp:277] _parseArguments(): args: 
+[188719][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[188724][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[191465][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[191474][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[191481][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[191487][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[191493][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[191500][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[191506][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[191512][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[191528][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[191534][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[191539][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[191545][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[191553][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[191559][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[191566][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[191572][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[191581][V][Parsing.cpp:277] _parseArguments(): args: 
+[191586][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[191591][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[194545][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[194554][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[194561][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[194567][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[194573][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[194580][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[194586][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[194592][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[194608][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[194613][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[194619][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[194625][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[194633][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[194640][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[194646][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[194653][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[194661][V][Parsing.cpp:277] _parseArguments(): args: 
+[194666][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[194672][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[197610][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[197619][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[197626][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[197632][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[197639][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[197645][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[197651][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[197658][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[197673][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[197679][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[197684][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[197690][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[197698][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[197704][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[197711][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[197717][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[197726][V][Parsing.cpp:277] _parseArguments(): args: 
+[197731][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[197736][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[200481][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[200490][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[200497][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[200503][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[200509][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[200516][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[200522][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[200528][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[200544][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[200549][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[200555][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[200561][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[200568][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[200575][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[200582][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[200588][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[200597][V][Parsing.cpp:277] _parseArguments(): args: 
+[200602][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[200607][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[203547][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[203556][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[203563][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[203569][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[203575][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[203582][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[203588][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[203594][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[203610][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[203615][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[203621][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[203627][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[203635][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[203641][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[203648][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[203655][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[203663][V][Parsing.cpp:277] _parseArguments(): args: 
+[203668][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[203674][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[206626][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[206635][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[206642][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[206648][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[206655][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[206661][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[206667][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[206673][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[206689][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[206694][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[206700][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[206706][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[206713][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[206720][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[206727][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[206733][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[206742][V][Parsing.cpp:277] _parseArguments(): args: 
+[206747][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[206752][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[209494][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[209503][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[209510][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[209516][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[209522][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[209529][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[209535][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[209541][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[209557][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[209562][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[209568][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[209574][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[209581][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[209588][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[209595][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[209601][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[209610][V][Parsing.cpp:277] _parseArguments(): args: 
+[209615][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[209620][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[212574][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[212583][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[212590][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[212596][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[212603][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[212609][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[212615][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[212621][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[212637][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[212643][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[212648][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[212654][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[212662][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[212668][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[212675][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[212682][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[212690][V][Parsing.cpp:277] _parseArguments(): args: 
+[212695][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[212701][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+[TIME] Синхронізовано: 04.01.2026 18:51:50
+[SENSOR] T:27.4/63.8°C H:66.3% P:985.5hPa
+🔧 Таймер витяжки: Витяжка увімкнена
+📈 Статистика: Пам'ять=139KB, Записів=4, Час=240сек
+[TIME] Синхронізовано: 04.01.2026 18:52:20
+[SENSOR] T:27.7/60.9°C H:67.5% P:985.6hPa
+[248640][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[248648][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[248656][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[248661][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[248668][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[248674][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[248681][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[248687][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[248702][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[248708][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[248714][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[248720][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[248727][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[248734][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[248741][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[248747][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[248756][V][Parsing.cpp:277] _parseArguments(): args: 
+[248761][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[248766][V][Parsing.cpp:261] _parseRequest():  Arguments: 
+✓ Зволожувач: ВИМКНЕНО (Вологість: 67.4%, Ціль: 67.4%)
+🔧 Таймер витяжки: Витяжка вимкнена
+[TIME] Синхронізовано: 04.01.2026 18:52:51
+[SENSOR] T:29.4/61.5°C H:66.1% P:985.6hPa
+✓ Зволожувач: ВКЛ (Вологість: 65.9, Ціль: 65.9)
+📈 Статистика: Пам'ять=140KB, Записів=5, Час=300сек
+[TIME] Синхронізовано: 04.01.2026 18:53:21
+[SENSOR] T:28.1/63.1°C H:65.4% P:985.6hPa
+[308652][V][WebServer.cpp:285] handleClient(): New client: client.localIP()=10.193.26.166
+[308661][V][Parsing.cpp:122] _parseRequest(): method: GET url: /status search: 
+[308668][V][Parsing.cpp:249] _parseRequest(): headerName: Host
+[308674][V][Parsing.cpp:250] _parseRequest(): headerValue: 10.193.26.166
+[308681][V][Parsing.cpp:249] _parseRequest(): headerName: Connection
+[308687][V][Parsing.cpp:250] _parseRequest(): headerValue: keep-alive
+[308693][V][Parsing.cpp:249] _parseRequest(): headerName: User-Agent
+[308700][V][Parsing.cpp:250] _parseRequest(): headerValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+[308715][V][Parsing.cpp:249] _parseRequest(): headerName: Accept
+[308721][V][Parsing.cpp:250] _parseRequest(): headerValue: */*
+[308726][V][Parsing.cpp:249] _parseRequest(): headerName: Referer
+[308732][V][Parsing.cpp:250] _parseRequest(): headerValue: http://10.193.26.166/
+[308740][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Encoding
+[308747][V][Parsing.cpp:250] _parseRequest(): headerValue: gzip, deflate
+[308753][V][Parsing.cpp:249] _parseRequest(): headerName: Accept-Language
+[308760][V][Parsing.cpp:250] _parseRequest(): headerValue: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
+[308768][V][Parsing.cpp:277] _parseArguments(): args: 
+[308773][V][Parsing.cpp:260] _parseRequest(): Request: /status
+[308779][V][Parsing.cpp:261] _parseRequest():  Arguments: 

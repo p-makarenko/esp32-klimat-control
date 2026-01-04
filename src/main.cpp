@@ -15,7 +15,17 @@
 
 // ГЛОБАЛЬНІ ЗМІННІ
 SystemConfig config;
-SensorData sensorData;
+SensorData sensorData = {
+  .tempCarrier = 0.0,
+  .tempRoom = 0.0,
+  .tempBME = 0.0,
+  .humidity = 0.0,
+  .pressure = 0.0,
+  .carrierValid = false,
+  .roomValid = false,
+  .bmeValid = false,
+  .timestamp = 0
+};
 HeatingState heatingState;
 VentilationState ventState;
 HumidifierState humidifierState;

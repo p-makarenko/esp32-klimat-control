@@ -269,10 +269,37 @@ String wifiStrengthToHTML(int rssi) {
 
 String getUkraineMarquee() {
     String txt = "🇺🇦 СЛАВА УКРАЇНІ! | 💪 ГЕРОЯМ СЛАВА! | 🔥 москалі - ПІДАРИ! | ✊ Україна переможе! | 💩 рашисти - терористи | 💙💛 Разом до Перемоги! | ⚔️ Смерть ворогам! | 🛡️ ЗСУ - найсильніша! | 🤮 хуйло - злочинець! | 🗡️ За Україну! | 🚀 Крим - наш! | 🔴 moscow delenda est! | 💀 кацапи - genocid | ⚡ Слава Нації! | 🎖️ Честь і Воля! | 🔥 россія - терорист! | 💪 Воля або Смерть! | 🖕 всі москалі - ПІДАРИ на болотах! | 🇺🇦 Україна понад усе! &nbsp;&nbsp;&nbsp;";
-    String marquee = "<div style='background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 10px 0; margin-top: 20px; overflow: hidden;'>";
-    marquee += "<div style='white-space: nowrap; animation: scroll 60s linear infinite; font-weight: bold;'>" + txt + txt + txt + "</div>";
+    
+    String marquee = "<div style='text-align: center; margin-top: 20px;'>";
+    marquee += "<button id='ukraineBtn' onclick='toggleUkraine()' style='background: linear-gradient(90deg, #0057B7 50%, #FFD700 50%); color: #000; border: 3px solid #000; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);'>";
+    marquee += "🇺🇦 ТИСНИ, ЯКЩО ЗА УКРАЇНУ! 🇺🇦";
+    marquee += "</button>";
     marquee += "</div>";
-    marquee += "<style>@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-33.333%); } }</style>";
+    
+    marquee += "<div id='ukraineMarquee' style='display: none; background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 10px 0; margin-top: 20px; overflow: hidden;'>";
+    marquee += "<div style='white-space: nowrap; animation: scroll 8s linear infinite; font-weight: bold;'>" + txt + txt + txt + "</div>";
+    marquee += "</div>";
+    
+    marquee += "<style>";
+    marquee += "@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-33.333%); } }";
+    marquee += "#ukraineBtn:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.4); }";
+    marquee += "#ukraineBtn:active { transform: scale(0.98); }";
+    marquee += "</style>";
+    
+    marquee += "<script>";
+    marquee += "function toggleUkraine() {";
+    marquee += "  const btn = document.getElementById('ukraineBtn');";
+    marquee += "  const marquee = document.getElementById('ukraineMarquee');";
+    marquee += "  if (marquee.style.display === 'none') {";
+    marquee += "    marquee.style.display = 'block';";
+    marquee += "    btn.textContent = '🇺🇦 СХОВАТИ 🇺🇦';";
+    marquee += "  } else {";
+    marquee += "    marquee.style.display = 'none';";
+    marquee += "    btn.textContent = '🇺🇦 ТИСНИ, ЯКЩО ЗА УКРАЇНУ! 🇺🇦';";
+    marquee += "  }";
+    marquee += "}";
+    marquee += "</script>";
+    
     return marquee;
 }
 
@@ -394,19 +421,28 @@ void handleRoot() {
     html += "<div class='status-grid'>";
     html += "<div class='card'>";
     html += "<h3>🌡️ ТЕМПЕРАТУРА</h3>";
-    html += "<div class='status-value temp-status' id='tempRoom'>" + String(sensorData.tempRoom, 1) + "°C</div>";
-    html += "<div>Теплоносій: <span id='tempCarrier'>" + String(sensorData.tempCarrier, 1) + "°C</span></div>";
-    html += "<div>BME280: <span id='tempBME'>" + String(sensorData.tempBME, 1) + "°C</span></div>";
+    html += "<div class='status-value temp-status' id='tempRoom'>";
+    html += sensorData.roomValid ? String(sensorData.tempRoom, 1) + "°C" : "🚨 ПОМИЛКА";
+    html += "</div>";
+    html += "<div>Теплоносій: <span id='tempCarrier'>";
+    html += sensorData.carrierValid ? String(sensorData.tempCarrier, 1) + "°C" : "🚨 ПОМИЛКА";
+    html += "</span></div>";
+    html += "<div>BME280: <span id='tempBME'>";
+    html += sensorData.bmeValid ? String(sensorData.tempBME, 1) + "°C" : "🚨 ПОМИЛКА";
+    html += "</span></div>";
     html += "<div>Ціль: " + String(config.tempMin, 1) + "-" + String(config.tempMax, 1) + "°C</div>";
-    html += "<div>Динаміка: <span id='tempTrend'>--</span></div>";
     html += "</div>";
     
     html += "<div class='card'>";
     html += "<h3>💧 ВОЛОГІСТЬ</h3>";
-    html += "<div class='status-value hum-status' id='humidity'>" + String(sensorData.humidity, 1) + "%</div>";
+    html += "<div class='status-value hum-status' id='humidity'>";
+    html += sensorData.bmeValid ? String(sensorData.humidity, 1) + "%" : "🚨 ПОМИЛКА";
+    html += "</div>";
     html += "<div>Ціль: " + String(config.humidityConfig.minHumidity, 1) + "-" + String(config.humidityConfig.maxHumidity, 1) + "%</div>";
     html += "<div>Зволожувач: <span id='humidifierStatus'>" + String(humidifierState.active ? "ВКЛ" : "ВИМК") + "</span></div>";
-    html += "<div>Тиск: <span id='pressure'>" + String(sensorData.pressure, 1) + " hPa</span></div>";
+    html += "<div>Тиск: <span id='pressure'>";
+    html += sensorData.bmeValid ? String(sensorData.pressure, 1) + " hPa" : "🚨 ПОМИЛКА";
+    html += "</span></div>";
     html += "</div>";
     
     html += "<div class='card'>";
@@ -490,27 +526,42 @@ void handleRoot() {
     html += "  fetch('/status')";
     html += "    .then(response => response.json())";
     html += "    .then(data => {";
-    html += "      if (data.tempRoom !== undefined) {";
+    html += "      if (data.tempRoom !== undefined && !isNaN(data.tempRoom)) {";
     html += "        document.getElementById('tempRoom').textContent = data.tempRoom.toFixed(1) + '°C';";
+    html += "      } else { document.getElementById('tempRoom').textContent = '🚨 ПОМИЛКА'; }";
+    html += "      if (data.tempCarrier !== undefined && !isNaN(data.tempCarrier)) {";
     html += "        document.getElementById('tempCarrier').textContent = data.tempCarrier.toFixed(1) + '°C';";
-    html += "      }";
-    html += "      if (data.tempBME !== undefined) {";
+    html += "      } else { document.getElementById('tempCarrier').textContent = '🚨 ПОМИЛКА'; }";
+    html += "      if (data.tempBME !== undefined && !isNaN(data.tempBME)) {";
     html += "        document.getElementById('tempBME').textContent = data.tempBME.toFixed(1) + '°C';";
-    html += "      }";
-    html += "      if (data.humidity !== undefined) {";
+    html += "      } else { document.getElementById('tempBME').textContent = '🚨 ПОМИЛКА'; }";
+    html += "      if (data.humidity !== undefined && !isNaN(data.humidity)) {";
     html += "        document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
-    html += "      }";
-    html += "      if (data.pressure !== undefined) {";
+    html += "      } else { document.getElementById('humidity').textContent = '🚨 ПОМИЛКА'; }";
+    html += "      if (data.pressure !== undefined && !isNaN(data.pressure)) {";
     html += "        document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
+    html += "      } else { document.getElementById('pressure').textContent = '🚨 ПОМИЛКА'; }";
     html += "      }";
     html += "      if (data.pumpPower !== undefined) {";
     html += "        document.getElementById('pumpPower').textContent = Math.round(data.pumpPower) + '%';";
+    html += "        const pumpSlider = document.getElementById('pumpSlider');";
+    html += "        if (pumpSlider) { pumpSlider.value = Math.round(data.pumpPower); }";
+    html += "        const pumpValue = document.getElementById('pumpValue');";
+    html += "        if (pumpValue) { pumpValue.textContent = Math.round(data.pumpPower) + '%'; }";
     html += "      }";
     html += "      if (data.fanPower !== undefined) {";
     html += "        document.getElementById('fanPower').textContent = Math.round(data.fanPower) + '%';";
+    html += "        const fanSlider = document.getElementById('fanSlider');";
+    html += "        if (fanSlider) { fanSlider.value = Math.round(data.fanPower); }";
+    html += "        const fanValue = document.getElementById('fanValue');";
+    html += "        if (fanValue) { fanValue.textContent = Math.round(data.fanPower) + '%'; }";
     html += "      }";
     html += "      if (data.extractorPower !== undefined) {";
     html += "        document.getElementById('extractorPower').textContent = Math.round(data.extractorPower) + '%';";
+    html += "        const extractorSlider = document.getElementById('extractorSlider');";
+    html += "        if (extractorSlider) { extractorSlider.value = Math.round(data.extractorPower); }";
+    html += "        const extractorValue = document.getElementById('extractorValue');";
+    html += "        if (extractorValue) { extractorValue.textContent = Math.round(data.extractorPower) + '%'; }";
     html += "      }";
     html += "      if (data.mode) {";
     html += "        document.getElementById('mode').textContent = data.mode;";
@@ -611,11 +662,11 @@ void handleRoot() {
 void handleStatus() {
     JsonDocument doc;
     
-    doc["tempRoom"] = sensorData.tempRoom;
-    doc["tempCarrier"] = sensorData.tempCarrier;
-    doc["tempBME"] = sensorData.tempBME;
-    doc["humidity"] = sensorData.humidity;
-    doc["pressure"] = sensorData.pressure;
+    doc["tempRoom"] = sensorData.roomValid ? sensorData.tempRoom : (float)NAN;
+    doc["tempCarrier"] = sensorData.carrierValid ? sensorData.tempCarrier : (float)NAN;
+    doc["tempBME"] = sensorData.bmeValid ? sensorData.tempBME : (float)NAN;
+    doc["humidity"] = sensorData.bmeValid ? sensorData.humidity : (float)NAN;
+    doc["pressure"] = sensorData.bmeValid ? sensorData.pressure : (float)NAN;
     doc["pumpPower"] = (heatingState.pumpPower * 100) / 255;
     doc["fanPower"] = (heatingState.fanPower * 100) / 255;
     doc["extractorPower"] = (heatingState.extractorPower * 100) / 255;
@@ -1708,6 +1759,9 @@ void handleControlPage() {
     html += "    console.log('Команда виконана:', text);";
     html += "    if (cmd === 'auto' || cmd === 'manual' || cmd === 'force' || cmd === 'emergency') {";
     html += "      updateModeButtons(cmd);";
+    html += "      if (cmd === 'auto') {";
+    html += "        setTimeout(function() { location.reload(); }, 500);";
+    html += "      }";
     html += "    }";
     html += "  });";
     html += "}";
