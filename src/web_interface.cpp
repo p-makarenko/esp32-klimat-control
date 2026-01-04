@@ -11,6 +11,7 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include <ESPmDNS.h>
+#include <NetBIOS.h>
 #include <vector>
 #include <algorithm>
 
@@ -36,24 +37,15 @@ bool checkAuth() {
 // ============================================================================
 
 void initWiFi() {
-    Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ WI-FI ===");
-    
     WiFi.mode(WIFI_STA);
     WiFi.disconnect(true);  // Повне відключення
     delay(100);
     
     // Спочатку скануємо мережі
-    Serial.println("🔍 Пошук доступних мереж...");
-    
     int n = WiFi.scanNetworks();
-    Serial.printf("Знайдено %d мереж:\n", n);
     
     for (int i = 0; i < n; i++) {
-        Serial.printf("  %d: %s (%d dBm) %s\n", 
-            i + 1, 
-            WiFi.SSID(i).c_str(), 
-            WiFi.RSSI(i),
-            (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "відкрита" : "захищена");
+        // Пропускаємо вивід у монітор
     }
     
     bool connected = false;
@@ -84,9 +76,6 @@ void initWiFi() {
 
     // Пробуємо підключитись до мереж в порядку кращого сигналу
     for (const auto& net : availableNetworks) {
-        Serial.printf("\n📡 Пробуємо підключитись до мережі: %s (сигнал: %d dBm)\n",
-            net.ssid.c_str(), net.rssi);
-
         WiFi.disconnect(true);
         delay(100);
         
@@ -98,12 +87,11 @@ void initWiFi() {
                 subnet.fromString(config.subnet) &&
                 dns.fromString(config.dns)) {
                 
-                Serial.println("⚙️  Використовується статична IP-адреса");
                 if (!WiFi.config(ip, gateway, subnet, dns)) {
-                    Serial.println("⚠️  Помилка налаштування статичної IP");
+                    // Помилка конфігурації
                 }
             } else {
-                Serial.println("⚠️  Невірний формат IP-адрес, використовуємо DHCP");
+                // Невірний формат IP-адрес
             }
         }
         
@@ -112,29 +100,23 @@ void initWiFi() {
         int attempts = 0;
         while (WiFi.status() != WL_CONNECTED && attempts < 20) {
             delay(500);
-            Serial.print(".");
             attempts++;
-
-            if (attempts % 5 == 0) {
-                Serial.printf(" [Статус: %d]", WiFi.status());
-            }
         }
 
         if (WiFi.status() == WL_CONNECTED) {
             connected = true;
             connectedSSID = net.ssid;
-            Serial.printf("\n✅ Успішно підключено до: %s\n", net.ssid.c_str());
+            
+            // Додаємо затримку для стабілізації з'єднання
+            delay(1000);
 
             // Зберігаємо успішні налаштування
             preferences.begin("wifi", false);
             preferences.putString("ssid", net.ssid);
             preferences.putString("password", net.password);
             preferences.end();
-
-            Serial.printf("Налаштування збережені для мережі: %s\n", net.ssid.c_str());
             break;
         } else {
-            Serial.printf("\n❌ Не вдалося підключитись до: %s\n", net.ssid.c_str());
             WiFi.disconnect(true);
             delay(500);
         }
@@ -142,30 +124,52 @@ void initWiFi() {
     
     // Якщо підключились - показуємо інформацію
     if (connected) {
+        delay(500);
+        Serial.flush();
         Serial.println("\n╔════════════════════════════════════════════════════════╗");
         Serial.println("║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║");
         Serial.println("╠════════════════════════════════════════════════════════╣");
-        Serial.printf("║  📡 SSID:         %-33s║\n", connectedSSID.c_str());
-        Serial.printf("║  🌐 IP адреса:    %-33s║\n", WiFi.localIP().toString().c_str());
-        Serial.printf("║  📶 Сигнал:       %-33s║\n", (String(WiFi.RSSI()) + " dBm").c_str());
+        Serial.printf("║  📡 Мережа:       %-33s║\n", WiFi.SSID().c_str());
+        Serial.printf("║  🌐 IP:           %-33s║\n", WiFi.localIP().toString().c_str());
+        Serial.printf("║  🔌 Шлюз:         %-33s║\n", WiFi.gatewayIP().toString().c_str());
+        Serial.printf("║  📶 Сигнал:       %-25d dBm ║\n", WiFi.RSSI());
         Serial.println("╠════════════════════════════════════════════════════════╣");
         Serial.println("║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║");
+        Serial.flush();
         
-        // Ініціалізація mDNS
-        if (MDNS.begin("klimat")) {
-            Serial.println("║  💻 З ноутбука:   http://klimat.local                 ║");
-            MDNS.addService("http", "tcp", 80);
+        // Основна адреса
+        Serial.printf("║  📱 IP адреса:    http://%-28s║\n", WiFi.localIP().toString().c_str());
+        
+        // Встановлюємо hostname
+        WiFi.setHostname("klimat");
+        
+        // NetBIOS - працює на Windows краще за mDNS
+        Serial.print("║  🔧 NetBIOS запуск...");
+        if (NBNS.begin("klimat")) {
+            Serial.println("                           ✅ ║");
+            Serial.println("║  💻 http://klimat (Windows)                            ║");
         } else {
-            Serial.println("║  ⚠️  mDNS не запущено                                 ║");
+            Serial.println("                           ❌ ║");
         }
         
-        Serial.printf("║  📱 З телефону:   http://%-25s║\n", WiFi.localIP().toString().c_str());
+        // mDNS - для Mac/iOS/Linux
+        Serial.print("║  🔧 mDNS запуск...");
+        if (MDNS.begin("klimat")) {
+            delay(100);
+            if (MDNS.addService("http", "tcp", 80)) {
+                Serial.println("                              ✅ ║");
+            } else {
+                Serial.println("                              ⚠️  ║");
+            }
+            Serial.println("║  🍎 http://klimat.local (Mac/iOS/Linux)                ║");
+        } else {
+            Serial.println("                              ❌ ║");
+        }
+        
         Serial.println("╠════════════════════════════════════════════════════════╣");
-        Serial.println("║  💡 ПОРАДА:                                            ║");
-        Serial.println("║  Android: Використовуйте IP-адресу                     ║");
-        Serial.println("║  iOS/Windows/Mac: Можна використати klimat.local      ║");
-        Serial.println("║  📸 На головній сторінці є QR-код для швидкого доступу ║");
+        Serial.println("║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║");
         Serial.println("╚════════════════════════════════════════════════════════╝\n");
+        Serial.flush();
         
         // Перевіряємо, правильний чи пароль (по силі сигналу)
         if (WiFi.RSSI() < -80) {
@@ -232,7 +236,6 @@ void initWiFi() {
     });
     
     server.begin();
-    Serial.println("✅ Веб-сервер запущено");
     Serial.println();
 }
 
@@ -345,7 +348,7 @@ void handleRoot() {
     
     html += "<div class='container'>";
     html += "<div class='header'>";
-    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>" VERSION "</span></h1>";
+    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>" VERSION "</span></h1>";
     html += "<script>";
     html += "function showVersion() {";
     html += "  var msg = '" VERSION "';";
@@ -362,26 +365,9 @@ void handleRoot() {
     // Інформація про мережу
     html += "<div style='background: #e8f5e9; padding: 10px 15px; border-radius: 5px; margin: 10px 0; font-size: 0.85em;'>";
     html += "📡 <strong>Підключено до:</strong> " + WiFi.SSID() + " | ";
-    html += "<strong>IP:</strong> " + WiFi.localIP().toString();
+    html += "<strong>IP:</strong> " + WiFi.localIP().toString() + " | ";
+    html += "<strong>⏰</strong> " + getTimeString();
     html += "</div>";
-    
-    html += "<p style='font-size: 0.9em; color: #666;'>";
-    html += "📱 <strong>Доступ з телефону:</strong> ";
-    html += "<span style='background: #fff3cd; padding: 2px 8px; border-radius: 3px; font-family: monospace;'>" + WiFi.localIP().toString() + "</span>";
-    html += "</p>";
-    html += "<p style='font-size: 0.9em; color: #666;'>";
-    html += "💻 <strong>Доступ з ноутбука:</strong> ";
-    html += "<span style='background: #d1ecf1; padding: 2px 8px; border-radius: 3px; font-family: monospace;'>http://klimat.local</span>";
-    html += " <span style='color: #999; font-size: 0.85em;'>(тільки в цій мережі)</span>";
-    html += "</p>";
-    html += "<div style='margin: 15px 0; text-align: center;'>";
-    // QR код через Google Charts API (працює офлайн після першого завантаження)
-    html += "<div style='background: white; display: inline-block; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);'>";
-    html += "<div style='font-size: 0.8em; color: #666; margin-bottom: 5px;'>Відскануйте для швидкого доступу з телефону:</div>";
-    html += "<img src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://" + WiFi.localIP().toString() + "' alt='QR Code' style='display: block;' />";
-    html += "</div>";
-    html += "</div>";
-    html += "<p style='font-size: 0.8em; color: #999;'>⏰ " + getTimeString() + "</p>";
     html += "<div style='display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: 600; margin-top: 10px;'>";
     html += "Режим: <span id='currentMode'>";
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
@@ -412,7 +398,7 @@ void handleRoot() {
     html += "<div>Теплоносій: <span id='tempCarrier'>" + String(sensorData.tempCarrier, 1) + "°C</span></div>";
     html += "<div>BME280: <span id='tempBME'>" + String(sensorData.tempBME, 1) + "°C</span></div>";
     html += "<div>Ціль: " + String(config.tempMin, 1) + "-" + String(config.tempMax, 1) + "°C</div>";
-    html += "<div>Тренд: <span id='tempTrend'>--</span></div>";
+    html += "<div>Динаміка: <span id='tempTrend'>--</span></div>";
     html += "</div>";
     
     html += "<div class='card'>";
@@ -1489,6 +1475,11 @@ void handleSettingsPage() {
     html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
     html += "</div>";
     html += "<div class='form-group'>";
+    html += "<label>Швидкість руху серво (мс/градус):</label>";
+    html += "<input type='number' name='servoSpeed' value='" + String(config.servoSpeed) + "' min='5' max='50'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менше значення = швидше рух (5-10мс швидко, 20-30мс стандарт, 40-50мс повільно)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
     html += "<label>Період виведення статусу (секунди):</label>";
     html += "<input type='number' name='statusPeriod' value='" + String(config.statusPeriod / 1000) + "' min='10' max='600'>";
     html += "</div>";
@@ -1582,6 +1573,9 @@ void handleSaveSettings() {
     if (server.hasArg("fanMin")) {
         config.fanMinPercent = server.arg("fanMin").toInt();
     }
+    if (server.hasArg("servoSpeed")) {
+        config.servoSpeed = constrain(server.arg("servoSpeed").toInt(), 5, 50);
+    }
     if (server.hasArg("statusPeriod")) {
         config.statusPeriod = server.arg("statusPeriod").toInt() * 1000UL;
     }
@@ -1640,30 +1634,33 @@ void handleControlPage() {
     html += "<h3>НАСОС (A)</h3>";
     html += "<input type='range' min='0' max='100' value='" + String((heatingState.pumpPower * 100) / 255) + "' class='slider' id='pumpSlider' oninput='updatePump(this.value)'>";
     html += "<span class='slider-value' id='pumpValue'>" + String((heatingState.pumpPower * 100) / 255) + "%</span>";
-    html += "<button class='btn' onclick=\"sendCmd('pump 0')\">ВИМК</button>";
-    html += "<button class='btn' onclick=\"sendCmd('pump 30')\">30%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('pump 50')\">50%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('pump 80')\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('pump', 0)\">ВИМК</button>";
+    html += "<button class='btn' onclick=\"setPower('pump', 30)\">30%</button>";
+    html += "<button class='btn' onclick=\"setPower('pump', 50)\">50%</button>";
+    html += "<button class='btn' onclick=\"setPower('pump', 80)\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('pump', 100)\">100%</button>";
     html += "</div>";
     
     html += "<div class='control-section'>";
     html += "<h3>ВЕНТИЛЯТОР (B)</h3>";
     html += "<input type='range' min='0' max='100' value='" + String((heatingState.fanPower * 100) / 255) + "' class='slider' id='fanSlider' oninput='updateFan(this.value)'>";
     html += "<span class='slider-value' id='fanValue'>" + String((heatingState.fanPower * 100) / 255) + "%</span>";
-    html += "<button class='btn' onclick=\"sendCmd('fan 0')\">ВИМК</button>";
-    html += "<button class='btn' onclick=\"sendCmd('fan 30')\">30%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('fan 50')\">50%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('fan 80')\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('fan', 0)\">ВИМК</button>";
+    html += "<button class='btn' onclick=\"setPower('fan', 30)\">30%</button>";
+    html += "<button class='btn' onclick=\"setPower('fan', 50)\">50%</button>";
+    html += "<button class='btn' onclick=\"setPower('fan', 80)\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('fan', 100)\">100%</button>";
     html += "</div>";
     
     html += "<div class='control-section'>";
     html += "<h3>ВИТЯЖКА (C)</h3>";
     html += "<input type='range' min='0' max='100' value='" + String((heatingState.extractorPower * 100) / 255) + "' class='slider' id='extractorSlider' oninput='updateExtractor(this.value)'>";
     html += "<span class='slider-value' id='extractorValue'>" + String((heatingState.extractorPower * 100) / 255) + "%</span>";
-    html += "<button class='btn' onclick=\"sendCmd('extractor 0')\">ВИМК</button>";
-    html += "<button class='btn' onclick=\"sendCmd('extractor 30')\">30%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('extractor 50')\">50%</button>";
-    html += "<button class='btn' onclick=\"sendCmd('extractor 80')\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('extractor', 0)\">ВИМК</button>";
+    html += "<button class='btn' onclick=\"setPower('extractor', 30)\">30%</button>";
+    html += "<button class='btn' onclick=\"setPower('extractor', 50)\">50%</button>";
+    html += "<button class='btn' onclick=\"setPower('extractor', 80)\">80%</button>";
+    html += "<button class='btn' onclick=\"setPower('extractor', 100)\">100%</button>";
     html += "</div>";
     
     html += "<div class='control-section'>";
@@ -1682,6 +1679,14 @@ void handleControlPage() {
     html += "</div>";
     
     html += "<script>";
+    html += "function setPower(device, value) {";
+    html += "  sendCmd('manual');";
+    html += "  const slider = document.getElementById(device + 'Slider');";
+    html += "  const display = document.getElementById(device + 'Value');";
+    html += "  if (slider) slider.value = value;";
+    html += "  if (display) display.textContent = value + '%';";
+    html += "  sendCmd(device + ' ' + value);";
+    html += "}";
     html += "function updatePump(v) { sendCmd('manual'); document.getElementById('pumpValue').textContent = v + '%'; sendCmd('pump ' + v); }";
     html += "function updateFan(v) { sendCmd('manual'); document.getElementById('fanValue').textContent = v + '%'; sendCmd('fan ' + v); }";
     html += "function updateExtractor(v) { sendCmd('manual'); document.getElementById('extractorValue').textContent = v + '%'; sendCmd('extractor ' + v); }";

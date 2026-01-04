@@ -1,4 +1,6 @@
 ﻿#include <Arduino.h>
+#include <ESPmDNS.h>
+#include <NetBIOS.h>
 
 #include "config.h"
 #include "system_core.h"
@@ -29,17 +31,15 @@ void setup() {
   Serial.begin(115200);
   delay(500);  // Даємо час Serial ініціалізуватись
   
-  Serial.println("\n\n==========================================");
-  Serial.println("  Клімат-контроль системи вентиляції");
-  Serial.println("  " VERSION);
-  Serial.println("  " VERSION_COMMENT);
-  Serial.print("  Зібрано: ");
-  Serial.print(BUILD_DATE);
-  Serial.print(" ");
-  Serial.println(BUILD_TIME);
-  Serial.printf("  Рядків коду: %d\n", TOTAL_CODE_LINES);
-  Serial.printf("  Розмір прошивки: %d KB\n", FIRMWARE_SIZE_KB);
-  Serial.println("==========================================");
+  Serial.println("\n\n╔════════════════════════════════════════════════════════╗");
+  Serial.println("║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║");
+  Serial.println("╠════════════════════════════════════════════════════════╣");
+  Serial.printf("║  📦 Версія:       %-33s║\n", VERSION);
+  Serial.printf("║  💬 Коментар:     %-33s║\n", VERSION_COMMENT);
+  Serial.printf("║  📅 Зібрано:      %-20s %-12s║\n", BUILD_DATE, BUILD_TIME);
+  Serial.printf("║  📝 Рядків:       %-33d║\n", TOTAL_CODE_LINES);
+  Serial.printf("║  💾 Розмір:       %-29d KB ║\n", FIRMWARE_SIZE_KB);
+  Serial.println("╚════════════════════════════════════════════════════════╝");;
   
   initMutexes();
   loadConfiguration();
@@ -101,18 +101,25 @@ void setup() {
   config.extractorTimer.lastChange = 0;
   
   Serial.println("\n▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄");
-  Serial.println("║  КЛІМАТ-КОНТРОЛЬ ГОТОВИЙ ДО РОБОТИ  ║");
+  Serial.println("║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║");
   Serial.println("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀");
-  Serial.println("Використовуйте:");
-  Serial.println("  'm' - Меню керування");
-  Serial.println("  's' - Статус системи");
+  
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("  Веб-інтерфейс:");
-    Serial.println("    http://klimat.local (рекомендовано)");
-    Serial.println("    http://" + WiFi.localIP().toString());
+    Serial.println("╔════════════════════════════════════════════════════════╗");
+    Serial.println("║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║");
+    Serial.println("╠════════════════════════════════════════════════════════╣");
+    Serial.printf("║  📱 IP адреса:    http://%-28s║\n", WiFi.localIP().toString().c_str());
+    Serial.println("║  💻 Локальне ім'я: http://klimat.local                 ║");
+    Serial.println("╠════════════════════════════════════════════════════════╣");
+    Serial.printf("║  📡 WiFi мережа:  %-33s║\n", WiFi.SSID().c_str());
+    Serial.printf("║  📶 Сигнал:       %-25d dBm ║\n", WiFi.RSSI());
+    Serial.println("╚════════════════════════════════════════════════════════╝");
   } else {
-    Serial.println("  Веб-інтерфейс: http://192.168.4.1 (режим точки доступу)");
+    Serial.println("🔗 Веб-інтерфейс: http://192.168.4.1 (точка доступу)");
   }
+  
+  Serial.println("\n💡 Команди Serial:");
+  Serial.println("  'm' - Меню | 's' - Статус");
   Serial.println("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n");
   
   setHeatingPower(0, 0, 0);
@@ -133,10 +140,7 @@ void loop() {
     lastWiFiCheck = now;
     
     if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("");
-      Serial.println("========================================");
-      Serial.println("   WiFi втрачено - перепідключення");
-      Serial.println("========================================");
+      // Тихе перепідключення без повідомлень
       
       // Читаємо збережені мережі з Preferences
       preferences.begin("wifi", true);
@@ -151,18 +155,16 @@ void loop() {
       
       // Якщо немає збережених мереж, використовуємо KNOWN_NETWORKS
       if (networkCount == 0) {
-        Serial.println("Збережених мереж немає, використовую стандартні");
         networkCount = KNOWN_NETWORKS_COUNT;
         for (int i = 0; i < networkCount && i < 5; i++) {
           savedNetworks[i].ssid = KNOWN_NETWORKS[i].ssid;
           savedNetworks[i].password = KNOWN_NETWORKS[i].password;
         }
       } else {
-        Serial.printf("Знайдено збережених мереж: %d\n", networkCount);
+        // Зчитуємо збережені мережі
         for (int i = 0; i < networkCount && i < 5; i++) {
           savedNetworks[i].ssid = preferences.getString(("ssid" + String(i)).c_str(), "");
           savedNetworks[i].password = preferences.getString(("pass" + String(i)).c_str(), "");
-          Serial.printf("  %d: %s\n", i+1, savedNetworks[i].ssid.c_str());
         }
       }
       preferences.end();
@@ -172,27 +174,17 @@ void loop() {
       delay(100);
       
       // Скануємо доступні мережі
-      Serial.println("Сканування мереж...");
       int n = WiFi.scanNetworks();
       
       if (n < 0) {
-        Serial.printf("Помилка сканування: %d\n", n);
-        Serial.println("Спроба повторного сканування через 10 сек...");
         delay(10000);
         lastWiFiCheck = millis();
         return;
       }
       
-      Serial.printf("Знайдено мереж: %d\n", n);
+      bool reconnected = false;
       
       if (n > 0) {
-        // Показуємо всі знайдені мережі
-        for (int i = 0; i < n; i++) {
-          Serial.printf("  %d: %s (%d dBm)\n", i+1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));
-        }
-        
-        // Шукаємо найкращу зі збережених мереж
-        bool reconnected = false;
         int bestRSSI = -999;
         String bestSSID = "";
         String bestPassword = "";
@@ -202,7 +194,6 @@ void loop() {
           
           for (int j = 0; j < n; j++) {
             if (WiFi.SSID(j) == savedNetworks[i].ssid) {
-              Serial.printf("Знайдено збережену мережу: %s (%d dBm)\n", savedNetworks[i].ssid.c_str(), WiFi.RSSI(j));
               if (WiFi.RSSI(j) > bestRSSI) {
                 bestRSSI = WiFi.RSSI(j);
                 bestSSID = savedNetworks[i].ssid;
@@ -213,8 +204,6 @@ void loop() {
         }
         
         if (bestSSID.length() > 0) {
-          Serial.printf("Connecting to: %s (signal: %d dBm)\n", bestSSID.c_str(), bestRSSI);
-          
           WiFi.disconnect();
           delay(100);
           WiFi.begin(bestSSID.c_str(), bestPassword.c_str());
@@ -222,34 +211,34 @@ void loop() {
           int attempts = 0;
           while (WiFi.status() != WL_CONNECTED && attempts < 20) {
             delay(500);
-            Serial.print(".");
             attempts++;
           }
-          Serial.println("");
           
           if (WiFi.status() == WL_CONNECTED) {
-            Serial.println("========================================");
-            Serial.println("   WiFi підключено успішно!");
-            Serial.println("========================================");
-            Serial.printf("SSID: %s\n", bestSSID.c_str());
-            Serial.printf("IP:   %s\n", WiFi.localIP().toString().c_str());
-            Serial.printf("RSSI: %d dBm\n", WiFi.RSSI());
-            Serial.println("========================================");
+            // Перезапускаємо NetBIOS та mDNS
+            delay(500);
+            WiFi.setHostname("klimat");
+            NBNS.begin("klimat");
+            if (MDNS.begin("klimat")) {
+              delay(100);
+              MDNS.addService("http", "tcp", 80);
+            }
+            
+            // Виводимо інформацію про перепідключення
+            Serial.println("\n╔════════════════════════════════════════════════════════╗");
+            Serial.println("║  ✅ WiFi ПЕРЕПІДКЛЮЧЕНО                               ║");
+            Serial.println("╠════════════════════════════════════════════════════════╣");
+            Serial.printf("║  📡 Мережа:   %-37s║\n", WiFi.SSID().c_str());
+            Serial.printf("║  🌐 IP:       %-37s║\n", WiFi.localIP().toString().c_str());
+            Serial.printf("║  📶 Сигнал:   %-33d dBm ║\n", WiFi.RSSI());
+            Serial.println("╠════════════════════════════════════════════════════════╣");
+            Serial.println("║  🔗 http://klimat                                      ║");
+            Serial.println("╚════════════════════════════════════════════════════════╝\n");
+            
             reconnected = true;
-          } else {
-            Serial.println("Не вдалось підключитись до: " + bestSSID);
           }
-        } else {
-          Serial.println("Жодна збережена мережа не знайдена!");
         }
-        
-        if (!reconnected) {
-          Serial.println("Перепідключення не вдалось");
-        }
-      } else {
-        Serial.println("Жодної мережі не знайдено");
       }
-      Serial.println("========================================");
     }
   }
   
