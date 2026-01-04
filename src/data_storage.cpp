@@ -20,11 +20,18 @@ void addToHistory() {
   
   if (xSemaphoreTake(getHistoryMutex(), portMAX_DELAY)) {
     history[historyIndex].timestamp = now;
-    history[historyIndex].tempCarrier = sensorData.tempCarrier;
-    history[historyIndex].tempRoom = sensorData.tempRoom;
-    history[historyIndex].tempBME = sensorData.tempBME;
-    history[historyIndex].humidity = sensorData.humidity;
-    history[historyIndex].pressure = sensorData.pressure;
+    // Зберігаємо тільки валідні дані, інакше залишаємо попереднє значення
+    if (sensorData.carrierValid) {
+      history[historyIndex].tempCarrier = sensorData.tempCarrier;
+    }
+    if (sensorData.roomValid) {
+      history[historyIndex].tempRoom = sensorData.tempRoom;
+    }
+    if (sensorData.bmeValid) {
+      history[historyIndex].tempBME = sensorData.tempBME;
+      history[historyIndex].humidity = sensorData.humidity;
+      history[historyIndex].pressure = sensorData.pressure;
+    }
     history[historyIndex].pumpPower = (heatingState.pumpPower * 100) / 255;
     history[historyIndex].fanPower = (heatingState.fanPower * 100) / 255;
     history[historyIndex].extractorPower = (heatingState.extractorPower * 100) / 255;
