@@ -19,12 +19,12 @@ bool initTemperatureSensors() {
     return false;
   }
 
-  if (!sensors.getAddress(tempCarrierAddr, 0)) {
+  if (!sensors.getAddress(tempCarrierAddr, 1)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика теплоносія!");
     return false;
   }
   
-  if (!sensors.getAddress(tempRoomAddr, 1)) {
+  if (!sensors.getAddress(tempRoomAddr, 0)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика кімнати!");
     return false;
   }
