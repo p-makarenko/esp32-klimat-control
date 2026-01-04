@@ -29,10 +29,26 @@ bool initTemperatureSensors() {
     return false;
   }
 
-  sensors.setResolution(tempCarrierAddr, 12);
-  sensors.setResolution(tempRoomAddr, 12);
+  // Знижуємо роздільність до 10 біт (188ms конвертація замість 750ms для 12 біт)
+  sensors.setResolution(tempCarrierAddr, 10);
+  sensors.setResolution(tempRoomAddr, 10);
+  
+  // Виводимо адреси датчиків для діагностики
+  Serial.print("Адреса теплоносія: ");
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.printf("%02X", tempCarrierAddr[i]);
+    if (i < 7) Serial.print("-");
+  }
+  Serial.println();
+  
+  Serial.print("Адреса кімнати: ");
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.printf("%02X", tempRoomAddr[i]);
+    if (i < 7) Serial.print("-");
+  }
+  Serial.println();
 
-  Serial.println("✓ DS18B20 датчики ініціалізовано");
+  Serial.println("✓ DS18B20 датчики ініціалізовано (10-bit роздільність)");
   return true;
 }
 
@@ -62,10 +78,17 @@ bool initBME280() {
 
 void readTemperatureSensors() {
   sensors.requestTemperatures();
-  delay(200); // Збільшено до 200ms для надійності конвертації (12-bit потребує ~750ms, але async mode швидше)
+  delay(500); // 10-bit потребує 188ms, але даємо запас для надійності
   
   float carrier = sensors.getTempC(tempCarrierAddr);
   float room = sensors.getTempC(tempRoomAddr);
+  
+  // Діагностика: виводимо сирі значення кожні 10 секунд
+  static unsigned long lastDiag = 0;
+  if (millis() - lastDiag > 10000) {
+    lastDiag = millis();
+    Serial.printf("[DS18B20 RAW] Теплоносій: %.2f°C, Кімната: %.2f°C\n", carrier, room);
+  }
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
     // Перевірка на помилкові значення DS18B20: -127, 85, та поза допустимим діапазоном
