@@ -5,12 +5,12 @@
 #include <Preferences.h>
 #include "learning_system.h"
 
-// Версія та інформація про збірку
-#define VERSION "4.1"
+// Версія та інформація про збірку (автоматично оновлюється при компіляції)
+#define VERSION __DATE__ " " __TIME__
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 2451  // Оновлюється вручну при значних змінах
-#define SESSION_TOKENS 35694   // Токени витрачені в поточній сесії
+#define TOTAL_CODE_LINES 5846
+#define SESSION_TOKENS 59557
 
 // Оголошення всіх глобальних змінних
 extern Preferences prefs;

@@ -8,6 +8,7 @@
 #include "data_storage.h"
 #include "advanced_climate_logic.h"
 #include "utility_functions.h"
+#include "global_declarations.h"
 #include <Arduino.h>
 
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -27,7 +28,11 @@ extern bool compactMode;
 void setup() {
   Serial.begin(115200);
   Serial.println("\n\n==========================================");
-  Serial.println("       Клімат-контроль системи вентиляції v4.0");
+  Serial.println("       Клімат-контроль системи вентиляції v" VERSION);
+  Serial.print("       Зібрано: ");
+  Serial.print(BUILD_DATE);
+  Serial.print(" ");
+  Serial.println(BUILD_TIME);
   Serial.println("==========================================");
   
   initMutexes();
@@ -96,7 +101,9 @@ void setup() {
   Serial.println("  'm' - Меню керування");
   Serial.println("  's' - Статус системи");
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("  Веб-інтерфейс: http://" + WiFi.localIP().toString());
+    Serial.println("  Веб-інтерфейс:");
+    Serial.println("    http://klimat.local (рекомендовано)");
+    Serial.println("    http://" + WiFi.localIP().toString());
   } else {
     Serial.println("  Веб-інтерфейс: http://192.168.4.1 (режим точки доступу)");
   }

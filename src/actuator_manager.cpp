@@ -51,6 +51,9 @@ void initGPIO() {
   pinMode(HUMIDIFIER_PIN, OUTPUT);
   digitalWrite(HUMIDIFIER_PIN, LOW);
   
+  // Ініціалізуємо стан вимикача
+  ventState.switchState = digitalRead(VENT_SWITCH_PIN);
+  
   Serial.println("✓ GPIO ініціалізовано");
 }
 
@@ -157,6 +160,13 @@ void setExtractorPercent(uint8_t percent) {
 }
 
 void moveServoSmooth(int targetAngle) {
+  // КРИТИЧНИЙ ЗАХИСТ: Серво рухається ТІЛЬКИ через механічний вимикач!
+  // Виняток: режим калібрування (для налаштування кутів)
+  if (!ventState.moving && !ventState.calibrationMode) {
+    Serial.println("⚠ БЛОКОВАНО: Серво рухається ТІЛЬКИ через механічний вимикач!");
+    return;
+  }
+  
   if (targetAngle == ventState.currentAngle) {
     return;
   }
@@ -187,19 +197,23 @@ void moveServoSmooth(int targetAngle) {
 
 void controlVentilation() {
   if (ventState.moving || ventState.calibrationMode) {
-    return;  // Пропускаємо в режимі калібрування
+    return;  // Пропускаємо в режимі калібрування або руху
   }
   
-  bool switchState = digitalRead(VENT_SWITCH_PIN);
+  bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
   
-  if (switchState && !ventState.open) {
+  // Рухаємо серво ТІЛЬКИ якщо змінився стан вимикача
+  if (currentSwitchState != ventState.switchState) {
+    ventState.switchState = currentSwitchState;
     ventState.moving = true;
-    moveServoSmooth(config.servoOpenAngle);
-    Serial.println("✓ Вентиляція відкрита (механічний вимикач)");
-  } else if (!switchState && ventState.open) {
-    ventState.moving = true;
-    moveServoSmooth(config.servoClosedAngle);
-    Serial.println("✓ Вентиляція закрита (механічний вимикач)");
+    
+    if (currentSwitchState) {
+      moveServoSmooth(config.servoOpenAngle);
+      Serial.println("✓ Вентиляція відкрита (механічний вимикач)");
+    } else {
+      moveServoSmooth(config.servoClosedAngle);
+      Serial.println("✓ Вентиляція закрита (механічний вимикач)");
+    }
   }
 }
 

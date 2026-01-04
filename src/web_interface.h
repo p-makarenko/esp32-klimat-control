@@ -5,6 +5,7 @@
 #include "advanced_climate_logic.h"
 #include "learning_system.h"
 #include "utility_functions.h"
+#include "global_declarations.h"
 
 // ============================================================================
 // ВЕБ-ІНТЕРФЕЙС
@@ -22,6 +23,7 @@ void handleSaveSettings();
 void handleTimePage();
 void handleWiFiPage();
 void handleHistoryPage();
+void handleHelpPage();
 void handleDebugPage();
 void handleLearningPage();
 void handleLearningAPI();
@@ -33,6 +35,7 @@ void handleServoAPI();
 // Налаштування Wi-Fi (додаємо!)
 void handleWiFiSettingsPage();
 void handleSaveWiFiSettings();
+void handleSaveNetworkSettings();
 void handleScanWiFi();
 void handleConnectWiFi();
 

@@ -69,6 +69,18 @@ struct SystemConfig {
   // Serial вивід
   bool autoStatusEnabled;
   
+  // Налаштування мережі
+  bool useStaticIP;
+  String staticIP;
+  String gateway;
+  String subnet;
+  String dns;
+  
+  // Безпека
+  bool useAuth;
+  String authLogin;
+  String authPassword;
+  
   HumidityConfig humidityConfig;
   
   uint8_t a_adaptive_min;

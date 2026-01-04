@@ -3,6 +3,7 @@
 #include "sensor_manager.h"
 #include "actuator_manager.h"
 #include "learning_system.h"
+#include "global_declarations.h"
 #include <ArduinoJson.h>
 #include "advanced_climate_logic.h"
 #include "data_storage.h"
@@ -350,7 +351,14 @@ void handleRoot() {
     
     html += "<div class='container'>";
     html += "<div class='header'>";
-    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ v" VERSION "</h1>";
+    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>v4.3</span></h1>";
+    html += "<script>";
+    html += "function showVersion() {";
+    html += "  var msg = 'Зібрано: " VERSION "';";
+    html += "  msg += '\\n\\nРядків коду: " + String(TOTAL_CODE_LINES) + "';";
+    html += "  alert(msg);";
+    html += "}";
+    html += "</script>";
     
     // Інформація про мережу
     html += "<div style='background: #e8f5e9; padding: 10px 15px; border-radius: 5px; margin: 10px 0; font-size: 0.85em;'>";
@@ -463,9 +471,9 @@ void handleRoot() {
     html += "<a href='/wifi-settings' class='nav-btn'>📶 WI-FI</a>";
     html += "<a href='/learning' class='nav-btn'>🧠 СИСТЕМА НАВЧАННЯ</a>";
     html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
+    html += "<a href='/history' class='nav-btn' style='background: #e91e63;'>📈 ГРАФІКИ</a>";
     html += "<a href='/status' class='nav-btn'>📊 JSON СТАТУС</a>";
     html += "<a href='/time' class='nav-btn'>🕒 ЧАС</a>";
-    html += "<a href='/history' class='nav-btn'>📈 ІСТОРІЯ</a>";
     html += "<a href='/debug' class='nav-btn'>🔧 ВІДЛАДКА</a>";
     html += "</div>";
     
@@ -1860,21 +1868,119 @@ void handleSaveNetworkSettings() {
 }
 
 void handleHistoryPage() {
-    String html = "";
-    html = "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
-    html += "<div style='max-width: 800px; margin: 0 auto; padding: 20px;'>";
-    html += "<h1>📈 ІСТОРІЯ ДАНИХ</h1>";
-    html += "<div style='background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;'>";
-    html += "<p><strong>Всього записів:</strong> " + String(historyIndex) + "</p>";
-    html += "<p><strong>Розмір буфера:</strong> " + String(HISTORY_BUFFER_SIZE) + " записів</p>";
-    html += "<p><strong>Ініціалізовано:</strong> " + String(historyInitialized ? "Так" : "Ні") + "</p>";
-    html += "<p><em>Повний перегляд історії буде доступний в майбутніх версіях</em></p>";
+    String html = "<!DOCTYPE html><html lang='uk'><head>";
+    html += "<meta charset='UTF-8'>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    html += "<title>📈 Історія даних</title>";
+    html += "<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0'></script>";
+    html += "<style>";
+    html += "body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }";
+    html += ".container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }";
+    html += "h1 { color: #333; text-align: center; margin-bottom: 10px; }";
+    html += ".info { text-align: center; color: #666; margin-bottom: 30px; font-size: 0.9em; }";
+    html += ".chart-container { position: relative; height: 300px; margin: 30px 0; }";
+    html += ".back-btn { display: inline-block; background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px; }";
+    html += ".back-btn:hover { background: #45a049; }";
+    html += "h2 { color: #667eea; margin-top: 40px; }";
+    html += "</style></head><body>";
+    html += "<div class='container'>";
+    html += "<h1>📈 ІСТОРІЯ ТЕМПЕРАТУРИ І ВОЛОГОСТІ</h1>";
+    html += "<div class='info'>";
+    html += "Записів: " + String(historyIndex) + " / " + String(HISTORY_BUFFER_SIZE);
+    html += " | Оновлення кожну хвилину";
     html += "</div>";
-    html += "<p><a href='/'>← На головну</a></p>";
+    
+    // Графік температури
+    html += "<h2>🌡️ Температура</h2>";
+    html += "<div class='chart-container'><canvas id='tempChart'></canvas></div>";
+    
+    // Графік вологості
+    html += "<h2>💧 Вологість</h2>";
+    html += "<div class='chart-container'><canvas id='humChart'></canvas></div>";
+    
+    html += "<a href='/' class='back-btn'>← На головну</a>";
     html += "</div>";
     html += getUkraineMarquee();
-    html += "</body></html>";
     
+    // JavaScript для графіків
+    html += "<script>";
+    html += "const labels = [];";
+    html += "const tempCarrier = [];";
+    html += "const tempRoom = [];";
+    html += "const tempBME = [];";
+    html += "const humidity = [];";
+    
+    // Додаємо дані з історії
+    int count = historyIndex > 0 ? historyIndex : HISTORY_BUFFER_SIZE;
+    int step = count > 288 ? count / 288 : 1; // Максимум 288 точок (кожні 5 хв з 24 год)
+    
+    for (int i = 0; i < count; i += step) {
+        HistoryData& h = history[i];
+        if (h.timestamp > 0) {
+            // Час у годинах:хвилинах
+            unsigned long hours = (h.timestamp / 3600) % 24;
+            unsigned long minutes = (h.timestamp / 60) % 60;
+            html += "labels.push('" + String(hours) + ":" + (minutes < 10 ? "0" : "") + String(minutes) + "');";
+            html += "tempCarrier.push(" + String(h.tempCarrier, 1) + ");";
+            html += "tempRoom.push(" + String(h.tempRoom, 1) + ");";
+            html += "tempBME.push(" + String(h.tempBME, 1) + ");";
+            html += "humidity.push(" + String(h.humidity, 1) + ");";
+        }
+    }
+    
+    // Графік температури
+    html += "new Chart(document.getElementById('tempChart'), {";
+    html += "type: 'line',";
+    html += "data: {";
+    html += "labels: labels,";
+    html += "datasets: [{";
+    html += "label: '🔥 Теплоносій',";
+    html += "data: tempCarrier,";
+    html += "borderColor: '#e74c3c',";
+    html += "backgroundColor: 'rgba(231, 76, 60, 0.1)',";
+    html += "tension: 0.4";
+    html += "}, {";
+    html += "label: '🏠 Кімната',";
+    html += "data: tempRoom,";
+    html += "borderColor: '#3498db',";
+    html += "backgroundColor: 'rgba(52, 152, 219, 0.1)',";
+    html += "tension: 0.4";
+    html += "}, {";
+    html += "label: '🌡️ BME280',";
+    html += "data: tempBME,";
+    html += "borderColor: '#2ecc71',";
+    html += "backgroundColor: 'rgba(46, 204, 113, 0.1)',";
+    html += "tension: 0.4";
+    html += "}]},";
+    html += "options: {";
+    html += "responsive: true,";
+    html += "maintainAspectRatio: false,";
+    html += "plugins: { legend: { display: true, position: 'top' } },";
+    html += "scales: { y: { beginAtZero: false, title: { display: true, text: '°C' } } }";
+    html += "}});";
+    
+    // Графік вологості
+    html += "new Chart(document.getElementById('humChart'), {";
+    html += "type: 'line',";
+    html += "data: {";
+    html += "labels: labels,";
+    html += "datasets: [{";
+    html += "label: '💧 Вологість',";
+    html += "data: humidity,";
+    html += "borderColor: '#3498db',";
+    html += "backgroundColor: 'rgba(52, 152, 219, 0.2)',";
+    html += "fill: true,";
+    html += "tension: 0.4";
+    html += "}]},";
+    html += "options: {";
+    html += "responsive: true,";
+    html += "maintainAspectRatio: false,";
+    html += "plugins: { legend: { display: true, position: 'top' } },";
+    html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
+    html += "}});";
+    html += "</script>";
+    
+    html += "</body></html>";
     server.send(200, "text/html", html);
 }
 

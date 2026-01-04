@@ -3,6 +3,7 @@
 #include "actuator_manager.h"
 #include "system_core.h"
 #include "data_storage.h"
+#include "global_declarations.h"
 #include <Arduino.h>
 #include "utility_functions.h"
 
@@ -48,7 +49,7 @@ void printCompactMode() {
 
 void printExtendedMode() {
     Serial.println("\n══════════════════════════════════════════════════════════");
-    Serial.println("        ПОВНИЙ РЕЖИМ КЕРУВАННЯ v4.0");
+    Serial.println("        ПОВНИЙ РЕЖИМ КЕРУВАННЯ v" VERSION);
     Serial.println("══════════════════════════════════════════════════════════");
     Serial.println("СЕРВІСНІ КОМАНДИ:");
     Serial.println("  status      - статус системи");

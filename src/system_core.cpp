@@ -332,6 +332,18 @@ void loadConfiguration() {
   
   config.autoStatusEnabled = preferences.getBool("autoStatus", false);
   
+  // Мережеві налаштування
+  config.useStaticIP = preferences.getBool("useStaticIP", false);
+  config.staticIP = preferences.getString("staticIP", "192.168.1.100");
+  config.gateway = preferences.getString("gateway", "192.168.1.1");
+  config.subnet = preferences.getString("subnet", "255.255.255.0");
+  config.dns = preferences.getString("dns", "8.8.8.8");
+  
+  // Безпека
+  config.useAuth = preferences.getBool("useAuth", false);
+  config.authLogin = preferences.getString("authLogin", "admin");
+  config.authPassword = preferences.getString("authPass", "12345");
+  
   
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
   config.humidityConfig.minHumidity = preferences.getFloat("humMin", HUM_MIN_DEFAULT);
