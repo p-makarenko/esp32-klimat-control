@@ -19,18 +19,19 @@ bool initTemperatureSensors() {
     return false;
   }
 
-  if (!sensors.getAddress(tempCarrierAddr, 1)) {
+  if (!sensors.getAddress(tempCarrierAddr, 0)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика теплоносія!");
     return false;
   }
   
-  if (!sensors.getAddress(tempRoomAddr, 0)) {
+  if (!sensors.getAddress(tempRoomAddr, 1)) {
     Serial.println("⚠ Проблема: Не вдалося знайти адресу датчика кімнати!");
     return false;
   }
 
   sensors.setResolution(tempCarrierAddr, 12);
   sensors.setResolution(tempRoomAddr, 12);
+  sensors.setWaitForConversion(true); // Чекаємо завершення конвертації
 
   Serial.println("✓ DS18B20 датчики ініціалізовано");
   return true;
@@ -62,7 +63,7 @@ bool initBME280() {
 
 void readTemperatureSensors() {
   sensors.requestTemperatures();
-  delay(200);
+  // setWaitForConversion(true) блокує виконання до завершення, тому delay не потрібен
   
   float carrier = sensors.getTempC(tempCarrierAddr);
   float room = sensors.getTempC(tempRoomAddr);
