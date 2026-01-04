@@ -62,10 +62,13 @@ bool initBME280() {
 }
 
 void readTemperatureSensors() {
-  sensors.requestTemperatures();
-  // setWaitForConversion(true) блокує виконання до завершення, тому delay не потрібен
-  
+  // Читаємо кожен датчик окремо
+  sensors.requestTemperaturesByAddress(tempCarrierAddr);
+  while (!sensors.isConversionComplete()) { delay(10); }
   float carrier = sensors.getTempC(tempCarrierAddr);
+  
+  sensors.requestTemperaturesByAddress(tempRoomAddr);
+  while (!sensors.isConversionComplete()) { delay(10); }
   float room = sensors.getTempC(tempRoomAddr);
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
