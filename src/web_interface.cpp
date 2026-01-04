@@ -2058,10 +2058,14 @@ void handleHistoryPage() {
     for (int i = 0; i < count; i += step) {
         HistoryData& h = history[i];
         if (h.timestamp > 0) {
-            // Час у годинах:хвилинах
-            unsigned long hours = (h.timestamp / 3600) % 24;
-            unsigned long minutes = (h.timestamp / 60) % 60;
-            html += "labels.push('" + String(hours) + ":" + (minutes < 10 ? "0" : "") + String(minutes) + "');";
+            // Обчислюємо реальний час на основі поточного часу та різниці в millis()
+            unsigned long currentMillis = millis();
+            unsigned long recordAge = currentMillis - h.timestamp; // Скільки мс тому був запис
+            time_t recordTime = time(nullptr) - (recordAge / 1000); // Віднімаємо секунди
+            struct tm* timeInfo = localtime(&recordTime);
+            
+            html += "labels.push('" + String(timeInfo->tm_hour) + ":" + 
+                    (timeInfo->tm_min < 10 ? "0" : "") + String(timeInfo->tm_min) + "');";
             html += "tempCarrier.push(" + String(h.tempCarrier, 1) + ");";
             html += "tempRoom.push(" + String(h.tempRoom, 1) + ");";
             html += "tempBME.push(" + String(h.tempBME, 1) + ");";
