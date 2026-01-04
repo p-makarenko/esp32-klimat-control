@@ -51,10 +51,31 @@ void initGPIO() {
   pinMode(HUMIDIFIER_PIN, OUTPUT);
   digitalWrite(HUMIDIFIER_PIN, LOW);
   
-  // Ініціалізуємо стан вимикача
-  ventState.switchState = digitalRead(VENT_SWITCH_PIN);
+  // Читаємо стан вимикача
+  bool switchState = digitalRead(VENT_SWITCH_PIN);
+  ventState.switchState = switchState;
   
-  Serial.println("✓ GPIO ініціалізовано");
+  // Встановлюємо серво у відповідне положення при старті
+  ventState.moving = true;  // Дозволяємо рух для ініціалізації
+  int targetAngle = switchState ? config.servoOpenAngle : config.servoClosedAngle;
+  
+  if (!ventState.servoAttached) {
+    ventServo.attach(SERVO_PIN);
+    ventState.servoAttached = true;
+    delay(50);
+  }
+  
+  ventServo.write(targetAngle);
+  ventState.currentAngle = targetAngle;
+  ventState.open = switchState;
+  
+  delay(500);  // Даємо час серво досягнути позиції
+  ventServo.detach();
+  ventState.servoAttached = false;
+  ventState.moving = false;
+  
+  Serial.printf("✓ GPIO ініціалізовано. Серво: %s (%d°)\n", 
+                switchState ? "ВІДКРИТО" : "ЗАКРИТО", targetAngle);
 }
 
 void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower) {
@@ -168,6 +189,7 @@ void moveServoSmooth(int targetAngle) {
   }
   
   if (targetAngle == ventState.currentAngle) {
+    ventState.moving = false;
     return;
   }
   
@@ -193,17 +215,35 @@ void moveServoSmooth(int targetAngle) {
   ventServo.detach();
   ventState.servoAttached = false;
   ventState.moving = false;
+  
+  // КРИТИЧНО: Після завершення руху перевіряємо чи не змінився вимикач під час руху
+  bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
+  if (currentSwitchState != ventState.switchState) {
+    Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
+    ventState.switchState = currentSwitchState;
+    // Запускаємо рух у зворотному напрямку через 100мс
+    delay(100);
+    ventState.moving = true;
+    int newTargetAngle = currentSwitchState ? config.servoOpenAngle : config.servoClosedAngle;
+    moveServoSmooth(newTargetAngle);
+  }
 }
 
 void controlVentilation() {
-  if (ventState.moving || ventState.calibrationMode) {
-    return;  // Пропускаємо в режимі калібрування або руху
+  if (ventState.calibrationMode) {
+    return;  // Пропускаємо в режимі калібрування
+  }
+  
+  // Якщо серво вже рухається, чекаємо завершення
+  if (ventState.moving) {
+    return;
   }
   
   bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
   
   // Рухаємо серво ТІЛЬКИ якщо змінився стан вимикача
   if (currentSwitchState != ventState.switchState) {
+    Serial.printf("Перемикач змінено: %d -> %d\n", ventState.switchState, currentSwitchState);
     ventState.switchState = currentSwitchState;
     ventState.moving = true;
     

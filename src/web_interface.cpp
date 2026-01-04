@@ -42,17 +42,6 @@ void initWiFi() {
     WiFi.disconnect(true);  // Повне відключення
     delay(100);
     
-    // Список мереж для підключення
-    struct WiFiNetwork {
-        const char* ssid;
-        const char* password;
-    };
-    
-    WiFiNetwork networks[] = {
-        {"Redmi Note 14", "12345678"},     // Основна мережа
-        {"Redmi Note 9", "1234567890"},    // Резервна мережа
-    };
-    
     // Спочатку скануємо мережі
     Serial.println("🔍 Пошук доступних мереж...");
     
@@ -79,10 +68,10 @@ void initWiFi() {
 
     std::vector<AvailableNetwork> availableNetworks;
 
-    for (int i = 0; i < sizeof(networks)/sizeof(networks[0]); i++) {
+    for (int i = 0; i < KNOWN_NETWORKS_COUNT; i++) {
         for (int j = 0; j < n; j++) {
-            if (WiFi.SSID(j) == networks[i].ssid && networks[i].password != NULL && strlen(networks[i].password) > 0) {
-                availableNetworks.push_back({networks[i].ssid, networks[i].password, WiFi.RSSI(j)});
+            if (WiFi.SSID(j) == KNOWN_NETWORKS[i].ssid) {
+                availableNetworks.push_back({KNOWN_NETWORKS[i].ssid, KNOWN_NETWORKS[i].password, WiFi.RSSI(j)});
                 break;
             }
         }
@@ -303,6 +292,11 @@ String encryptionTypeToString(wifi_auth_mode_t type) {
 // ============================================================================
 
 void handleRoot() {
+    // Перевірка WiFi перед відправкою великої відповіді
+    if (WiFi.status() != WL_CONNECTED) {
+        return;
+    }
+    
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -351,11 +345,16 @@ void handleRoot() {
     
     html += "<div class='container'>";
     html += "<div class='header'>";
-    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>v4.3</span></h1>";
+    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>" VERSION "</span></h1>";
     html += "<script>";
     html += "function showVersion() {";
-    html += "  var msg = 'Зібрано: " VERSION "';";
-    html += "  msg += '\\n\\nРядків коду: " + String(TOTAL_CODE_LINES) + "';";
+    html += "  var msg = '" VERSION "';";
+    html += "  msg += '\\n" VERSION_COMMENT "';";
+    html += "  msg += '\\n\\nЗібрано: " BUILD_DATE " " BUILD_TIME "';";
+    html += "  msg += '\\nРядків коду: " + String(TOTAL_CODE_LINES) + "';";
+    if (FIRMWARE_SIZE_KB > 0) {
+        html += "  msg += '\\nРозмір прошивки: " + String(FIRMWARE_SIZE_KB) + " KB';";
+    }
     html += "  alert(msg);";
     html += "}";
     html += "</script>";
@@ -613,7 +612,10 @@ void handleRoot() {
     
     html += "</body></html>";
     
-    server.send(200, "text/html", html);
+    // Перевірка WiFi перед відправкою
+    if (WiFi.status() == WL_CONNECTED) {
+        server.send(200, "text/html", html);
+    }
 }
 
 // ============================================================================
@@ -963,6 +965,8 @@ String processWebCommand(const String& cmd) {
 // ============================================================================
 
 void handleWiFiSettingsPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -999,6 +1003,20 @@ void handleWiFiSettingsPage() {
     html += ".hidden { display: none; }";
     html += "</style>";
     html += "<script>";
+    html += "var savedNetworks = {};";
+    
+    // Додаємо збережені мережі з паролями
+    preferences.begin("wifi", true);
+    int networkCount = preferences.getInt("netCount", 0);
+    for (int i = 0; i < networkCount; i++) {
+        String savedSSID = preferences.getString(("ssid" + String(i)).c_str(), "");
+        String savedPass = preferences.getString(("pass" + String(i)).c_str(), "");
+        if (savedSSID.length() > 0) {
+            html += "savedNetworks['" + savedSSID + "'] = '" + savedPass + "';";
+        }
+    }
+    preferences.end();
+    
     html += "function showManualForm() {";
     html += "  document.getElementById('manualForm').classList.remove('hidden');";
     html += "  document.getElementById('manualForm').scrollIntoView({ behavior: 'smooth' });";
@@ -1008,6 +1026,11 @@ void handleWiFiSettingsPage() {
     html += "  document.getElementById('connectEncrypted').value = encrypted;";
     html += "  if (encrypted === 'true') {";
     html += "    document.getElementById('manualForm').classList.remove('hidden');";
+    html += "    if (savedNetworks[ssid]) {";
+    html += "      document.getElementById('connectPassword').value = savedNetworks[ssid];";
+    html += "    } else {";
+    html += "      document.getElementById('connectPassword').value = '';";
+    html += "    }";
     html += "    document.getElementById('connectPassword').focus();";
     html += "  } else {";
     html += "    document.getElementById('connectPassword').value = '';";
@@ -1076,20 +1099,42 @@ void handleWiFiSettingsPage() {
             html += "</div>";
         }
     } else {
-        // Показати збережені мережі з preferences
+        // Показати всі збережені мережі з preferences
         preferences.begin("wifi", true);
-        String savedSSID = preferences.getString("ssid", "");
-        preferences.end();
+        int networkCount = preferences.getInt("netCount", 0);
         
-        if (savedSSID.length() > 0) {
-            html += "<div class='network-item'>";
-            html += "<div>";
-            html += "<div class='network-ssid'>" + savedSSID + " (збережена)</div>";
-            html += "<div class='network-details'>Збережена мережа - натисніть кнопку вище для сканування</div>";
+        if (networkCount > 0) {
+            html += "<div class='status-info' style='margin-bottom: 10px;'>";
+            html += "💾 Збережено мереж: " + String(networkCount);
             html += "</div>";
-            html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
-            html += "</div>";
+            
+            for (int i = 0; i < networkCount; i++) {
+                String savedSSID = preferences.getString(("ssid" + String(i)).c_str(), "");
+                if (savedSSID.length() > 0) {
+                    html += "<div class='network-item'>";
+                    html += "<div>";
+                    html += "<div class='network-ssid'>📱 " + savedSSID + "</div>";
+                    html += "<div class='network-details'>Збережена мережа #" + String(i+1) + "</div>";
+                    html += "</div>";
+                    html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
+                    html += "</div>";
+                }
+            }
+        } else {
+            // Перевірка старого формату (одна мережа)
+            String savedSSID = preferences.getString("ssid", "");
+            if (savedSSID.length() > 0) {
+                html += "<div class='network-item'>";
+                html += "<div>";
+                html += "<div class='network-ssid'>📱 " + savedSSID + "</div>";
+                html += "<div class='network-details'>Збережена мережа (старий формат)</div>";
+                html += "</div>";
+                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
+                html += "</div>";
+            }
         }
+        
+        preferences.end();
         
         html += "<div class='network-item'>";
         html += "<div>";
@@ -1268,9 +1313,41 @@ void handleSaveWiFiSettings() {
         response += "<p>Сигнал: " + String(WiFi.RSSI()) + " dBm</p>";
         response += "<p>Перенаправлення на головну сторінку...</p>";
         
+        // Зберігаємо мережу в список збережених мереж (до 5 мереж)
+        preferences.begin("wifi", false);
+        
+        // Читаємо поточну кількість збережених мереж
+        int networkCount = preferences.getInt("netCount", 0);
+        
+        // Перевіряємо чи мережа вже є
+        bool exists = false;
+        for (int i = 0; i < networkCount; i++) {
+            String savedSSID = preferences.getString(("ssid" + String(i)).c_str(), "");
+            if (savedSSID == ssid) {
+                // Оновлюємо пароль
+                preferences.putString(("pass" + String(i)).c_str(), password);
+                exists = true;
+                break;
+            }
+        }
+        
+        // Якщо мережі нема - додаємо
+        if (!exists && networkCount < 5) {
+            preferences.putString(("ssid" + String(networkCount)).c_str(), ssid);
+            preferences.putString(("pass" + String(networkCount)).c_str(), password);
+            networkCount++;
+            preferences.putInt("netCount", networkCount);
+        }
+        
+        // Зберігаємо останню підключену мережу (для сумісності)
+        preferences.putString("ssid", ssid);
+        preferences.putString("password", password);
+        preferences.end();
+        
         Serial.println("\n✅ Підключення успішно!");
         Serial.println("  IP: " + WiFi.localIP().toString());
         Serial.println("  RSSI: " + String(WiFi.RSSI()) + " dBm");
+        Serial.printf("  Збережено мереж: %d\n", networkCount);
     } else {
         response += "<h1 class='error'>❌ Не вдалося підключитись</h1>";
         response += "<p>Мережа: " + ssid + "</p>";
@@ -1296,6 +1373,8 @@ void handleSaveWiFiSettings() {
 // ============================================================================
 
 void handleSettingsPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "<!DOCTYPE html><html><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -1529,6 +1608,7 @@ void handleSaveSettings() {
 
 void handleControlPage() {
     if (!checkAuth()) return;
+    if (WiFi.status() != WL_CONNECTED) return;
     
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
@@ -1868,6 +1948,8 @@ void handleSaveNetworkSettings() {
 }
 
 void handleHistoryPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -1989,6 +2071,8 @@ void handleHistoryPage() {
 // ============================================================================
 
 void handleHelpPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "<!DOCTYPE html><html lang='uk'><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -2205,10 +2289,10 @@ void handleHelpPage() {
     html += "<li>IP-адреса: <strong>" + WiFi.localIP().toString() + "</strong></li>";
     html += "<li>mDNS: <strong>klimat.local</strong></li>";
     html += "<li>Сигнал: <strong>" + String(WiFi.RSSI()) + " dBm</strong></li>";
-    html += "<li>Версія: <strong>v" VERSION "</strong></li>";
+    html += "<li>Версія: <strong>" VERSION "</strong></li>";
     html += "<li>Дата збірки: <strong>" BUILD_DATE " " BUILD_TIME "</strong></li>";
     html += "<li>Рядків коду: <strong>" + String(TOTAL_CODE_LINES) + "</strong></li>";
-    html += "<li>Токенів сесії: <strong>" + String(SESSION_TOKENS) + "</strong></li>";
+    html += "<li>Розмір прошивки: <strong>" + String(FIRMWARE_SIZE_KB) + " KB</strong></li>";
     html += "</ul>";
     html += "</div>";
     
@@ -2386,6 +2470,8 @@ void handleHelpPage() {
 // ============================================================================
 
 void handleDebugPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "";
     html = "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
     html += "<div style='max-width: 800px; margin: 0 auto; padding: 20px;'>";
@@ -2412,6 +2498,8 @@ void handleDebugPage() {
 // ============================================================================
 
 void handleLearningPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "";
     html = "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
     html += "<div style='max-width: 800px; margin: 0 auto; padding: 20px;'>";
@@ -2445,6 +2533,8 @@ void handleLearningAPI() {
 // ============================================================================
 
 void handleServoPage() {
+    if (WiFi.status() != WL_CONNECTED) return;
+    
     String html = "<!DOCTYPE html><html><head>";
     html += "<meta charset='UTF-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";

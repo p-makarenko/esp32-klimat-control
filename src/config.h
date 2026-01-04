@@ -91,7 +91,18 @@
 #define WIFI_PASSWORD "12345678"
 #define WIFI_CHANNEL       1
 #define MAX_CLIENTS        4
+// Структура для списку WiFi мереж
+struct WiFiCredentials {
+    const char* ssid;
+    const char* password;
+};
 
+// Список відомих WiFi мереж (в порядку пріоритету)
+#define KNOWN_NETWORKS_COUNT 2
+const WiFiCredentials KNOWN_NETWORKS[KNOWN_NETWORKS_COUNT] = {
+    {"Redmi Note 14", "12345678"},
+    {"Redmi Note 9", "1234567890"}
+};
 // Додано: налаштування обмежень пристроїв за замовчуванням
 #define PUMP_MIN_DEFAULT       30
 #define PUMP_MAX_DEFAULT       100

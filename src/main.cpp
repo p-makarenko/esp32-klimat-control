@@ -27,12 +27,18 @@ extern bool compactMode;
 // НАЛАШТУВАННЯ СИСТЕМИ
 void setup() {
   Serial.begin(115200);
+  delay(500);  // Даємо час Serial ініціалізуватись
+  
   Serial.println("\n\n==========================================");
-  Serial.println("       Клімат-контроль системи вентиляції v" VERSION);
-  Serial.print("       Зібрано: ");
+  Serial.println("  Клімат-контроль системи вентиляції");
+  Serial.println("  " VERSION);
+  Serial.println("  " VERSION_COMMENT);
+  Serial.print("  Зібрано: ");
   Serial.print(BUILD_DATE);
   Serial.print(" ");
   Serial.println(BUILD_TIME);
+  Serial.printf("  Рядків коду: %d\n", TOTAL_CODE_LINES);
+  Serial.printf("  Розмір прошивки: %d KB\n", FIRMWARE_SIZE_KB);
   Serial.println("==========================================");
   
   initMutexes();
@@ -118,6 +124,135 @@ void setup() {
 
 // ГОЛОВНИЙ ЦИКЛ
 void loop() {
+  static unsigned long lastWiFiCheck = 0;
+  const unsigned long wifiCheckInterval = 30000; // Перевірка кожні 30 секунд
+  
+  // Автоматичне перепідключення WiFi
+  unsigned long now = millis();
+  if (now - lastWiFiCheck >= wifiCheckInterval) {
+    lastWiFiCheck = now;
+    
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("");
+      Serial.println("========================================");
+      Serial.println("   WiFi втрачено - перепідключення");
+      Serial.println("========================================");
+      
+      // Читаємо збережені мережі з Preferences
+      preferences.begin("wifi", true);
+      int networkCount = preferences.getInt("netCount", 0);
+      
+      // Масив для збережених мереж
+      struct SavedNetwork {
+        String ssid;
+        String password;
+      };
+      SavedNetwork savedNetworks[5];
+      
+      // Якщо немає збережених мереж, використовуємо KNOWN_NETWORKS
+      if (networkCount == 0) {
+        Serial.println("Збережених мереж немає, використовую стандартні");
+        networkCount = KNOWN_NETWORKS_COUNT;
+        for (int i = 0; i < networkCount && i < 5; i++) {
+          savedNetworks[i].ssid = KNOWN_NETWORKS[i].ssid;
+          savedNetworks[i].password = KNOWN_NETWORKS[i].password;
+        }
+      } else {
+        Serial.printf("Знайдено збережених мереж: %d\n", networkCount);
+        for (int i = 0; i < networkCount && i < 5; i++) {
+          savedNetworks[i].ssid = preferences.getString(("ssid" + String(i)).c_str(), "");
+          savedNetworks[i].password = preferences.getString(("pass" + String(i)).c_str(), "");
+          Serial.printf("  %d: %s\n", i+1, savedNetworks[i].ssid.c_str());
+        }
+      }
+      preferences.end();
+      
+      // Відключаємося від поточної мережі перед скануванням
+      WiFi.disconnect();
+      delay(100);
+      
+      // Скануємо доступні мережі
+      Serial.println("Сканування мереж...");
+      int n = WiFi.scanNetworks();
+      
+      if (n < 0) {
+        Serial.printf("Помилка сканування: %d\n", n);
+        Serial.println("Спроба повторного сканування через 10 сек...");
+        delay(10000);
+        lastWiFiCheck = millis();
+        return;
+      }
+      
+      Serial.printf("Знайдено мереж: %d\n", n);
+      
+      if (n > 0) {
+        // Показуємо всі знайдені мережі
+        for (int i = 0; i < n; i++) {
+          Serial.printf("  %d: %s (%d dBm)\n", i+1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));
+        }
+        
+        // Шукаємо найкращу зі збережених мереж
+        bool reconnected = false;
+        int bestRSSI = -999;
+        String bestSSID = "";
+        String bestPassword = "";
+        
+        for (int i = 0; i < networkCount && i < 5; i++) {
+          if (savedNetworks[i].ssid.length() == 0) continue;
+          
+          for (int j = 0; j < n; j++) {
+            if (WiFi.SSID(j) == savedNetworks[i].ssid) {
+              Serial.printf("Знайдено збережену мережу: %s (%d dBm)\n", savedNetworks[i].ssid.c_str(), WiFi.RSSI(j));
+              if (WiFi.RSSI(j) > bestRSSI) {
+                bestRSSI = WiFi.RSSI(j);
+                bestSSID = savedNetworks[i].ssid;
+                bestPassword = savedNetworks[i].password;
+              }
+            }
+          }
+        }
+        
+        if (bestSSID.length() > 0) {
+          Serial.printf("Connecting to: %s (signal: %d dBm)\n", bestSSID.c_str(), bestRSSI);
+          
+          WiFi.disconnect();
+          delay(100);
+          WiFi.begin(bestSSID.c_str(), bestPassword.c_str());
+          
+          int attempts = 0;
+          while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+          }
+          Serial.println("");
+          
+          if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("========================================");
+            Serial.println("   WiFi підключено успішно!");
+            Serial.println("========================================");
+            Serial.printf("SSID: %s\n", bestSSID.c_str());
+            Serial.printf("IP:   %s\n", WiFi.localIP().toString().c_str());
+            Serial.printf("RSSI: %d dBm\n", WiFi.RSSI());
+            Serial.println("========================================");
+            reconnected = true;
+          } else {
+            Serial.println("Не вдалось підключитись до: " + bestSSID);
+          }
+        } else {
+          Serial.println("Жодна збережена мережа не знайдена!");
+        }
+        
+        if (!reconnected) {
+          Serial.println("Перепідключення не вдалось");
+        }
+      } else {
+        Serial.println("Жодної мережі не знайдено");
+      }
+      Serial.println("========================================");
+    }
+  }
+  
   processAdvancedSerialCommand();
   autoPrintStatus();
   addToHistory();
