@@ -1,165 +1,131 @@
-# Інструкції для AI-агентів у проєкті ESP32-Klimat-Control
-## ВЕДЕННЯ АРХІВУ КОРИСТУВАЧА  
-**перевірити наявність, а якщо нема, то створити файл в корневому каталозі проекту pavlo_says.md. Цей файл є постійним архівом ВИКЛЮЧНО повідомлень користувача під час спілкування з AI-агентом. Архівування відбувається ПОСТІЙНО та АВТОМАТИЧНО для КОЖНОГО повідомлення користувача.
+Instructions for Copilot AI Agent in the ESP32-Klimat-Control Project
+USER ARCHIVE HANDLING
+Always check for the existence of the file pavlo_says.md in the project root. If it does not exist, create it.
+This file is a permanent archive for USER messages ONLY during interactions with the AI agent.
+Archiving must happen CONTINUOUSLY and AUTOMATICALLY for EVERY user message.
+STRICT PROHIBITIONS FOR THE AGENT:
+NEVER add your own responses, code, explanations, or any content except filtered user messages.
+NEVER edit, format, or delete existing content in the file.
+NEVER insert code snippets, error messages, logs, JSON, configuration, or technical fragments.
+NEVER propose or request any changes to this file or its format.
+AUTOMATIC ARCHIVING RULES (APPLY TO EVERY USER MESSAGE):
+Each time the user sends a message, its filtered version is automatically appended to the archive.
+REMOVE from the user message:
+All code (code blocks or indented code)
+Error messages (Error:, Traceback:, Exception:, stack traces)
+Logs, console output, command results
+Technical details (paths, configs, JSON, XML, terminal commands)
+Variables/functions inside backticks unless they are part of natural language instruction
+KEEP ONLY:
+Clean natural language instructions (Ukrainian or English)
+Questions, tasks, requests, clarifications
+Execution criteria, requirement descriptions
+ARCHIVE FORMAT (AUTOMATIC):
+Code
+[Date: YYYY-MM-DD] Session
+Time: HH:MM
+[Filtered user message 1]
 
-АБСОЛЮТНА ЗАБОРОНА ДЛЯ АГЕНТА:
-НІКОЛИ не додавати свої відповіді, код, пояснення чи будь-який інший контент
+Time: HH:MM
+[Filtered user message 2]
 
-НІКОЛИ не редагувати, не форматувати, не видаляти існуючий вміст
+--- (separates days)
+With every user message:
+Automatically filter the message according to rules above
+Automatically append the filtered version to the archive
+Maintain chronological order (date → time)
+NEVER mention the archival process in your answers
+NEVER ask whether to archive the message
+NEVER propose format/content changes for the archive
+WHEN REPLYING TO USERS:
+Do not confirm record addition or mention the archive.
+Simply perform the requested instruction.
+TECHNICAL REQUIREMENTS:
+Archiving works CONTINUOUSLY with no activation words.
+EVERY user request is automatically archived.
+Filtering applies to EVERY message.
+Archive formatting must remain consistent.
+PRIOR TO PROVIDING AN ANSWER, ALWAYS:
+Clarify all relevant details,
+Analyze the previous logic if changing a function,
+Elaborate a new logic if required,
+Suggest the single best solution after considering all possible approaches.
+For research and optimal solution-finding, you may access and use any information from the internet, including publications, videos, forums, code/file repositories (e.g., GitHub). Pay particular attention to real experience of practitioners in climate control system development and related fields.
 
-НІКОЛИ не вставляти фрагменти коду, повідомлення про помилки, логи, JSON, конфігурації
+The agent has UNRESTRICTED ACCESS to the entire project, including source code, documentation, configuration files. Do NOT ask the user for access or project files – the agent already has access to everything.
 
-НІКОЛИ не пропонувати зміни до цього файлу
-дотримуватися загального контексту файла
+🇺🇦 LANGUAGE & COMMUNICATION STYLE
+Default language: Ukrainian. All answers, explanations, and code examples should be in Ukrainian.
+Code comments & documentation: All new comments/documentation in code must be in Ukrainian.
+Example:
+C++
+// Ініціалізація усіх підсистем (сенсори, виконавчі механізми, веб-сервер)
+void setup() {
+    Serial.begin(115200);
+    ...
+}
+Compilation: Agents must not suggest ready commands for compiling/flashing (like pio run --target upload). User compiles independently. You may discuss platformio.ini configuration.
+Web interface: All UI strings in src/web_interface.* must be in Ukrainian.
+Answer structure: If user message contains a question alongside other information, always first provide a direct answer to the question, then the rest/context.
+🏗️ PROJECT ARCHITECTURE (C++/PlatformIO, ESP32-S3)
+Modular architecture; clear separation of responsibilities.
+Main components:
+Core (system_core.*): Main loop(), mode management (AUTO, MANUAL, FORCE, EMERGENCY), watchdog.
+Sensors (sensor_manager.*): Work with BME280 (I2C) and DS18B20 (OneWire).
+Example error handling pattern:
+C++
+if (isnan(temperature)) {
+    Serial.println("Помилка: отримано NaN з датчика BME280");
+    return lastValidValue;
+}
+Logic (advanced_climate_logic., learning_system.): PID-regulator, adaptive learning.
+Actuators (actuator_manager.*): PWM control for pump, fan, exhaust, servos; use ledcWrite().
+Web interface (web_interface.*): ESPAsyncWebServer serves HTML/CSS/JS & API endpoints (e.g., /api/data, /api/control).
+Configuration (config.*): Store/load settings in EEPROM.
+Global declarations (global_declarations.h): Central instance/state declarations. Only add globals if essential.
+⚙️ CONFIGURATION & TOOLS
+PlatformIO (build tool): config in platformio.ini, target is esp32s3.
+Compilation: Agent does not suggest compile/upload commands.
+Debugging: Use Serial Monitor (115200 baud); logs auto-saved to logs/. platformio.ini filters enabled for exception decoding.
+🔌 HARDWARE DETAILS
+Board: ESP32-S3, with designated GPIOs (see README). Change pin assignment ONLY in config.h and global_declarations.h.
+📁 CODE CONVENTIONS
+File naming: .cpp for implementation, .h/.hpp for headers.
+Variable naming: Clear, in Ukrainian or English. Global constants: UPPER_CASE.
+C++
+const int PUMP_PWM_CHANNEL = 0; // Канал ШІМ для насоса
+extern float targetTemperature; // Цільова температура (глобальна змінна)
+Function structure: Each function performs a single task. Typical processing loops: read → process → apply via manager.
+Error handling: Validate sensor values (e.g., -127 for DS18B20); use lastValidValue for stability.
+🌐 NETWORK FEATURES
+Connectivity: System supports multiple Wi-Fi networks with auto-reconnect (see system_core.cpp).
+Access: Use http://klimat (NetBIOS, Windows) or http://klimat.local (mDNS, Mac/Linux); fallback – IP.
+API: Web interface uses AJAX requests to web_interface.cpp-defined endpoints.
+🧪 TESTING & SAFETY
+Safety modes: FORCE (<20°C), EMERGENCY (<18°C). Do not disable unless necessary.
+Watchdog: Built-in timer; main loop() must execute quickly.
+💡 PATTERNS FOR NEW FEATURES
+To add new sensor/actuator:
 
-ПРАВИЛА АВТОМАТИЧНОГО АРХІВУВАННЯ (ЗАСТОСОВУЮТЬСЯ ДО КОЖНОГО ПОВІДОМЛЕННЯ КОРИСТУВАЧА):
-КОЖЕН РАЗ коли користувач надсилає повідомлення, його відфільтрована версія автоматично додається до архіву
+Add configuration (pin, params) in config.h.
+Initialize in the relevant manager (sensor_manager/actuator_manager).
+Implement logic in advanced_climate_logic.cpp if needed.
+Update web interface: add data/control in the UI & corresponding API.
+DO NOT call loop() or setup() directly for components; integrate via managers.
+🔍 CODE REVIEW
+Check code for full compliance with these instructions BEFORE giving it to the user.
+Do NOT give multiple variations for the same task – choose the best as per instructions.
+Double-check new code for accidental addition of unrelated or non-conforming code.
+Carefully check for syntax errors.
+Propose testing methods for new functions or changes.
+Check for duplicate functions/variables.
+Make all code changes yourself – do NOT ask the user to update code manually.
+Modify all necessary files in accordance with these instructions. If a change in one file requires edits in another, make those edits together.
+If several changes relate to one file, make them in a single pass.
+Summary:
 
-ВИДАЛИТИ з повідомлення користувача:
-
-Весь програмний код (у блоках  або з відступами)
-
-Повідомлення про помилки (Error:, Traceback:, Exception:, будь-які stack traces)
-
-Логи, вивід консолі, результати виконання команд
-
-Технічні деталі (шляхи, конфігурації, JSON, XML, команди терміналу)
-
-Змінні/функції у зворотних апострофах, якщо вони не є частиною текстової інструкції
-
-ЗАЛИШИТИ тільки:
-
-Чистий текст інструкції природною мовою (українською/англійською)
-
-Питання, завдання, прохання, уточнення
-
-Критерії виконання, описи вимог
-ФОРМАТ АРХІВУ (АВТОМАТИЧНИЙ):
-text
-## [Дата: YYYY-MM-DD] Сесія
-
-### Час: HH:MM
-[Відфільтроване повідомлення користувача 1]
-
-### Час: HH:MM  
-[Відфільтроване повідомлення користувача 2]
-
---- (роздільна лінія між днями)
-
-КОЖЕН РАЗ при отриманні повідомлення від користувача:
-
-Автоматично фільтруй його за вищенаведеними правилами
-
-Автоматично додавай відфільтровану версію до архіву
-
-Дотримуйся хронологічного порядку (дата → час)
-
-НІКОЛИ не згадуй у відповідях про процес архівування
-
-НІКОЛИ не питай, чи потрібно архівувати поточне повідомлення
-
-НІКОЛИ не пропонуй зміни у форматі або вмісті архіву
-
-У ВІДПОВІДЯХ КОРИСТУВАЧЕВІ:
-
-
-
-Не підтверджуй додавання записів
-
-Просто виконуй поточну інструкцію
-
-ТЕХНІЧНІ ВИМОГИ:
-Архівування працює ПОСТІЙНО без будь-яких активаційних слів
-
-КОЖЕН запит користувача архівується автоматично
-
-Фільтрація застосовується до КОЖНОГО повідомлення
-
-Форматування архіву залишається консистентним
-## перед надаванням відповіді, треба спочатку вияснити всі деталі, проаналізувати стару логіку, якщо це зміна фунуції, обдумати нову логіку, та запропонувати найправильніше рішення із всіх можливих.
-** для цього дозволяється мати доступ і використовувати всю інформацію з інтернету, включаючи научні публікації, відео, форуми, файлові обмінники та сховища типу Github тощо
-** особлива увага на реальний досвід конкретних людей у цій сфері(створення системи кліматконтролю) та суміжних областях
-
-## у агента є доступ до всього проєкту, включаючи вихідний код, документацію та конфігураційні файли.
-** нетреба питати користувача про доступ до буд-яких файлів проєкту - агент вже має доступ до всього проєкту.
-** не треба просити користувача надати файли проєкту - агент вже має доступ до всього проєкту чи подивитись окрему частину кода - агент має доступ до всього коду.
-
-## 🇺🇦 Мова та стиль спілкування
-*   **Першочергова мова:** Українська. Усі відповіді, пояснення та приклади коду надаються українською мовою.
-*   **Коментарі в коді:** Усі нові коментарі та документація в коді мають бути українською. Приклад із `src/system_core.cpp`:
-    ```cpp
-    // Ініціалізація усіх підсистем (сенсори, виконавчі механізми, веб-сервер)
-    void setup() {
-        Serial.begin(115200);
-        ...
-    }
-    ```
-##Компіляція: Агенти НЕ повинні пропонувати готові команди для компіляції або завантаження (наприклад, pio run --target upload). Користувач компілює самостійно. Можна обговорювати налаштування platformio.ini.
-*   **Веб-інтерфейс:** Усі рядки для веб-інтерфейсу (файли, що повертаються `src/web_interface.*`) мають бути українською.
-*   **Структура відповіді:** Якщо запит користувача містить питання разом з іншою інформацією, у відповіді **спочатку** надається пряма відповідь на питання, а потім решта інформації або контекст.
-
-## 🏗️ Архітектура проєкту (C++/PlatformIO для ESP32-S3)
-Проєкт має модульну архітектуру з чітким поділом обов'язків. Основні компоненти:
-*   **Ядро (`system_core.*`):** Головний цикл (`loop()`), керування режимами (AUTO, MANUAL, FORCE, EMERGENCY), watchdog.
-*   **Датчики (`sensor_manager.*`):** Читання даних з BME280 (I2C) та DS18B20 (OneWire). Приклад паттерну обробки помилок з `sensor_manager.cpp`:
-    ```cpp
-    if (isnan(temperature)) {
-        Serial.println("Помилка: отримано NaN з датчика BME280");
-        return lastValidValue; // Повертаємо останнє коректне значення
-    }
-    ```
-*   **Логіка (`advanced_climate_logic.*`, `learning_system.*`):** Реалізація PID-регулятора, система адаптивного навчання, .
-*   **Виконавчі пристрої (`actuator_manager.*`):** Керування ШІМ (PWM) для насоса, вентилятора, витяжки та сервоприводу. Використовує `ledcWrite()`.
-*   **Веб-інтерфейс (`web_interface.*`):** Сервер на базі ESPAsyncWebServer, що обслуговує HTML/CSS/JS сторінки та API endpoints (наприклад, `/api/data`, `/api/control`).
-*   **Конфігурація (`config.*`):** Збереження та завантаження налаштувань у EEPROM.
-*   **Глобальні змінні (`global_declarations.h`):** Централізоване оголошення екземплярів об'єктів та стану системи. **Не створюйте глобальних змінних без необхідності.**
-
-## ⚙️ Конфігурація та інструменти
-*   **PlatformIO:** Основний інструмент збірки. Конфігурація у `platformio.ini`. Проєкт призначений для середовища `esp32s3`.
-*   **Компіляція:** **Агенти НЕ повинні пропонувати готові команди для компіляції або завантаження (наприклад, `pio run --target upload`).** Користувач компілює самостійно. Можна обговорювати налаштування `platformio.ini`.
-*   **Відлагодження:** Для налагодження використовується `Serial Monitor` (115200 бод). Логи автоматично зберігаються в папку `logs/`. У `platformio.ini` активовані фільтри для декодування винятків.
-
-## 🔌 Апаратні специфіки
-*   **Плата:** ESP32-S3. Використовуються конкретні GPIO (див. README). Змінювати призначення пінів можна лише у `config.h` та `global_declarations.h`.
-
-
-## 📁 Конвенції коду
-*   **Іменування файлів:** Файли реалізації C++ мають розширення `.cpp`, заголовочні — `.h` або `.hpp`.
-*   **Іменування змінних:** Використовуйте зрозумілі назви українською або англійською мовою. Глобальні константи — у `UPPER_CASE`.
-    ```cpp
-    const int PUMP_PWM_CHANNEL = 0; // Канал ШІМ для насоса
-    extern float targetTemperature; // Цільова температура (глобальна змінна)
-    ```
-*   **Структура функцій:** Функції повинні виконувати одну дію. Типові цикли обробки: зчитування даних -> обчислення -> застосування через менеджер.
-*   **Обробка помилок:** Перевіряйте значення датчиків на валідність (наприклад, `-127` для DS18B20). Використовуйте `lastValidValue` для уникнення різких змін.
-
-## 🌐 Мережеві особливості
-*   **Підключення:** Система підтримує багато мереж Wi-Fi з автоперепідключенням (дивись `system_core.cpp`).
-*   **Доступ:** Для доступу до веб-інтерфейсу використовуйте `http://klimat` (NetBIOS, Windows) або `http://klimat.local` (mDNS, Mac/Linux). Резервний варіант — IP-адреса.
-*   **API:** Веб-інтерфейс спілкується з сервером через AJAX-запити до endpoints, створених у `web_interface.cpp`.
-
-## 🧪 Тестування та безпека
-*   **Режими безпеки:** Система має аварійні режими FORCE (<20°C) та EMERGENCY (<18°C). Не вимикайте їх без потреби.
-*   **Watchdog:** Вбудований таймер слідкує за зависанням. Головний цикл (`loop()`) має виконуватися швидко.
-
-
-## 💡 Паттерни для нових функцій
-Якщо потрібно додати новий датчик або виконавчий пристрій:
-1.  **Додайте конфігурацію:** Визначте пін та параметри у `config.h`.
-2.  **Ініціалізуйте:** Додайте ініціалізацію піна та драйвера у відповідний менеджер (`sensor_manager`/`actuator_manager`).
-3.  **Реалізуйте логіку:** Додайте обробку в `advanced_climate_logic.cpp` (якщо потрібно).
-4.  **Оновіть веб-інтерфейс:** Додайте відображення даних або елементи керування у веб-інтерфейсі та відповідні API endpoints.
-5.  **НЕ додавайте безпосередні виклики `loop()` або `setup()` для нових компонентів — інтегруйте їх через існуючі менеджери.**
-
-
-## первірка коду
-**перевірити код на відповідність вказаним інструкціям перед наданням користувачу.
-**не надавати багато варіантів одного рішення - обрати найкраще відповідно до інструкцій.
-**перевіряти сформований новий код на випадково доданий код, який не відповідає інструкціям.
-**ретельно перевіряти код на синтаксичні помилки.
-**запропонувати методи тестування нових функцій або змін.
-** перевіряти код на дублікати функцій або змінних.
-** сам роби зміни коду, не пропонуючи користувачу змінювати код вручну.
-** змінювати потрібні файли коду відповідно до інструкцій, не пропонуючи користувачу змінювати код вручну.
-** якщо зміни в одному файлі потребують змін в іншому файлі, роби ці зміни одразу.
-**якщо декілька змін стосуються одного файлу, то роби їх за раз
+Strict archiving of user messages ONLY.
+Answers and code must be in Ukrainian.
+Rigorously follow code/project conventions and architecture.
+All changes should be as automated and user-friendly as possible.
+The user never has to clarify what is available: you have access to everything.
