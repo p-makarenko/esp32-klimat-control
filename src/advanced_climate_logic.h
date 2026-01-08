@@ -18,9 +18,21 @@ void processAdvancedSerialCommand();
 
 // Розширена логіка керування
 void smartHeatingControl();
+void smartCoolingControl();  // Режим охолодження (літо)
 void advancedHumidityControl(float humidity, float tempRoom);
 void advancedUpdateExtractorTimer();  // Перейменували, щоб уникнути конфлікту
 void monitorSystemHealth();
+
+// Аварійний моніторинг та управління
+float analyzeTempTrend();  // Аналіз тренду температури теплоносія (°C/хв)
+void monitorPowerOutage();
+void cascadeEmergencyHeating();
+
+// Адаптивне зниження порогів
+void checkAdaptiveThresholds();
+
+// Сезонне відключення обігріву
+bool isHeatingSeasonActive();
 
 // Ініціалізація та завдання
 void initAdvancedLogic();

@@ -21,6 +21,7 @@ SensorData sensorData = {
   .tempBME = 0.0,
   .humidity = 0.0,
   .pressure = 0.0,
+  .bmeOffset = 0.0,
   .carrierValid = false,
   .roomValid = false,
   .bmeValid = false,
@@ -29,6 +30,16 @@ SensorData sensorData = {
 HeatingState heatingState;
 VentilationState ventState;
 HumidifierState humidifierState;
+PowerOutageState powerOutageState = {
+  .detected = false,
+  .detectionTime = 0,
+  .tempAtDetection = 0,
+  .recoveryStage = 0,
+  .stageStartTime = 0,
+  .tempBeforeDrop = 0,
+  .lastTempSave = 0,
+  .emergencyHeatingActive = false
+};
 
 extern int historyIndex;
 extern bool historyInitialized;
@@ -73,7 +84,7 @@ void setup() {
     Serial.println("✅  Датчик BME280 готовий");
   }
   
-  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===");
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===");
   initGPIO();
   initPWM();
   initServo();
@@ -99,7 +110,19 @@ void setup() {
   humidifierState.startTime = 0;
   humidifierState.lastCycle = 0;
   humidifierState.cyclesToday = 0;
-  
+
+  // Ініціалізація моніторингу відключення живлення
+  powerOutageState.detected = false;
+  powerOutageState.detectionTime = 0;
+  powerOutageState.tempAtDetection = 0.0f;
+  powerOutageState.recoveryStage = 0;
+  powerOutageState.stageStartTime = 0;
+  powerOutageState.tempBeforeDrop = 0.0f;
+  powerOutageState.lastTempSave = millis();
+  powerOutageState.emergencyHeatingActive = false;
+  powerOutageState.autoExitCheckStart = 0;
+  powerOutageState.tempAtAutoExitStart = 0.0f;
+
   if (config.pumpMinPercent == 0) config.pumpMinPercent = PUMP_MIN_DEFAULT;
   if (config.pumpMaxPercent == 0) config.pumpMaxPercent = PUMP_MAX_DEFAULT;
   if (config.fanMaxPercent == 0) config.fanMaxPercent = FAN_MAX_DEFAULT;

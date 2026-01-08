@@ -404,7 +404,20 @@ void loadConfiguration() {
   config.extractorTimer.lastChange = 0;
   
   config.history_size = preferences.getUShort("historySize", 1440);
-  
+
+  // Сезонне відключення та режим охолодження
+  config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
+  config.coolingMode = preferences.getBool("coolingMode", false);
+
+  // Параметри моніторингу аварій
+  config.powerOutageTempDropThreshold = preferences.getFloat("poTempDrop", 2.0f);
+  config.powerOutageTempRiseThreshold = preferences.getFloat("poTempRise", 1.0f);
+  config.powerOutageCheckInterval = preferences.getUShort("poCheckInt", 30);
+  config.powerOutageStage1Time = preferences.getUShort("poStage1", 120);
+  config.powerOutagePauseTime = preferences.getUShort("poPause", 300);
+  config.powerOutageStage2Time = preferences.getUShort("poStage2", 120);
+  config.powerOutageAutoExitTime = preferences.getUShort("poAutoExit", 600);
+
   preferences.end();
   
   // Р†РЅС–С†С–Р°Р»С–Р·Р°С†С–СЏ Р±СѓС„РµСЂС–РІ
@@ -479,7 +492,20 @@ void saveConfiguration() {
   preferences.putUChar("extPower", config.extractorTimer.powerPercent);
   
   preferences.putUShort("historySize", config.history_size);
-  
+
+  // Сезонне відключення та режим охолодження
+  preferences.putBool("seasonalDisable", config.seasonalHeatingDisable);
+  preferences.putBool("coolingMode", config.coolingMode);
+
+  // Параметри моніторингу аварій
+  preferences.putFloat("poTempDrop", config.powerOutageTempDropThreshold);
+  preferences.putFloat("poTempRise", config.powerOutageTempRiseThreshold);
+  preferences.putUShort("poCheckInt", config.powerOutageCheckInterval);
+  preferences.putUShort("poStage1", config.powerOutageStage1Time);
+  preferences.putUShort("poPause", config.powerOutagePauseTime);
+  preferences.putUShort("poStage2", config.powerOutageStage2Time);
+  preferences.putUShort("poAutoExit", config.powerOutageAutoExitTime);
+
   preferences.end();
   
   // Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");  // RUS_REMOVED

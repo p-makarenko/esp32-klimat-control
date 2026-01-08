@@ -16,6 +16,7 @@ struct SensorData {
   float tempBME;
   float humidity;
   float pressure;
+  float bmeOffset;        // Різниця між DS18B20 (кімната) і BME280 (постійна)
   bool carrierValid;
   bool roomValid;
   bool bmeValid;
@@ -51,6 +52,8 @@ struct SystemConfig {
   float tempVentMin;
   float tempVentMax;
   bool heatingEnabled;
+  bool seasonalHeatingDisable;  // Автоматичне відключення обігріву в теплі місяці
+  bool coolingMode;              // Режим охолодження (літо: холодна вода в теплоносії)
   bool humidifierEnabled;
   uint32_t statusPeriod;
   uint8_t fanMinPercent;
@@ -94,7 +97,16 @@ struct SystemConfig {
   uint16_t heating_check_interval;
   uint8_t adaptive_temp_step;
   uint8_t adaptive_hum_step;
-  
+
+  // Параметри моніторингу аварій
+  float powerOutageTempDropThreshold;   // Поріг падіння температури для виявлення аварії (°C)
+  float powerOutageTempRiseThreshold;   // Поріг зростання температури для підтвердження відновлення (°C)
+  uint16_t powerOutageCheckInterval;    // Інтервал перевірки тренду (секунди)
+  uint16_t powerOutageStage1Time;       // Тривалість етапу 1 діагностики (секунди)
+  uint16_t powerOutagePauseTime;        // Тривалість паузи між спробами (секунди)
+  uint16_t powerOutageStage2Time;       // Тривалість етапу 2/3 спроб (секунди)
+  uint16_t powerOutageAutoExitTime;     // Час оцінювання стабільного зростання для автовиходу (секунди)
+
   ExtractorTimer extractorTimer;
   uint16_t history_size;
 };
@@ -156,6 +168,20 @@ struct HumidifierState {
   uint8_t cyclesToday;
 };
 
+// Структура для моніторингу відключення зовнішнього живлення (аварія теплоносія)
+struct PowerOutageState {
+  bool detected;                    // Чи виявлено аварію
+  unsigned long detectionTime;      // Час виявлення аварії
+  float tempAtDetection;            // Температура теплоносія при виявленні
+  uint8_t recoveryStage;            // Етап відновлення (0=немає, 1=перша спроба, 2=друга спроба, 3=відключення)
+  unsigned long stageStartTime;     // Час початку поточного етапу
+  float tempBeforeDrop;             // Температура до падіння (5 хв тому)
+  unsigned long lastTempSave;       // Час останнього збереження температури
+  bool emergencyHeatingActive;      // Чи активний аварійний обігрів
+  unsigned long autoExitCheckStart; // Час початку перевірки автовиходу
+  float tempAtAutoExitStart;        // Температура при початку перевірки автовиходу
+};
+
 struct HistoryData {
   unsigned long timestamp;
   float tempCarrier;
@@ -179,6 +205,7 @@ extern SensorData sensorData;
 extern HeatingState heatingState;
 extern VentilationState ventState;
 extern HumidifierState humidifierState;
+extern PowerOutageState powerOutageState;
 extern time_t currentTime;
 extern struct tm timeInfo;
 extern bool enableStatusOutput;

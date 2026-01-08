@@ -399,6 +399,17 @@ void handleRoot() {
     html += "Режим: <span id='currentMode'>";
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
     html += "</span></div>";
+
+    // Показуємо попередження про аварійний режим
+    if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
+        html += "<div style='background: #ffebee; border: 2px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 15px;'>";
+        html += "<h3 style='color: #d32f2f; margin: 0 0 10px 0;'>🚨 АВАРІЙНИЙ РЕЖИМ АКТИВНИЙ</h3>";
+        html += "<p style='margin: 5px 0;'>Система виявила відключення зовнішнього живлення</p>";
+        html += "<p style='margin: 5px 0;'>Етап відновлення: " + String(powerOutageState.recoveryStage) + "</p>";
+        html += "<button class='btn' style='background: #f44336; margin-top: 10px; padding: 12px 20px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>";
+        html += "</div>";
+    }
+
     html += "</div>";
     
     html += "<div class='power-indicators'>";
@@ -541,7 +552,6 @@ void handleRoot() {
     html += "      if (data.pressure !== undefined && !isNaN(data.pressure)) {";
     html += "        document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
     html += "      } else { document.getElementById('pressure').textContent = '🚨 ПОМИЛКА'; }";
-    html += "      }";
     html += "      if (data.pumpPower !== undefined) {";
     html += "        document.getElementById('pumpPower').textContent = Math.round(data.pumpPower) + '%';";
     html += "        const pumpSlider = document.getElementById('pumpSlider');";
@@ -617,7 +627,22 @@ void handleRoot() {
     html += "function clearOutput() {";
     html += "  document.getElementById('commandOutput').innerHTML = '> Готово до команд...';";
     html += "}";
-    
+
+    html += "function resetEmergency() {";
+    html += "  if (confirm('Скинути аварійний режим і повернутись до AUTO?')) {";
+    html += "    fetch('/command', {";
+    html += "      method: 'POST',";
+    html += "      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },";
+    html += "      body: 'cmd=reset'";
+    html += "    }).then(response => response.text()).then(text => {";
+    html += "      alert('✅ ' + text);";
+    html += "      setTimeout(function() { location.reload(); }, 500);";
+    html += "    }).catch(error => {";
+    html += "      alert('❌ Помилка: ' + error);";
+    html += "    });";
+    html += "  }";
+    html += "}";
+
     html += "document.getElementById('commandInput').addEventListener('keypress', function(e) {";
     html += "  if (e.key === 'Enter') executeCommand();";
     html += "});";
@@ -716,7 +741,7 @@ void handleWebCommand() {
 String processWebCommand(const String& cmd) {
     String lowerCmd = cmd;
     lowerCmd.toLowerCase();
-    
+
     // Перевірка режимів СПОЧАТКУ (щоб "auto" не розпізнавався як "a0")
     if (lowerCmd == "auto") {
         heatingState.manualMode = false;
@@ -741,6 +766,18 @@ String processWebCommand(const String& cmd) {
         heatingState.manualMode = false;
         heatingState.forceMode = false;
         return "⚠️ Режим: АВАРІЯ";
+    }
+    else if (lowerCmd == "reset" || lowerCmd == "reset_emergency") {
+        // Скидання аварійного режиму
+        powerOutageState.detected = false;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.recoveryStage = 0;
+        powerOutageState.autoExitCheckStart = 0;
+        powerOutageState.tempAtAutoExitStart = 0;
+        heatingState.emergencyMode = false;
+        heatingState.forceMode = false;
+        heatingState.manualMode = false;
+        return "✅ Аварійний режим скинуто. Повернення до AUTO";
     }
     
     // Компактні команди (a50, b40, c30) - автоматично перемикають в РУЧНИЙ режим
@@ -1535,7 +1572,58 @@ void handleSettingsPage() {
     html += "<input type='number' name='statusPeriod' value='" + String(config.statusPeriod / 1000) + "' min='10' max='600'>";
     html += "</div>";
     html += "</div>";
-    
+
+    html += "<div class='section'>";
+    html += "<h3>🔄 СЕЗОННІ РЕЖИМИ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='coolingMode' " + String(config.coolingMode ? "checked" : "") + "> ❄️ Режим охолодження (літо: холодна вода в теплоносії)</label>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Інверсна логіка: вентилятор працює на максимум при перегріві, насос вимкнений</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='seasonalDisable' " + String(config.seasonalHeatingDisable ? "checked" : "") + "> 🌞 Автоматичне відключення обігріву (травень-вересень)</label>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Система автоматично відключить обігрів в теплі місяці</small>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div class='section'>";
+    html += "<h3>🚨 МОНІТОРИНГ АВАРІЙ (відключення живлення)</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Поріг падіння температури (°C):</label>";
+    html += "<input type='number' step='0.1' name='poTempDrop' value='" + String(config.powerOutageTempDropThreshold, 1) + "' min='0.5' max='50.0'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне падіння температури теплоносія для виявлення аварії</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Поріг зростання температури (°C):</label>";
+    html += "<input type='number' step='0.1' name='poTempRise' value='" + String(config.powerOutageTempRiseThreshold, 1) + "' min='0.5' max='5.0'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне зростання температури теплоносія для підтвердження відновлення</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Інтервал перевірки тренду (секунди):</label>";
+    html += "<input type='number' name='poCheckInt' value='" + String(config.powerOutageCheckInterval) + "' min='10' max='300'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто перевіряти тренд температури</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Тривалість етапу 1 діагностики (секунди):</label>";
+    html += "<input type='number' name='poStage1' value='" + String(config.powerOutageStage1Time) + "' min='30' max='600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для першої спроби аварійного обігріву</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Тривалість паузи між спробами (секунди):</label>";
+    html += "<input type='number' name='poPause' value='" + String(config.powerOutagePauseTime) + "' min='60' max='1800'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час очікування перед наступною спробою</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Тривалість етапів 2/3 (секунди):</label>";
+    html += "<input type='number' name='poStage2' value='" + String(config.powerOutageStage2Time) + "' min='30' max='600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для другої та третьої спроби аварійного обігріву</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час автовиходу з аварії (секунди):</label>";
+    html += "<input type='number' name='poAutoExit' value='" + String(config.powerOutageAutoExitTime) + "' min='60' max='3600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час оцінювання стабільного зростання температури теплоносія для автоматичного виходу з режиму підтримки</small>";
+    html += "</div>";
+    html += "</div>";
+
     html += "<div style='margin-top: 30px;'>";
     html += "<button type='submit' class='btn'>💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>";
     html += "<button type='button' class='btn btn-secondary' onclick='window.location.href=\"/\"'>← НА ГОЛОВНУ</button>";
@@ -1630,7 +1718,42 @@ void handleSaveSettings() {
     if (server.hasArg("statusPeriod")) {
         config.statusPeriod = server.arg("statusPeriod").toInt() * 1000UL;
     }
-    
+
+    // Сезонні режими
+    if (server.hasArg("coolingMode")) {
+        config.coolingMode = true;
+    } else {
+        config.coolingMode = false;
+    }
+    if (server.hasArg("seasonalDisable")) {
+        config.seasonalHeatingDisable = true;
+    } else {
+        config.seasonalHeatingDisable = false;
+    }
+
+    // Параметри моніторингу аварій
+    if (server.hasArg("poTempDrop")) {
+        config.powerOutageTempDropThreshold = server.arg("poTempDrop").toFloat();
+    }
+    if (server.hasArg("poTempRise")) {
+        config.powerOutageTempRiseThreshold = server.arg("poTempRise").toFloat();
+    }
+    if (server.hasArg("poCheckInt")) {
+        config.powerOutageCheckInterval = server.arg("poCheckInt").toInt();
+    }
+    if (server.hasArg("poStage1")) {
+        config.powerOutageStage1Time = server.arg("poStage1").toInt();
+    }
+    if (server.hasArg("poPause")) {
+        config.powerOutagePauseTime = server.arg("poPause").toInt();
+    }
+    if (server.hasArg("poStage2")) {
+        config.powerOutageStage2Time = server.arg("poStage2").toInt();
+    }
+    if (server.hasArg("poAutoExit")) {
+        config.powerOutageAutoExitTime = server.arg("poAutoExit").toInt();
+    }
+
     saveConfiguration();
     
     String html = "<!DOCTYPE html><html><head>";
@@ -1720,6 +1843,14 @@ void handleControlPage() {
     html += "<button class='mode-btn" + String(!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode ? " active" : "") + "' onclick=\"sendCmd('auto')\" data-mode='auto'>🤖 АВТО</button>";
     html += "<button class='mode-btn" + String(heatingState.manualMode ? " active" : "") + "' onclick=\"sendCmd('manual')\" data-mode='manual'>✋ РУЧНИЙ</button>";
     html += "</div>";
+
+    // Показуємо кнопку скидання аварійного режиму якщо він активний
+    if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
+        html += "<div style='margin-top: 15px;'>";
+        html += "<button class='btn' style='background: #f44336; width: 100%; padding: 15px; font-size: 16px; font-weight: bold;' onclick=\"resetEmergency()\">🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>";
+        html += "</div>";
+    }
+
     html += "<div style='margin-top: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px;'>";
     html += "<strong>ℹ️ Автоматичні режими:</strong><br>";
     html += "⚡ <strong>ФОРСАЖ</strong> - вмикається при температурі < 20°C (80% потужність)<br>";
@@ -1741,6 +1872,12 @@ void handleControlPage() {
     html += "function updatePump(v) { sendCmd('manual'); document.getElementById('pumpValue').textContent = v + '%'; sendCmd('pump ' + v); }";
     html += "function updateFan(v) { sendCmd('manual'); document.getElementById('fanValue').textContent = v + '%'; sendCmd('fan ' + v); }";
     html += "function updateExtractor(v) { sendCmd('manual'); document.getElementById('extractorValue').textContent = v + '%'; sendCmd('extractor ' + v); }";
+    html += "function resetEmergency() {";
+    html += "  if (confirm('Скинути аварійний режим і повернутись до AUTO?')) {";
+    html += "    sendCmd('reset');";
+    html += "    setTimeout(function() { location.reload(); }, 1000);";
+    html += "  }";
+    html += "}";
     html += "function updateModeButtons(activeMode) {";
     html += "  const btns = document.querySelectorAll('.mode-btn');";
     html += "  btns.forEach(btn => {";
@@ -1764,6 +1901,12 @@ void handleControlPage() {
     html += "      }";
     html += "    }";
     html += "  });";
+    html += "}";
+    html += "function resetEmergency() {";
+    html += "  if (confirm('Скинути аварійний режим та повернутися до штатної роботи?')) {";
+    html += "    sendCmd('reset_emergency');";
+    html += "    setTimeout(function() { location.reload(); }, 1000);";
+    html += "  }";
     html += "}";
     html += "</script>";
     

@@ -138,18 +138,18 @@ void readBME280() {
   float temp = bme.readTemperature();
   float hum = bme.readHumidity();
   float pres = bme.readPressure() / 100.0f;
-  
+
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
     // Перевірка на коректність даних
     bool tempOk = (!isnan(temp) && temp > -40.0f && temp < 85.0f);
     bool humOk = (!isnan(hum) && hum >= 0.0f && hum <= 100.0f);
     bool presOk = (!isnan(pres) && pres > 300.0f && pres < 1100.0f);
     bool allOk = (tempOk && humOk && presOk);
-    
+
     // Лічильник помилок
     static uint8_t bmeErrorCount = 0;
     const uint8_t MAX_ERRORS = 10;
-    
+
     if (!allOk) {
       bmeErrorCount++;
       if (bmeErrorCount == 1) {
@@ -166,12 +166,39 @@ void readBME280() {
       if (tempOk) sensorData.tempBME = temp;
       if (humOk) sensorData.humidity = hum;
       if (presOk) sensorData.pressure = pres;
+
+      // Калібруємо різницю між DS18B20 та BME280 (якщо обидва валідні)
+      if (sensorData.roomValid && tempOk) {
+        // Обчислюємо поточну різницю
+        float currentOffset = sensorData.tempRoom - temp;
+
+        // Використовуємо згладжування для стабільності (75% старе, 25% нове)
+        if (sensorData.bmeOffset == 0.0f) {
+          sensorData.bmeOffset = currentOffset; // Перший раз - використовуємо як є
+        } else {
+          sensorData.bmeOffset = sensorData.bmeOffset * 0.75f + currentOffset * 0.25f;
+        }
+      }
     }
-    
+
     sensorData.bmeValid = (bmeErrorCount < MAX_ERRORS);
-    
+
     xSemaphoreGive(getSensorMutex());
   }
+}
+
+// Функція для отримання скоригованої температури BME280
+float getAdjustedBmeTemperature() {
+  float adjustedTemp = 0.0f;
+
+  if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
+    if (sensorData.bmeValid) {
+      adjustedTemp = sensorData.tempBME + sensorData.bmeOffset;
+    }
+    xSemaphoreGive(getSensorMutex());
+  }
+
+  return adjustedTemp;
 }
 
 void sensorTask(void *parameter) {

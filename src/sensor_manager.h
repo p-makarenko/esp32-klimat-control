@@ -18,6 +18,7 @@ bool initTemperatureSensors();
 bool initBME280();
 void readTemperatureSensors();
 void readBME280();
+float getAdjustedBmeTemperature();  // Отримати скориговану температуру BME280
 void sensorTask(void *parameter);
 
 #endif

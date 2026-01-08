@@ -60,9 +60,9 @@ void autoPrintStatus() {
                   humidity, config.humidityConfig.minHumidity, config.humidityConfig.maxHumidity);
     Serial.printf("  Тиск: %.1f hPa\n", pressure);
     Serial.println("----------------------------------------------");
-    Serial.printf("  Насос (A): %d%% (%d)\n", (pumpPower * 100) / 255, pumpPower);
-    Serial.printf("  Вентилятор (B): %d%% (%d)\n", (fanPower * 100) / 255, fanPower);
-    Serial.printf("  Витяжка (C): %d%% (%d)\n", (extractorPower * 100) / 255, extractorPower);
+    Serial.printf("  Насос (A): %d%%\n", (pumpPower * 100) / 255);
+    Serial.printf("  Вентилятор (B): %d%%\n", (fanPower * 100) / 255);
+    Serial.printf("  Витяжка (C): %d%%\n", (extractorPower * 100) / 255);
     Serial.printf("  Зволожувач: %s\n", humidifierState.active ? "ВКЛ" : "ВИМК");
     Serial.printf("  Вентиляція: %s\n", ventState.open ? "ВІДКРИТА" : "ЗАКРИТА");
     Serial.println("----------------------------------------------");
