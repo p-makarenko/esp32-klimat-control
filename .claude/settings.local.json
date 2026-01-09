@@ -15,7 +15,8 @@
       "Bash(~/.platformio/penv/Scripts/platformio.exe run:*)",
       "Bash(ls:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

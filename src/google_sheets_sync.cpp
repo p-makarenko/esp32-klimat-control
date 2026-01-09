@@ -75,47 +75,42 @@ bool syncToGoogleSheets() {
     // Тому просто припустимо що всі записи нові для тесту
   }
 
-  // Статичний буфер (10 записів = ~260 байт на стеку)
   DataRecord buffer[10];
-  uint16_t count = 10;
-
   readRAMDataChunk(buffer, 0, 10);
 
-  Serial.printf("📊 Відправка останніх %u записів\n", count);
-  Serial.printf("💾 Heap перед відправкою: %u байт\n", ESP.getFreeHeap());
-
-  uint16_t sent = 0;
-  uint16_t failed = 0;
-  unsigned long lastTimestamp = syncStats.lastSentTimestamp;
-
-  if (sendBatchToSheets(buffer, count)) {
-    sent = count;
-    Serial.printf("✅ Пакет відправлено успішно\n");
-  } else {
-    failed = count;
-    Serial.printf("❌ Помилка відправки пакету\n");
+  uint16_t newCount = 0;
+  for (uint16_t i = 0; i < 10; i++) {
+    if (buffer[i].timestamp > syncStats.lastSentTimestamp) {
+      if (newCount != i) {
+        buffer[newCount] = buffer[i];
+      }
+      newCount++;
+    }
   }
 
-  // Оновлюємо статистику
-  if (sent > 0) {
-    syncStats.lastSentTimestamp = lastTimestamp;
-    syncStats.totalRecordsSent += sent;
-    syncStats.lastSyncTime = millis();
+  if (newCount == 0) {
+    Serial.println("📭 Немає нових записів");
+    syncStats.syncInProgress = false;
+    return true;
+  }
 
-    // Зберігаємо в NVS
+  Serial.printf("📊 Відправка %u нових записів\n", newCount);
+
+  if (sendBatchToSheets(buffer, newCount)) {
+    syncStats.lastSentTimestamp = buffer[newCount - 1].timestamp;
+    syncStats.totalRecordsSent += newCount;
+    syncStats.lastSyncTime = millis();
     preferences.putULong("last_ts", syncStats.lastSentTimestamp);
 
-    Serial.printf("💾 Збережено lastSentTimestamp: %lu\n", syncStats.lastSentTimestamp);
-  }
-
-  if (failed > 0) {
+    Serial.printf("✅ Синхронізація успішна\n");
+    syncStats.syncInProgress = false;
+    return true;
+  } else {
     syncStats.failedSyncs++;
+    Serial.printf("❌ Синхронізація помилка\n");
+    syncStats.syncInProgress = false;
+    return false;
   }
-
-  Serial.printf("\n✅ Синхронізація завершена: %u успішно, %u помилок\n", sent, failed);
-
-  syncStats.syncInProgress = false;
-  return (failed == 0);
 }
 
 bool sendBatchToSheets(DataRecord* records, uint16_t count) {
