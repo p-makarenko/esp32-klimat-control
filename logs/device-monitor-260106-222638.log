@@ -1,0 +1,796 @@
+⚠️  Локальна мережа (немає доступу до інтернету)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+...........
+Спроба 10/30, міняю сервер...
+.....Сервер: pool.ntp.org
+Отримано: 2026-01-06 22:26:59
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+ℹ️  SCD30 тимчасово вимкнений
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (180°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (180°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS ===
+✓ Google Sheets модуль ініціалізовано
+  URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+  Час відправки: 23:59
+  Автозбереження: кожні 1 хв або 1 нових записів
+📅 Останній відправлений timestamp: 0
+📍 Індекс відправки скинуто для перевірки нових даних
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✓ Зволожувач: УВІМКНЕНО (Вологість: 0.0%, Ціль: 75.0%)
+🚀 Google Sheets task запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║
+╠════════════════════════════════════════════════════════╣
+║  📱 IP адреса:    http://10.193.26.166               ║
+║  💻 Локальне ім'я: http://klimat.local                 ║
+╠════════════════════════════════════════════════════════╣
+║  📡 WiFi мережа:  Redmi Note 14                    ║
+║  📶 Сигнал:       -39                       dBm ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+> git reset --hard сюди вставте ідентифікаторgit reset --hard сюди вставте ідентифікаторgit reset --hard сюди вставте ідентифікатор
+✗ Невідома команда. Введіть 'm' для меню
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+[HISTORY] Додано запис: time=1767731224000 (sec=1767731224), tempRoom=0.0
+✓ Зволожувач: УВІМКНЕНО (Вологість: 0.0%, Ціль: 75.0%)
+[TIME] Синхронізовано: 06.01.2026 22:27:04
+[SENSOR] T:27.5/64.1°C H:66.8% P:988.6hPa
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731225000 (sec=1767731225), tempRoom=27.5
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731226000 (sec=1767731226), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731227000 (sec=1767731227), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731228000 (sec=1767731228), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731229000 (sec=1767731229), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731230000 (sec=1767731230), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731231000 (sec=1767731231), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731232000 (sec=1767731232), tempRoom=27.3
+
+🤖 Автоматичне збереження даних...
+   Причина: 88 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 0
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 177 байт
+📄 JSON дані:
+{"records":[{"timestamp":2499665344,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"АВТО"}]}
+📦 Розмір form data: 182 байт
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731233000 (sec=1767731233), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731234000 (sec=1767731234), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731235000 (sec=1767731235), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731236000 (sec=1767731236), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731237000 (sec=1767731237), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731238000 (sec=1767731238), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731239000 (sec=1767731239), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731240000 (sec=1767731240), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731241000 (sec=1767731241), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731242000 (sec=1767731242), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731243000 (sec=1767731243), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731244000 (sec=1767731244), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731245000 (sec=1767731245), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731246000 (sec=1767731246), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.2
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731247000 (sec=1767731247), tempRoom=27.3
+📈 Статистика: Пам'ять=123KB, Записів=236, Час=60сек
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731248000 (sec=1767731248), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.3
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731249000 (sec=1767731249), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731250000 (sec=1767731250), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731251000 (sec=1767731251), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731252000 (sec=1767731252), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.4
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731253000 (sec=1767731253), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731254000 (sec=1767731254), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.5
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.5
+[SENSOR] T:27.6/64.2°C H:67.1% P:988.6hPa
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731255000 (sec=1767731255), tempRoom=27.6
+🔧 Таймер витяжки: Витяжка вимкнена
+[TIME] Синхронізовано: 06.01.2026 22:27:35
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731256000 (sec=1767731256), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731257000 (sec=1767731257), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731258000 (sec=1767731258), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731259000 (sec=1767731259), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731260000 (sec=1767731260), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.7
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731261000 (sec=1767731261), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731262000 (sec=1767731262), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731263000 (sec=1767731263), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731264000 (sec=1767731264), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731265000 (sec=1767731265), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731266000 (sec=1767731266), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731267000 (sec=1767731267), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+
+🤖 Автоматичне збереження даних...
+   Причина: 432 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+📊 Перевірка нових даних після timestamp 2499665344
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 204 байт
+📄 JSON дані:
+{"records":[{"timestamp":2499666344,"tempCarrier":64.0625,"tempRoom":27.5,"tempBME":25.81,"humidity":66.83301,"pressure":988.6226,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"АВТО"}]}
+📦 Розмір form data: 209 байт
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731268000 (sec=1767731268), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731269000 (sec=1767731269), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731270000 (sec=1767731270), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731271000 (sec=1767731271), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731272000 (sec=1767731272), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731273000 (sec=1767731273), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731274000 (sec=1767731274), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731275000 (sec=1767731275), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731276000 (sec=1767731276), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.9
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731277000 (sec=1767731277), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731278000 (sec=1767731278), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731279000 (sec=1767731279), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731280000 (sec=1767731280), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731281000 (sec=1767731281), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731282000 (sec=1767731282), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731283000 (sec=1767731283), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731284000 (sec=1767731284), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.8
+[SENSOR] T:27.6/64.6°C H:67.4% P:988.7hPa
+[HISTORY] Додано запис: time=1767731285000 (sec=1767731285), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731286000 (sec=1767731286), tempRoom=27.6
+[TIME] Синхронізовано: 06.01.2026 22:28:06
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731287000 (sec=1767731287), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731288000 (sec=1767731288), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731288000 (sec=1767731288), tempRoom=27.6
+[HISTORY] Додано запис: time=1767731288000 (sec=1767731288), tempRoom=27.6

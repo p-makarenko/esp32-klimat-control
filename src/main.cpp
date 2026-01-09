@@ -8,6 +8,8 @@
 #include "actuator_manager.h"
 #include "web_interface.h"
 #include "data_storage.h"
+#include "data_logger.h"
+#include "google_sheets_sync.h"
 #include "advanced_climate_logic.h"
 #include "utility_functions.h"
 #include "global_declarations.h"
@@ -46,6 +48,9 @@ extern bool historyInitialized;
 extern HistoryData history[HISTORY_BUFFER_SIZE];
 
 extern bool compactMode;
+
+// Оголошення функцій
+void handleSerialInput();
 
 // НАЛАШТУВАННЯ СИСТЕМИ
 void setup() {
@@ -92,7 +97,17 @@ void setup() {
   
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===");
   initAdvancedLogic();
-  
+
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===");
+  if (!initDataLogger()) {
+    Serial.println("⚠️  Попередження: Логування даних недоступне");
+  }
+
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===");
+  if (!initGoogleSheetsSync()) {
+    Serial.println("⚠️  Попередження: Google Sheets синхронізація недоступна");
+  }
+
   Serial.println("\n=== СТВОРЕННЯ ЗАВДАНЬ ===");
   createTasks();
   
@@ -275,7 +290,7 @@ void loop() {
     }
   }
   
-  processAdvancedSerialCommand();
+  handleSerialInput();
   autoPrintStatus();
   addToHistory();
   checkEmergencyTimeout();
@@ -441,7 +456,12 @@ void handleSerialInput() {
       debugCommands();
     }
     else {
-      processAdvancedSerialCommand();
+      // Передаємо ВСІ інші команди (включно sheets-sync) в розширений обробник
+      Serial.println("> " + input);
+      processExtendedCommand(input);
     }
   }
+
+  // Автоматична синхронізація з Google Sheets
+  autoSyncTask();
 }

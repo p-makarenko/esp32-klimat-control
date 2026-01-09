@@ -66,8 +66,8 @@ void saveLearningPreferences();
 with open('src/global_declarations.h', 'w', encoding='utf-8') as f:
     f.write(header_content)
 
-print(f"✓ Рядків коду: {total_lines}")
-print(f"✓ Версія: {version_str}")
-print(f"✓ День розробки: {days_in_dev}")
+print(f"[OK] Ryadkiv kodu: {total_lines}")
+print(f"[OK] Versiya: {version_str}")
+print(f"[OK] Den rozrobky: {days_in_dev}")
 if firmware_size_kb > 0:
-    print(f"✓ Розмір прошивки: {firmware_size_kb} KB")
+    print(f"[OK] Rozmir proshyvky: {firmware_size_kb} KB")

@@ -1,0 +1,501 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x23 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0xb (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.6-D30                         ║
+║  💬 Коментар:     День 30 розробки     ║
+║  📅 Зібрано:      Jan  6 2026          17:41:55    ║
+║  📝 Рядків:       7879                             ║
+║  💾 Розмір:       1232                          KB ║
+╚════════════════════════════════════════════════════════╝
+[HISTORY] Історія ініціалізована
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 9                     ║
+║  🌐 IP:           192.168.128.166                  ║
+║  🔌 Шлюз:         192.168.128.214                  ║
+║  📶 Сигнал:       -76                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-06 17:45:56
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+ℹ️  SCD30 тимчасово вимкнений
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (180°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (180°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS ===
+✓ Google Sheets модуль ініціалізовано
+  URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+  Час відправки: 23:59
+  Автозбереження: кожні 1 хв або 1 нових записів
+📅 Останній відправлений timestamp: 0
+📍 Індекс відправки скинуто для перевірки нових даних
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+🚀 Google Sheets task запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║
+╠════════════════════════════════════════════════════════╣
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  💻 Локальне ім'я: http://klimat.local                 ║
+╠════════════════════════════════════════════════════════╣
+║  📡 WiFi мережа:  Redmi Note 9                     ║
+║  📶 Сигнал:       -75                       dBm ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+
+🤖 Автоматичне збереження даних...
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 0
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2482800,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+✓ Зволожувач: УВІМКНЕНО (Вологість: 61.4%, Ціль: 66.9%)
+[TIME] Синхронізовано: 06.01.2026 17:46:11
+[SENSOR] T:27.3/61.7°C H:61.5% P:988.5hPa
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+🔧 Таймер витяжки: Витяжка вимкнена
+[SENSOR] T:28.8/60.8°C H:61.8% P:988.5hPa
+📈 Статистика: Пам'ять=121KB, Записів=1, Час=61сек
+[TIME] Синхронізовано: 06.01.2026 17:46:42
+✓ Датчик теплоносія відновлено
+[TIME] Синхронізовано: 06.01.2026 17:47:12
+[SENSOR] T:28.1/61.6°C H:60.5% P:988.5hPa
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482800806
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 198 байт
+📄 JSON дані:
+{"records":[{"timestamp":2482860,"tempCarrier":61.25,"tempRoom":28.4375,"tempBME":25.55,"humidity":61.10254,"pressure":988.5233,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 203 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+📈 Статистика: Пам'ять=119KB, Записів=2, Час=121сек
+[SENSOR] T:27.1/61.6°C H:61.1% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:47:43
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482860883
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+✓ Датчик теплоносія відновлено
+[SENSOR] T:28.8/59.8°C H:58.4% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:48:14
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482860883
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 198 байт
+📄 JSON дані:
+{"records":[{"timestamp":2482921,"tempCarrier":60.5625,"tempRoom":27.6875,"tempBME":25.53,"humidity":60.1748,"pressure":988.516,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 203 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+✓ Датчик теплоносія відновлено
+📈 Статистика: Пам'ять=120KB, Записів=4, Час=181сек
+[SENSOR] T:28.8/60.7°C H:57.4% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:48:44
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482921305
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+[SENSOR] T:28.2/61.0°C H:56.9% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:49:15
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482921305
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 196 байт
+📄 JSON дані:
+{"records":[{"timestamp":2482981,"tempCarrier":60.875,"tempRoom":28.5,"tempBME":25.48,"humidity":57.29004,"pressure":988.5203,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 201 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+📈 Статистика: Пам'ять=120KB, Записів=6, Час=241сек
+[SENSOR] T:27.3/61.1°C H:55.9% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:49:45
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482981304
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+✓ Датчик теплоносія відновлено
+[SENSOR] T:27.9/59.4°C H:55.2% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:50:16
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2482981304
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 197 байт
+📄 JSON дані:
+{"records":[{"timestamp":2483041,"tempCarrier":60.75,"tempRoom":27.125,"tempBME":25.43,"humidity":55.30566,"pressure":988.5289,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 202 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+📈 Статистика: Пам'ять=122KB, Записів=8, Час=301сек
+[SENSOR] T:28.7/59.6°C H:53.9% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:50:46
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483041316
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 200 байт
+📄 JSON дані:
+{"records":[{"timestamp":2483100,"tempCarrier":59.9375,"tempRoom":28.3125,"tempBME":25.42,"humidity":53.96777,"pressure":988.5213,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 205 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[SENSOR] T:27.8/60.3°C H:54.7% P:988.5hPa
+[TIME] Синхронізовано: 06.01.2026 17:51:17
+🔧 Таймер витяжки: Витяжка увімкнена
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483100452
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+📈 Статистика: Пам'ять=122KB, Записів=9, Час=361сек
+[SENSOR] T:27.3/60.0°C H:54.8% P:988.6hPa
+[TIME] Синхронізовано: 06.01.2026 17:51:47
+[HISTORY] Записано запис 10
+🔧 Таймер витяжки: Витяжка вимкнена
+
+🤖 Автоматичне збереження даних...
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483100452
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 200 байт
+📄 JSON дані:
+{"records":[{"timestamp":2483160,"tempCarrier":59.1875,"tempRoom":27.875,"tempBME":25.44,"humidity":55.44629,"pressure":988.5731,"co2":0,"pumpPower":20,"fanPower":0,"extractorPower":9,"mode":"AUTO"}]}
+📦 Розмір form data: 205 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[SENSOR] T:28.9/58.8°C H:55.6% P:988.6hPa
+[TIME] Синхронізовано: 06.01.2026 17:52:18
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483160545
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+📈 Статистика: Пам'ять=122KB, Записів=10, Час=421сек
+[SENSOR] T:28.2/59.7°C H:55.9% P:988.6hPa
+[TIME] Синхронізовано: 06.01.2026 17:52:49
+
+🤖 Автоматичне збереження даних...
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483160545
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 200 байт
+📄 JSON дані:
+{"records":[{"timestamp":2483220,"tempCarrier":59.8125,"tempRoom":27.9375,"tempBME":25.47,"humidity":55.57813,"pressure":988.5789,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 205 байт
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[SENSOR] T:27.4/60.0°C H:56.3% P:988.6hPa
+[TIME] Синхронізовано: 06.01.2026 17:53:19
+📈 Статистика: Пам'ять=122KB, Записів=11, Час=481сек
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483220565
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+[SENSOR] T:27.8/58.8°C H:56.6% P:988.6hPa
+[TIME] Синхронізовано: 06.01.2026 17:53:50
+
+🤖 Автоматичне збереження даних...
+   Причина: 1 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483220565
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 191 байт
+📄 JSON дані:
+{"records":[{"timestamp":2483280,"tempCarrier":58.25,"tempRoom":28.5,"tempBME":25.49,"humidity":56.9043,"pressure":988.6,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 196 байт
+[SENSOR] T:28.8/58.9°C H:58.7% P:988.6hPa
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[TIME] Синхронізовано: 06.01.2026 17:54:20
+📈 Статистика: Пам'ять=122KB, Записів=12, Час=541сек
+[SENSOR] T:28.2/59.8°C H:59.1% P:988.6hPa
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbx-W2wMM6qhlamDM4DBnrg1r1IOQMCDNe_1PMgnjZdBLt_iXmT_3fgWzR2n3VntOnas/exec
+📊 Перевірка нових даних після timestamp 2483280664
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+[TIME] Синхронізовано: 06.01.2026 17:54:51

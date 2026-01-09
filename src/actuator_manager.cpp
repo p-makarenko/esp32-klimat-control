@@ -342,22 +342,18 @@ void heatingTask(void *parameter) {
 
 void ventilationTask(void *parameter) {
   Serial.println("✓ Задачу вентиляції запущено");
-  
+
   while (1) {
-    if (!config.manualVentControl && !ventState.autoCalibrationActive) {
-      controlVentilation();
-    }
-    
     // Перевірка стану механічного вимикача
     bool newSwitchState = digitalRead(VENT_SWITCH_PIN);
     if (newSwitchState != ventState.switchState) {
       unsigned long now = millis();
-      
+
       // Детекція швидких перемикань для автокалібрування
       if (now - ventState.lastSwitchChange < 1000) {
         ventState.switchChangeCount++;
         Serial.printf("⚡ Швидке перемикання %d/3\n", ventState.switchChangeCount);
-        
+
         if (ventState.switchChangeCount >= 2 && !ventState.autoCalibrationActive) {
           Serial.println("🎯 Детектовано 3 швидких перемикання!");
           // НЕ викликаємо controlVentilation, одразу запускаємо калібрування
@@ -372,10 +368,9 @@ void ventilationTask(void *parameter) {
         ventState.switchChangeCount = 0;
       }
       ventState.lastSwitchChange = now;
-      
-      ventState.switchState = newSwitchState;
-      
+
       // Викликаємо controlVentilation тільки якщо НЕ в режимі детекції або калібрування
+      // ВАЖЛИВО: НЕ оновлюємо ventState.switchState тут, бо controlVentilation() сам це зробить
       if (!config.manualVentControl && !ventState.autoCalibrationActive && ventState.switchChangeCount == 0) {
         controlVentilation();
       }

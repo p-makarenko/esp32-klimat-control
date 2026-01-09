@@ -1,0 +1,2363 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x23 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.6-D30                         ║
+║  💬 Коментар:     День 30 розробки     ║
+║  📅 Зібрано:      Jan  6 2026          16:13:05    ║
+║  📝 Рядків:       7887                             ║
+║  💾 Розмір:       1232                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 9                     ║
+║  🌐 IP:           192.168.128.166                  ║
+║  🔌 Шлюз:         192.168.128.214                  ║
+║  📶 Сигнал:       -75                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-06 16:15:47
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+ℹ️  SCD30 тимчасово вимкнений
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано. Серво: ВІДКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS ===
+✓ Google Sheets модуль ініціалізовано
+  URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+  Час відправки: 23:59
+  Автозбереження: кожні 1 хв або 1 нових записів
+📅 Останній відправлений timestamp: 0
+📍 Індекс відправки скинуто для перевірки нових даних
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✓ Задача розширеної логіки запущена
+🚀 Google Sheets task запущено
+✅ Веб-завдання запущено
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║
+╠════════════════════════════════════════════════════════╣
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  💻 Локальне ім'я: http://klimat.local                 ║
+╠════════════════════════════════════════════════════════╣
+║  📡 WiFi мережа:  Redmi Note 9                     ║
+║  📶 Сигнал:       -75                       dBm ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708951, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708952, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708953, isTimeSynced(): 1
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708954, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708955, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708956, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708957, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708958, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708959, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708960, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 0
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2477393,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708961, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708962, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708963, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708964, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+❌ Автозбереження не вдалося
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[SENSOR] T:28.6/65.6°C H:60.0% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708965, isTimeSynced(): 1
+✓ Зволожувач: ВКЛ (Вологість: 60.0, Ціль: 66.2)
+[TIME] Синхронізовано: 06.01.2026 16:16:05
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708966, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+WEB COMMAND: quiet
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708967, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708968, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708969, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708970, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708971, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708972, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708973, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708974, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708975, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708976, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708977, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708978, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708979, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708980, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708981, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708982, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+WEB COMMAND: save-data
+📤 Ручне збереження даних в Google Sheets...
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477393209
+📭 Немає нових даних для відправки
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708983, isTimeSynced(): 1
+🔧 Таймер витяжки: Витяжка вимкнена
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708984, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708985, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708986, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708987, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708988, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708989, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708990, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708991, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708992, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708993, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708994, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708995, isTimeSynced(): 1
+📈 Статистика: Пам'ять=120KB, Записів=2, Час=60сек
+[TIME] Синхронізовано: 06.01.2026 16:16:35
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[SENSOR] T:27.9/66.3°C H:60.1% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708996, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708997, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708998, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767708999, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709000, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709001, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709002, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709003, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709004, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709005, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709006, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709007, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709008, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709009, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709010, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709011, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709012, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709013, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709014, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709015, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709016, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709017, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709018, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709019, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709020, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709021, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709022, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709023, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709024, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477393209
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 193 байт
+📄 JSON дані:
+{"records":[{"timestamp":2477453,"tempCarrier":66.5,"tempRoom":27.5,"tempBME":25.44,"humidity":60.07031,"pressure":988.478,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 198 байт
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709025, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+WEB COMMAND: save-data
+📤 Ручне збереження даних в Google Sheets...
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477453040
+📭 Немає нових даних для відправки
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[SENSOR] T:27.5/65.8°C H:60.3% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709026, isTimeSynced(): 1
+[TIME] Синхронізовано: 06.01.2026 16:17:06
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709027, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709028, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709029, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709030, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709031, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709032, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709033, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709034, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709035, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709036, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709037, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709038, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709039, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+✓ Датчик теплоносія відновлено
+[HISTORY] getCurrentTime(): 1767709040, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709041, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709042, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709043, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709044, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709045, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709046, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709047, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709048, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709049, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709050, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709051, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709052, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709053, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709054, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709055, isTimeSynced(): 1
+📈 Статистика: Пам'ять=119KB, Записів=4, Час=120сек
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709056, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[SENSOR] T:28.9/64.9°C H:59.1% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709057, isTimeSynced(): 1
+[TIME] Синхронізовано: 06.01.2026 16:17:37
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709058, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709059, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+📊 Перевірка нових даних після timestamp 2477453040
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+[HISTORY] getCurrentTime(): 1767709060, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709061, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709062, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709063, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709064, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709065, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709066, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709067, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709068, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709069, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709070, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709071, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709072, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709073, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709074, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709075, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709076, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709077, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709078, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709079, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709080, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709081, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709082, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709083, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709084, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709085, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709086, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[SENSOR] T:28.0/66.0°C H:61.3% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709087, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709088, isTimeSynced(): 1
+[TIME] Синхронізовано: 06.01.2026 16:18:08
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709089, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477453040
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 197 байт
+📄 JSON дані:
+{"records":[{"timestamp":2477513,"tempCarrier":65.5,"tempRoom":28.6875,"tempBME":25.44,"humidity":59.07617,"pressure":988.4612,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 202 байт
+[HISTORY] getCurrentTime(): 1767709090, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709091, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709092, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709093, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709094, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709095, isTimeSynced(): 1
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+❌ Автозбереження не вдалося
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709096, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+✓ Датчик теплоносія відновлено
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709097, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709098, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709099, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709100, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709101, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709102, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709103, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709104, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709105, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709106, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709107, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709108, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709109, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709110, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709111, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709112, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709113, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709114, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709115, isTimeSynced(): 1
+📈 Статистика: Пам'ять=120KB, Записів=6, Час=180сек
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709116, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709117, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[SENSOR] T:27.2/66.5°C H:60.7% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709118, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[TIME] Синхронізовано: 06.01.2026 16:18:39
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709119, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709120, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709121, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709122, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709123, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709124, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709125, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477513041
+📭 Немає нових даних для відправки
+✅ Автозбереження завершено успішно
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709126, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709127, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709128, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709129, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709130, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709131, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709132, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709133, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+✓ Датчик теплоносія відновлено
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709134, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709135, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709136, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709137, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709138, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709139, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709140, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709141, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709142, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709143, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709144, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709145, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709146, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709147, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[SENSOR] T:27.8/65.3°C H:61.3% P:988.5hPa
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709148, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709149, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[TIME] Синхронізовано: 06.01.2026 16:19:10
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709150, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709151, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709152, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709153, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709154, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709155, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+
+🤖 Автоматичне збереження даних...
+   Причина: 2 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbxKamWjGvfhy05Jm7xaGUDfqsFLvFE9ygwTeAAp2ahOxMOQxM8QNXwunIirByDk-Gk9/exec
+📊 Перевірка нових даних після timestamp 2477513041
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 193 байт
+📄 JSON дані:
+{"records":[{"timestamp":2477572,"tempCarrier":66.625,"tempRoom":27,"tempBME":25.44,"humidity":61.0293,"pressure":988.4636,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 198 байт
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709156, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709157, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[HISTORY] getCurrentTime(): 1767709158, isTimeSynced(): 1
+[

@@ -4,6 +4,7 @@
 #include "system_core.h"
 #include "data_storage.h"
 #include "global_declarations.h"
+#include "google_sheets_sync.h"
 #include <Arduino.h>
 #include "utility_functions.h"
 
@@ -14,7 +15,7 @@
 bool compactMode = true;
 unsigned long lastModeSwitch = 0;
 unsigned long lastPowerUpdate = 0;
-const unsigned long POWER_UPDATE_INTERVAL = 1000;
+const unsigned long POWER_UPDATE_INTERVAL = 30000;  // 30 секунд - щоб гасло встигло пробігти
 
 // ============================================================================
 // ДРУК ДЛЯ SERIAL MONITOR
@@ -102,6 +103,9 @@ void printExtendedMode() {
     Serial.println("  test vent   - тест вентиляції");
     Serial.println("  test pump   - тест насоса (10 сек)");
     Serial.println("  test fan    - тест вентилятора (10 сек)");
+    Serial.println("\nSYNC З GOOGLE SHEETS:");
+    Serial.println("  sheets-sync - синхронізувати дані з Google Sheets");
+    Serial.println("  sheets-stats- статистика синхронізації");
     Serial.println("══════════════════════════════════════════════════════════\n");
 }
 
@@ -588,6 +592,17 @@ void processExtendedCommand(String command) {
         Serial.println("║  Система повернулась в AUTO режим                    ║");
         Serial.println("╚═══════════════════════════════════════════════════════╝\n");
     }
+    else if (command == "sheets-sync" || command == "sheets sync") {
+        Serial.println("📤 Запуск синхронізації з Google Sheets...");
+        if (syncToGoogleSheets()) {
+            Serial.println("✅ Дані успішно відправлено в Google Sheets");
+        } else {
+            Serial.println("❌ Помилка синхронізації");
+        }
+    }
+    else if (command == "sheets-stats" || command == "sheets stats") {
+        printSyncInfo();
+    }
     else {
         Serial.println("✗ Невідома команда. Введіть 'menu' для списку команд");
     }
@@ -705,10 +720,34 @@ void smartHeatingControl() {
         xSemaphoreGive(getSensorMutex());
     }
 
-    // Якщо датчик кімнати несправний - використовуємо BME280 як резервний
-    if (!roomValid && bmeValid) {
+    // Перевірка валідності датчиків кімнати
+    bool roomTempAvailable = false;
+
+    if (roomValid) {
+        roomTempAvailable = true;
+    } else if (bmeValid) {
+        // Якщо основний датчик кімнати несправний - використовуємо BME280 як резервний
         tempRoom = getAdjustedBmeTemperature();
-        Serial.println("⚠️ Використовую BME280 як резервний датчик кімнати");
+        roomTempAvailable = true;
+
+        static unsigned long lastBmeWarning = 0;
+        if (now - lastBmeWarning > 60000) {  // Повідомлення раз на хвилину
+            Serial.println("⚠️ Використовую BME280 як резервний датчик кімнати");
+            lastBmeWarning = now;
+        }
+    } else {
+        // Обидва датчики кімнати несправні - система не може працювати
+        static unsigned long lastErrorWarning = 0;
+        if (now - lastErrorWarning > 10000) {  // Повідомлення раз на 10 секунд
+            Serial.println("🚨 КРИТИЧНА ПОМИЛКА: ВСІ ДАТЧИКИ КІМНАТИ НЕСПРАВНІ!");
+            Serial.println("   Система зупинена до відновлення датчиків");
+            lastErrorWarning = now;
+        }
+
+        // Зупиняємо всі виконавчі механізми для безпеки
+        setPumpPercent(0);
+        setFanPercent(config.fanMinPercent);  // Мінімальна циркуляція для запобігання застою
+        return;
     }
 
     // Перевіряємо аварійні режими (тільки в автоматичному режимі)
@@ -797,10 +836,34 @@ void smartCoolingControl() {
         xSemaphoreGive(getSensorMutex());
     }
 
-    // Якщо датчик кімнати несправний - використовуємо BME280 як резервний
-    if (!roomValid && bmeValid) {
+    // Перевірка валідності датчиків кімнати
+    bool roomTempAvailable = false;
+
+    if (roomValid) {
+        roomTempAvailable = true;
+    } else if (bmeValid) {
+        // Якщо основний датчик кімнати несправний - використовуємо BME280 як резервний
         tempRoom = getAdjustedBmeTemperature();
-        Serial.println("⚠️ Використовую BME280 як резервний датчик кімнати");
+        roomTempAvailable = true;
+
+        static unsigned long lastBmeWarning = 0;
+        if (now - lastBmeWarning > 60000) {  // Повідомлення раз на хвилину
+            Serial.println("⚠️ [ОХОЛОДЖЕННЯ] Використовую BME280 як резервний датчик");
+            lastBmeWarning = now;
+        }
+    } else {
+        // Обидва датчики кімнати несправні - система не може працювати
+        static unsigned long lastErrorWarning = 0;
+        if (now - lastErrorWarning > 10000) {  // Повідомлення раз на 10 секунд
+            Serial.println("🚨 [ОХОЛОДЖЕННЯ] КРИТИЧНА ПОМИЛКА: ВСІ ДАТЧИКИ НЕСПРАВНІ!");
+            Serial.println("   Система зупинена до відновлення датчиків");
+            lastErrorWarning = now;
+        }
+
+        // Зупиняємо всі виконавчі механізми для безпеки
+        setPumpPercent(0);
+        setFanPercent(config.fanMinPercent);  // Мінімальна циркуляція
+        return;
     }
 
     // РЕЖИМ ОХОЛОДЖЕННЯ: Насос завжди 0%, вентилятор регулює охолодження
@@ -980,15 +1043,24 @@ void monitorSystemHealth() {
         xSemaphoreGive(getSensorMutex());
     }
 
-    Serial.printf("║  🌡️  Теплоносій: %s%-28s ║\n",
-                 carrierValid ? "" : "🚨 ",
-                 carrierValid ? (String(tempCarrier, 1) + "°C").c_str() : "ПОМИЛКА");
-    Serial.printf("║  🏠 Кімната: %s%-31s ║\n",
-                 roomValid ? "" : "🚨 ",
-                 roomValid ? (String(tempRoom, 1) + "°C").c_str() : "ПОМИЛКА");
-    Serial.printf("║  💧 Вологість: %s%-29s ║\n",
-                 bmeValid ? "" : "🚨 ",
-                 bmeValid ? (String(humidity, 1) + "%").c_str() : "ПОМИЛКА");
+    // Фіксована ширина для кирилиці (UTF-8 займає більше байтів)
+    if (carrierValid) {
+        Serial.printf("║  🌡️  Теплоносій: %-35s║\n", (String(tempCarrier, 1) + "°C").c_str());
+    } else {
+        Serial.println("║  🌡️  Теплоносій: 🚨 ПОМИЛКА                          ║");
+    }
+
+    if (roomValid) {
+        Serial.printf("║  🏠 Кімната: %-39s║\n", (String(tempRoom, 1) + "°C").c_str());
+    } else {
+        Serial.println("║  🏠 Кімната: 🚨 ПОМИЛКА                              ║");
+    }
+
+    if (bmeValid) {
+        Serial.printf("║  💧 Вологість: %-37s║\n", (String(humidity, 1) + "%").c_str());
+    } else {
+        Serial.println("║  💧 Вологість: 🚨 ПОМИЛКА                            ║");
+    }
 
     // Режим роботи
     String mode;
@@ -1257,13 +1329,15 @@ void cascadeEmergencyHeating() {
             break;
 
         case 2: // ЕТАП 2: Спроба 100% насосом (відмова котла)
-            // Статус кожні 10 секунд
+            // Статус кожні 5 секунд
             {
                 static unsigned long lastStatusPrint2 = 0;
-                if (now - lastStatusPrint2 > 10000) {
+                if (now - lastStatusPrint2 > 5000) {
                     lastStatusPrint2 = now;
-                    Serial.printf("⚡ [%s] ЕТАП 2 СПРОБА 100%%: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=100%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, config.fanMinPercent);
+                    uint8_t pumpPercent = map(heatingState.pumpPower, 0, 255, 0, 100);
+                    uint8_t fanPercent = map(heatingState.fanPower, 0, 255, 0, 100);
+                    Serial.printf("⚡ [%s] ЕТАП 2 СПРОБА 100%%: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=%d%%, Вентилятор=%d%%\n",
+                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, pumpPercent, fanPercent);
                 }
             }
 
@@ -1407,13 +1481,15 @@ void cascadeEmergencyHeating() {
             break;
 
         case 5: // Перевірка останньої спроби
-            // Статус кожні 10 секунд
+            // Статус кожні 5 секунд
             {
                 static unsigned long lastStatusPrint5 = 0;
-                if (now - lastStatusPrint5 > 10000) {
+                if (now - lastStatusPrint5 > 5000) {
                     lastStatusPrint5 = now;
-                    Serial.printf("🔥 [%s] ЕТАП 5 ОСТАННЯ СПРОБА: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=100%%, Вентилятор=0%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise);
+                    uint8_t pumpPercent = map(heatingState.pumpPower, 0, 255, 0, 100);
+                    uint8_t fanPercent = map(heatingState.fanPower, 0, 255, 0, 100);
+                    Serial.printf("🔥 [%s] ЕТАП 5 ОСТАННЯ СПРОБА: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=%d%%, Вентилятор=%d%%\n",
+                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, pumpPercent, fanPercent);
                 }
             }
 

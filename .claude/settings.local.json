@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where:*)",
+      "Bash(where pio:*)",
+      "Bash(pio run)",
+      "Bash(platformio run)",
+      "Bash(pio run:*)",
+      "Bash(platformio run:*)",
+      "Bash(python -m platformio run:*)",
+      "Bash(python3:*)",
+      "Bash(cmd /c \"pio run -t upload\")",
+      "Bash(/c/Users/Pavel/.platformio/penv/Scripts/platformio.exe run -t upload)",
+      "Bash(PYTHONIOENCODING=utf-8 /c/Users/Pavel/.platformio/penv/Scripts/platformio.exe run:*)",
+      "Bash(~/.platformio/penv/Scripts/platformio.exe run:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

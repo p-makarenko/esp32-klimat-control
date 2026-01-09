@@ -7,12 +7,12 @@
 
 // Версія та інформація про збірку (автоматично оновлюється при компіляції)
 #define PROJECT_START_DATE "Dec 7 2025"
-#define VERSION "v4.6-D32"
-#define VERSION_COMMENT "День 32 розробки"
+#define VERSION "v4.6-D33"
+#define VERSION_COMMENT "День 33 розробки"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 7846
-#define FIRMWARE_SIZE_KB 1069
+#define TOTAL_CODE_LINES 9393
+#define FIRMWARE_SIZE_KB 1285
 
 // Оголошення всіх глобальних змінних
 extern Preferences prefs;

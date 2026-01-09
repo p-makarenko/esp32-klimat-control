@@ -1,0 +1,358 @@
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 9                     ║
+║  🌐 IP:           192.168.128.166                  ║
+║  🔌 Шлюз:         192.168.128.214                  ║
+║  📶 Сигнал:       -80                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-06 18:36:27
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+ℹ️  SCD30 тимчасово вимкнений
+
+=== ІНІЦІАЛІЗАЦІЯ ІСПОЛНЮВАЧІВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (180°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ЗАКРИТА (180°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS ===
+✓ Google Sheets модуль ініціалізовано
+  URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+  Час відправки: 23:59
+  Автозбереження: кожні 1 хв або 1 нових записів
+📅 Останній відправлений timestamp: 0
+📍 Індекс відправки скинуто для перевірки нових даних
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✓ Задача розширеної логіки запущена
+🚀 Google Sheets task запущено
+✅ Веб-завдання запущено
+✓ Задачу вентиляції запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║
+╠════════════════════════════════════════════════════════╣
+║  📱 IP адреса:    http://192.168.128.166             ║
+║  💻 Локальне ім'я: http://klimat.local                 ║
+╠════════════════════════════════════════════════════════╣
+║  📡 WiFi мережа:  Redmi Note 9                     ║
+║  📶 Сигнал:       -81                       dBm ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+[HISTORY] Записано запис 10
+[HISTORY] Записано запис 20
+🔧 Таймер витяжки: Запущений, витяжка увімкнена
+[HISTORY] Записано запис 30
+[HISTORY] Записано запис 40
+[HISTORY] Записано запис 50
+[HISTORY] Записано запис 60
+[HISTORY] Записано запис 70
+[HISTORY] Записано запис 80
+[HISTORY] Записано запис 90
+
+🤖 Автоматичне збереження даних...
+   Причина: 98 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 0
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 173 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485831686,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 178 байт
+[HISTORY] Записано запис 100
+[HISTORY] Записано запис 110
+[HISTORY] Записано запис 120
+[HISTORY] Записано запис 130
+[TIME] Синхронізовано: 06.01.2026 18:36:44
+[HISTORY] Записано запис 140
+[SENSOR] T:25.5/51.9°C H:68.6% P:988.8hPa
+[HISTORY] Записано запис 150
+[HISTORY] Записано запис 160
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 170
+[HISTORY] Записано запис 180
+[HISTORY] Записано запис 190
+[HISTORY] Записано запис 200
+[HISTORY] Записано запис 210
+[HISTORY] Записано запис 220
+[HISTORY] Записано запис 230
+[HISTORY] Записано запис 240
+[HISTORY] Записано запис 250
+[HISTORY] Записано запис 260
+[HISTORY] Записано запис 270
+[HISTORY] Записано запис 280
+[HISTORY] Записано запис 290
+[HISTORY] Записано запис 300
+[HISTORY] Записано запис 310
+[HISTORY] Записано запис 320
+🔧 Таймер витяжки: Витяжка вимкнена
+[HISTORY] Записано запис 330
+[HISTORY] Записано запис 340
+[HISTORY] Записано запис 350
+[HISTORY] Записано запис 360
+[HISTORY] Записано запис 370
+[HISTORY] Записано запис 380
+[HISTORY] Записано запис 390
+[HISTORY] Записано запис 400
+[HISTORY] Записано запис 410
+[HISTORY] Записано запис 420
+[HISTORY] Записано запис 430
+[HISTORY] Записано запис 440
+[SENSOR] T:26.5/49.9°C H:68.2% P:988.8hPa
+📈 Статистика: Пам'ять=123KB, Записів=447, Час=61сек
+[TIME] Синхронізовано: 06.01.2026 18:37:15
+[HISTORY] Записано запис 450
+[HISTORY] Записано запис 460
+
+🤖 Автоматичне збереження даних...
+   Причина: 465 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485831686
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 173 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485832786,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 178 байт
+[HISTORY] Записано запис 470
+[HISTORY] Записано запис 480
+[HISTORY] Записано запис 490
+[HISTORY] Записано запис 500
+[HISTORY] Записано запис 510
+[HISTORY] Записано запис 520
+[HISTORY] Записано запис 530
+[HISTORY] Записано запис 540
+[HISTORY] Записано запис 550
+[HISTORY] Записано запис 560
+❌ Помилка з'єднання: connection refused
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 570
+[HISTORY] Записано запис 580
+[HISTORY] Записано запис 590
+[HISTORY] Записано запис 600
+[HISTORY] Записано запис 610
+[HISTORY] Записано запис 620
+[HISTORY] Записано запис 630
+[HISTORY] Записано запис 640
+[HISTORY] Записано запис 650
+[HISTORY] Записано запис 660
+[HISTORY] Записано запис 670
+[HISTORY] Записано запис 680
+[HISTORY] Записано запис 690
+[HISTORY] Записано запис 700
+[HISTORY] Записано запис 710
+[HISTORY] Записано запис 720
+[HISTORY] Записано запис 730
+[HISTORY] Записано запис 740
+[TIME] Синхронізовано: 06.01.2026 18:37:45
+[SENSOR] T:26.2/51.7°C H:68.2% P:988.8hPa
+[HISTORY] Записано запис 750
+[HISTORY] Записано запис 760
+[HISTORY] Записано запис 770
+[HISTORY] Записано запис 780
+[HISTORY] Записано запис 790
+[HISTORY] Записано запис 800
+[HISTORY] Записано запис 810
+[HISTORY] Записано запис 820
+[HISTORY] Записано запис 830
+[HISTORY] Записано запис 840
+[HISTORY] Записано запис 850
+[HISTORY] Записано запис 860
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 861 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485832786
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 173 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485832886,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 178 байт
+[HISTORY] Записано запис 870
+[HISTORY] Записано запис 880
+[HISTORY] Записано запис 890
+[HISTORY] Записано запис 900
+[HISTORY] Записано запис 910
+❌ Помилка з'єднання: connection refused
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 920
+[HISTORY] Записано запис 930
+[HISTORY] Записано запис 940
+[HISTORY] Записано запис 950
+[HISTORY] Записано запис 960
+[HISTORY] Записано запис 970
+[HISTORY] Записано запис 980
+[HISTORY] Записано запис 990
+[HISTORY] Записано запис 1000
+[HISTORY] Записано запис 1010
+[HISTORY] Записано запис 1020
+[HISTORY] Записано запис 1030
+[HISTORY] Записано запис 1040
+📈 Статистика: Пам'ять=116KB, Записів=1047, Час=121сек
+[HISTORY] Записано запис 1050
+[SENSOR] T:25.9/50.6°C H:68.1% P:988.8hPa
+[TIME] Синхронізовано: 06.01.2026 18:38:16
+[HISTORY] Записано запис 1060
+[HISTORY] Записано запис 1070
+[HISTORY] Записано запис 1080
+[HISTORY] Записано запис 1090
+[HISTORY] Записано запис 1100
+[HISTORY] Записано запис 1110
+[HISTORY] Записано запис 1120
+[HISTORY] Записано запис 1130
+[HISTORY] Записано запис 1140
+[HISTORY] Записано запис 1150
+[HISTORY] Записано запис 1160
+[HISTORY] Записано запис 1170
+[HISTORY] Записано запис 1180
+[HISTORY] Записано запис 1190
+[HISTORY] Записано запис 1200
+[HISTORY] Записано запис 1210
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1211 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485832886
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 173 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485832986,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 178 байт
+[HISTORY] Записано запис 1220
+[HISTORY] Записано запис 1230
+[HISTORY] Записано запис 1240
+[HISTORY] Записано запис 1250
+[HISTORY] Записано запис 1260
+❌ Помилка з'єднання: connection refused
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 1270
+✓ Зволожувач: УВІМКНЕНО (Вологість: 67.4%, Ціль: 67.4%)
+[HISTORY] Записано запис 1280
+[HISTORY] Записано запис 1290
+[HISTORY] Записано запис 1300
+[HISTORY] Записано запис 1310
+[HISTORY] Записано запис 1320
+[HISTORY] Записано запис 1330
+[HISTORY] Записано запис 1340
+[HISTORY] Записано запис 1350
+[SENSOR] T:26.2/50.1°C H:67.3% P:988.8hPa
+[HISTORY] Записано запис 1360
+[TIME] Синхронізовано: 06.01.2026 18:38:47
+[HISTORY] Записано запис 1370
+[HISTORY] Записано запис 1380
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0xb (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.6-D30                         ║
+║  💬 Коментар:     День 30 розробки     ║
+║  📅 Зібрано:      Jan  6 2026          18:29:24    ║
+║  📝 Рядків:       7868                             ║
+║  💾 Розмір:       1232                          KB ║
+╚════════════════════════════════════════════════════════╝
+[HISTORY] Історія ініціалізована
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===

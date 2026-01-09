@@ -1,0 +1,665 @@
+[HISTORY] Записано запис 90
+
+🤖 Автоматичне збереження даних...
+   Причина: 98 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 0
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485045,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] Записано запис 100
+[HISTORY] Записано запис 110
+[HISTORY] Записано запис 120
+[HISTORY] Записано запис 130
+[HISTORY] Записано запис 140
+[SENSOR] T:25.4/52.5°C H:66.9% P:988.7hPa
+✓ Зволожувач: ВКЛ (Вологість: 66.9, Ціль: 67.8)
+[TIME] Синхронізовано: 06.01.2026 18:23:38
+[HISTORY] Записано запис 150
+[HISTORY] Записано запис 160
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 170
+[HISTORY] Записано запис 180
+[HISTORY] Записано запис 190
+[HISTORY] Записано запис 200
+[HISTORY] Записано запис 210
+[HISTORY] Записано запис 220
+[HISTORY] Записано запис 230
+[HISTORY] Записано запис 240
+[HISTORY] Записано запис 250
+[HISTORY] Записано запис 260
+[HISTORY] Записано запис 270
+[HISTORY] Записано запис 280
+[HISTORY] Записано запис 290
+[HISTORY] Записано запис 300
+[HISTORY] Записано запис 310
+[HISTORY] Записано запис 320
+🔧 Таймер витяжки: Витяжка вимкнена
+[HISTORY] Записано запис 330
+[HISTORY] Записано запис 340
+[HISTORY] Записано запис 350
+[HISTORY] Записано запис 360
+[HISTORY] Записано запис 370
+[HISTORY] Записано запис 380
+[HISTORY] Записано запис 390
+[HISTORY] Записано запис 400
+[HISTORY] Записано запис 410
+[HISTORY] Записано запис 420
+[HISTORY] Записано запис 430
+[HISTORY] Записано запис 440
+[SENSOR] T:26.6/50.4°C H:66.4% P:988.7hPa
+📈 Статистика: Пам'ять=123KB, Записів=447, Час=60сек
+[HISTORY] Записано запис 450
+[TIME] Синхронізовано: 06.01.2026 18:24:09
+[HISTORY] Записано запис 460
+
+🤖 Автоматичне збереження даних...
+   Причина: 459 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485045437
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485045,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] Записано запис 470
+[HISTORY] Записано запис 480
+[HISTORY] Записано запис 490
+[HISTORY] Записано запис 500
+[HISTORY] Записано запис 510
+[HISTORY] Записано запис 520
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 530
+[HISTORY] Записано запис 540
+[HISTORY] Записано запис 550
+[HISTORY] Записано запис 560
+[HISTORY] Записано запис 570
+[HISTORY] Записано запис 580
+[HISTORY] Записано запис 590
+[HISTORY] Записано запис 600
+[HISTORY] Записано запис 610
+WEB COMMAND: save-data
+📤 Ручне збереження даних в Google Sheets...
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+[HISTORY] Записано запис 620
+📊 Перевірка нових даних після timestamp 2485045537
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485045,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] Записано запис 630
+[HISTORY] Записано запис 640
+[HISTORY] Записано запис 650
+[HISTORY] Записано запис 660
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+[HISTORY] Записано запис 670
+[HISTORY] Записано запис 680
+[HISTORY] Записано запис 690
+[HISTORY] Записано запис 700
+[HISTORY] Записано запис 710
+[HISTORY] Записано запис 720
+[HISTORY] Записано запис 730
+[HISTORY] Записано запис 740
+[SENSOR] T:26.6/52.5°C H:67.2% P:988.7hPa
+[HISTORY] Записано запис 750
+[TIME] Синхронізовано: 06.01.2026 18:24:39
+[HISTORY] Записано запис 760
+[HISTORY] Записано запис 770
+[HISTORY] Записано запис 780
+[HISTORY] Записано запис 790
+[HISTORY] Записано запис 800
+[HISTORY] Записано запис 810
+[HISTORY] Записано запис 820
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 822 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485045637
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485045,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] Записано запис 830
+[HISTORY] Записано запис 840
+[HISTORY] Записано запис 850
+[HISTORY] Записано запис 860
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 870
+[HISTORY] Записано запис 880
+[HISTORY] Записано запис 890
+[HISTORY] Записано запис 900
+[HISTORY] Записано запис 910
+[HISTORY] Записано запис 920
+[HISTORY] Записано запис 930
+[HISTORY] Записано запис 940
+[HISTORY] Записано запис 950
+[HISTORY] Записано запис 960
+[HISTORY] Записано запис 970
+[HISTORY] Записано запис 980
+[HISTORY] Записано запис 990
+[HISTORY] Записано запис 1000
+[HISTORY] Записано запис 1010
+[HISTORY] Записано запис 1020
+[HISTORY] Записано запис 1030
+[HISTORY] Записано запис 1040
+📈 Статистика: Пам'ять=120KB, Записів=1044, Час=120сек
+[HISTORY] Записано запис 1050
+[SENSOR] T:26.3/53.6°C H:67.7% P:988.7hPa
+[HISTORY] Записано запис 1060
+[TIME] Синхронізовано: 06.01.2026 18:25:10
+[HISTORY] Записано запис 1070
+[HISTORY] Записано запис 1080
+[HISTORY] Записано запис 1090
+[HISTORY] Записано запис 1100
+[HISTORY] Записано запис 1110
+[HISTORY] Записано запис 1120
+[HISTORY] Записано запис 1130
+[HISTORY] Записано запис 1140
+[HISTORY] Записано запис 1150
+[HISTORY] Записано запис 1160
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1164 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485045737
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 170 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485045,"tempCarrier":0,"tempRoom":0,"tempBME":0,"humidity":0,"pressure":0,"co2":0,"pumpPower":0,"fanPower":0,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 175 байт
+[HISTORY] Записано запис 1170
+[HISTORY] Записано запис 1180
+[HISTORY] Записано запис 1190
+[HISTORY] Записано запис 1200
+[HISTORY] Записано запис 1210
+[HISTORY] Записано запис 1220
+[HISTORY] Записано запис 1230
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 1240
+[HISTORY] Записано запис 1250
+[HISTORY] Записано запис 1260
+[HISTORY] Записано запис 1270
+[HISTORY] Записано запис 1280
+[HISTORY] Записано запис 1290
+✓ Датчик теплоносія відновлено
+[HISTORY] Записано запис 1300
+[HISTORY] Записано запис 1310
+[HISTORY] Записано запис 1320
+[HISTORY] Записано запис 1330
+[HISTORY] Записано запис 1340
+[HISTORY] Записано запис 1350
+[SENSOR] T:25.9/53.2°C H:67.6% P:988.7hPa
+[HISTORY] Записано запис 1360
+[TIME] Синхронізовано: 06.01.2026 18:25:41
+[HISTORY] Записано запис 1370
+[HISTORY] Записано запис 1380
+[HISTORY] Записано запис 1390
+[HISTORY] Записано запис 1400
+[HISTORY] Записано запис 1410
+[HISTORY] Записано запис 1420
+[HISTORY] Записано запис 1430
+[HISTORY] Записано запис 0
+[HISTORY] Записано запис 10
+[HISTORY] Записано запис 20
+[HISTORY] Записано запис 30
+[HISTORY] Записано запис 40
+[HISTORY] Записано запис 50
+[HISTORY] Записано запис 60
+[HISTORY] Записано запис 70
+[HISTORY] Записано запис 80
+[HISTORY] Записано запис 90
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485045837
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 198 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485054,"tempCarrier":53.1875,"tempRoom":25.4375,"tempBME":25.23,"humidity":67.25,"pressure":988.6771,"co2":0,"pumpPower":0,"fanPower":74,"extractorPower":9,"mode":"AUTO"}]}
+📦 Розмір form data: 203 байт
+[HISTORY] Записано запис 100
+[HISTORY] Записано запис 110
+[HISTORY] Записано запис 120
+✓ Зволожувач: ВИМК (Вологість: 68.4, Ціль: 68.4)
+[HISTORY] Записано запис 130
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 140
+[HISTORY] Записано запис 150
+[HISTORY] Записано запис 160
+[HISTORY] Записано запис 170
+[HISTORY] Записано запис 180
+[HISTORY] Записано запис 190
+[HISTORY] Записано запис 200
+📈 Статистика: Пам'ять=120KB, Записів=202, Час=180сек
+[HISTORY] Записано запис 210
+[SENSOR] T:26.4/51.9°C H:68.4% P:988.7hPa
+[HISTORY] Записано запис 220
+[HISTORY] Записано запис 230
+[TIME] Синхронізовано: 06.01.2026 18:26:12
+[HISTORY] Записано запис 240
+[HISTORY] Записано запис 250
+[HISTORY] Записано запис 260
+[HISTORY] Записано запис 270
+[HISTORY] Записано запис 280
+[HISTORY] Записано запис 290
+[HISTORY] Записано запис 300
+[HISTORY] Записано запис 310
+[HISTORY] Записано запис 320
+[HISTORY] Записано запис 330
+[HISTORY] Записано запис 340
+[HISTORY] Записано запис 350
+[HISTORY] Записано запис 360
+[HISTORY] Записано запис 370
+[HISTORY] Записано запис 380
+[HISTORY] Записано запис 390
+[HISTORY] Записано запис 400
+[HISTORY] Записано запис 410
+[HISTORY] Записано запис 420
+[HISTORY] Записано запис 430
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485054937
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 201 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485089,"tempCarrier":50.3125,"tempRoom":26.5625,"tempBME":25.19,"humidity":66.16992,"pressure":988.6767,"co2":0,"pumpPower":0,"fanPower":20,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 206 байт
+[HISTORY] Записано запис 440
+[HISTORY] Записано запис 450
+[HISTORY] Записано запис 460
+[HISTORY] Записано запис 470
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 480
+[HISTORY] Записано запис 490
+[HISTORY] Записано запис 500
+[HISTORY] Записано запис 510
+[HISTORY] Записано запис 520
+[SENSOR] T:26.2/52.3°C H:68.1% P:988.7hPa
+[HISTORY] Записано запис 530
+[HISTORY] Записано запис 540
+[TIME] Синхронізовано: 06.01.2026 18:26:43
+[HISTORY] Записано запис 550
+[HISTORY] Записано запис 560
+[HISTORY] Записано запис 570
+[HISTORY] Записано запис 580
+[HISTORY] Записано запис 590
+[HISTORY] Записано запис 600
+[HISTORY] Записано запис 610
+[HISTORY] Записано запис 620
+[HISTORY] Записано запис 630
+[HISTORY] Записано запис 640
+[HISTORY] Записано запис 650
+[HISTORY] Записано запис 660
+[HISTORY] Записано запис 670
+[HISTORY] Записано запис 680
+[HISTORY] Записано запис 690
+[HISTORY] Записано запис 700
+[HISTORY] Записано запис 710
+[HISTORY] Записано запис 720
+[HISTORY] Записано запис 730
+[HISTORY] Записано запис 740
+[HISTORY] Записано запис 750
+[HISTORY] Записано запис 760
+[HISTORY] Записано запис 770
+✓ Зволожувач: УВІМКНЕНО (Вологість: 67.4%, Ціль: 67.5%)
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485089165
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 200 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485123,"tempCarrier":52.5625,"tempRoom":26.625,"tempBME":25.19,"humidity":67.24316,"pressure":988.6998,"co2":0,"pumpPower":0,"fanPower":14,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 205 байт
+[HISTORY] Записано запис 780
+[HISTORY] Записано запис 790
+[HISTORY] Записано запис 800
+📈 Статистика: Пам'ять=70KB, Записів=801, Час=240сек
+[HISTORY] Записано запис 810
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 820
+[SENSOR] T:26.1/51.3°C H:67.1% P:988.8hPa
+[HISTORY] Записано запис 830
+[HISTORY] Записано запис 840
+[TIME] Синхронізовано: 06.01.2026 18:27:13
+[HISTORY] Записано запис 850
+[HISTORY] Записано запис 860
+[HISTORY] Записано запис 870
+[HISTORY] Записано запис 880
+[HISTORY] Записано запис 890
+[HISTORY] Записано запис 900
+[HISTORY] Записано запис 910
+[HISTORY] Записано запис 920
+[HISTORY] Записано запис 930
+[HISTORY] Записано запис 940
+✓ Датчик теплоносія відновлено
+[HISTORY] Записано запис 950
+[HISTORY] Записано запис 960
+[HISTORY] Записано запис 970
+[HISTORY] Записано запис 980
+[HISTORY] Записано запис 990
+[HISTORY] Записано запис 1000
+[HISTORY] Записано запис 1010
+[HISTORY] Записано запис 1020
+✓ Датчик теплоносія відновлено
+[HISTORY] Записано запис 1030
+[HISTORY] Записано запис 1040
+[HISTORY] Записано запис 1050
+[HISTORY] Записано запис 1060
+[HISTORY] Записано запис 1070
+[HISTORY] Записано запис 1080
+[HISTORY] Записано запис 1090
+[HISTORY] Записано запис 1100
+[HISTORY] Записано запис 1110
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485123471
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 201 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485158,"tempCarrier":53.8125,"tempRoom":26.1875,"tempBME":25.18,"humidity":67.65039,"pressure":988.7047,"co2":0,"pumpPower":0,"fanPower":29,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 206 байт
+[HISTORY] Записано запис 1120
+[SENSOR] T:26.3/51.4°C H:67.0% P:988.8hPa
+[HISTORY] Записано запис 1130
+[HISTORY] Записано запис 1140
+[HISTORY] Записано запис 1150
+[TIME] Синхронізовано: 06.01.2026 18:27:44
+[HISTORY] Записано запис 1160
+[HISTORY] Записано запис 1170
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 1180
+[HISTORY] Записано запис 1190
+[HISTORY] Записано запис 1200
+[HISTORY] Записано запис 1210
+[HISTORY] Записано запис 1220
+[HISTORY] Записано запис 1230
+[HISTORY] Записано запис 1240
+[HISTORY] Записано запис 1250
+[HISTORY] Записано запис 1260
+[HISTORY] Записано запис 1270
+[HISTORY] Записано запис 1280
+[HISTORY] Записано запис 1290
+[HISTORY] Записано запис 1300
+[HISTORY] Записано запис 1310
+[HISTORY] Записано запис 1320
+[HISTORY] Записано запис 1330
+[HISTORY] Записано запис 1340
+[HISTORY] Записано запис 1350
+[HISTORY] Записано запис 1360
+[HISTORY] Записано запис 1370
+[HISTORY] Записано запис 1380
+[HISTORY] Записано запис 1390
+[HISTORY] Записано запис 1400
+📈 Статистика: Пам'ять=122KB, Записів=1400, Час=300сек
+[HISTORY] Записано запис 1410
+[HISTORY] Записано запис 1420
+[HISTORY] Записано запис 1430
+[SENSOR] T:26.0/51.7°C H:68.4% P:988.8hPa
+[HISTORY] Записано запис 0
+[HISTORY] Записано запис 10
+[TIME] Синхронізовано: 06.01.2026 18:28:14
+[HISTORY] Записано запис 20
+[HISTORY] Записано запис 30
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485158231
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 193 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485194,"tempCarrier":52.5,"tempRoom":26,"tempBME":25.15,"humidity":68.26465,"pressure":988.7141,"co2":0,"pumpPower":0,"fanPower":49,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 198 байт
+[HISTORY] Записано запис 40
+[HISTORY] Записано запис 50
+[HISTORY] Записано запис 60
+[HISTORY] Записано запис 70
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+✓ Зволожувач: ВИМК (Вологість: 68.6, Ціль: 68.5)
+[HISTORY] Записано запис 80
+[HISTORY] Записано запис 90
+[HISTORY] Записано запис 100
+[HISTORY] Записано запис 110
+[HISTORY] Записано запис 120
+[HISTORY] Записано запис 130
+[HISTORY] Записано запис 140
+[HISTORY] Записано запис 150
+[HISTORY] Записано запис 160
+[HISTORY] Записано запис 170
+[HISTORY] Записано запис 180
+[HISTORY] Записано запис 190
+[HISTORY] Записано запис 200
+[HISTORY] Записано запис 210
+[HISTORY] Записано запис 220
+[HISTORY] Записано запис 230
+[HISTORY] Записано запис 240
+[HISTORY] Записано запис 250
+[HISTORY] Записано запис 260
+[HISTORY] Записано запис 270
+[HISTORY] Записано запис 280
+[HISTORY] Записано запис 290
+[SENSOR] T:26.3/51.1°C H:69.5% P:988.8hPa
+[HISTORY] Записано запис 300
+[HISTORY] Записано запис 310
+[HISTORY] Записано запис 320
+[TIME] Синхронізовано: 06.01.2026 18:28:45
+[HISTORY] Записано запис 330
+[HISTORY] Записано запис 340
+[HISTORY] Записано запис 350
+[HISTORY] Записано запис 360
+[HISTORY] Записано запис 370
+
+🤖 Автоматичне збереження даних...
+   Причина: минуло 1 хвилин
+   Причина: 1440 нових записів
+
+📤 Відправка даних в Google Sheets...
+🌐 URL: https://script.google.com/macros/s/AKfycbwocwVwGu3BfPqQCOEjuudVvCAVV-NNU2IFkqTQhIau8-qLI-7DiaAwSc8boR4Jy49P/exec
+📊 Перевірка нових даних після timestamp 2485194286
+📊 Підготовлено 1 нових записів для відправки (макс 1)
+📦 Розмір JSON: 200 байт
+📄 JSON дані:
+{"records":[{"timestamp":2485227,"tempCarrier":52.0625,"tempRoom":26.375,"tempBME":25.13,"humidity":68.27246,"pressure":988.7288,"co2":0,"pumpPower":0,"fanPower":29,"extractorPower":0,"mode":"AUTO"}]}
+📦 Розмір form data: 205 байт
+[HISTORY] Записано запис 380
+[HISTORY] Записано запис 390
+[HISTORY] Записано запис 400
+[HISTORY] Записано запис 410
+[HISTORY] Записано запис 420
+[HISTORY] Записано запис 430
+🔧 Таймер витяжки: Витяжка увімкнена
+[HISTORY] Записано запис 440
+📡 HTTP код: 400
+❌ Помилка HTTP: 400
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 400 (Bad Request)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>400.</b> <ins>That’s an error.</ins>
+  <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>
+
+❌ Автозбереження не вдалося
+[HISTORY] Записано запис 450
+[HISTORY] Записано запис 460

@@ -4,6 +4,7 @@
 #include "actuator_manager.h"
 #include "web_interface.h"
 #include "data_storage.h"
+#include "data_logger.h"
 #include "advanced_climate_logic.h"
 #include <time.h>
 
@@ -599,8 +600,19 @@ void createTasks() {
     &advancedLogicTaskHandle, // Handle
     1                         // РЇРґСЂРѕ
   );
-  
-  // Serial.println("вњ“ Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
+
+  TaskHandle_t dataLoggerTaskHandle = NULL;
+  xTaskCreatePinnedToCore(
+    dataLoggerTask,          // Функція задачі
+    "DataLoggerTask",        // Назва
+    8192,                    // Розмір стеку
+    NULL,                    // Параметри
+    1,                       // Пріоритет (низький)
+    &dataLoggerTaskHandle,   // Handle
+    0                        // Ядро 0
+  );
+
+  // Serial.println("вњ" Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
   
   // Р”Р°С”РјРѕ С‡Р°СЃ Р·Р°РґР°С‡Р°Рј Р·Р°РїСѓСЃС‚РёС‚РёСЃСЏ
   delay(100);

@@ -7,6 +7,8 @@
 #include <ArduinoJson.h>
 #include "advanced_climate_logic.h"
 #include "data_storage.h"
+#include "data_logger.h"
+#include "google_sheets_sync.h"
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
@@ -226,6 +228,9 @@ void initWiFi() {
     server.on("/wifi", HTTP_GET, handleWiFiPage);
     server.on("/saveNetwork", HTTP_POST, handleSaveNetworkSettings);
     server.on("/history", HTTP_GET, handleHistoryPage);
+    server.on("/history/data", HTTP_GET, handleHistoryData);
+    server.on("/history/stats", HTTP_GET, handleHistoryStats);
+    server.on("/history/export", HTTP_GET, handleHistoryExport);
     server.on("/help", HTTP_GET, handleHelpPage);
     server.on("/debug", HTTP_GET, handleDebugPage);
     server.on("/servo", HTTP_GET, handleServoPage);
@@ -276,25 +281,29 @@ String getUkraineMarquee() {
     marquee += "</button>";
     marquee += "</div>";
     
-    marquee += "<div id='ukraineMarquee' style='display: none; background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 10px 0; margin-top: 20px; overflow: hidden;'>";
-    marquee += "<div style='white-space: nowrap; animation: scroll 8s linear infinite; font-weight: bold;'>" + txt + txt + txt + "</div>";
+    marquee += "<div id='ukraineMarquee' style='max-height: 0; opacity: 0; background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 0; margin-top: 20px; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;'>";
+    marquee += "<div style='white-space: nowrap; animation: scroll 40s linear infinite; font-weight: bold;'>" + txt + "</div>";
     marquee += "</div>";
-    
+
     marquee += "<style>";
-    marquee += "@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-33.333%); } }";
+    marquee += "@keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }";
     marquee += "#ukraineBtn:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.4); }";
     marquee += "#ukraineBtn:active { transform: scale(0.98); }";
     marquee += "</style>";
-    
+
     marquee += "<script>";
     marquee += "function toggleUkraine() {";
     marquee += "  const btn = document.getElementById('ukraineBtn');";
     marquee += "  const marquee = document.getElementById('ukraineMarquee');";
-    marquee += "  if (marquee.style.display === 'none') {";
-    marquee += "    marquee.style.display = 'block';";
+    marquee += "  if (marquee.style.maxHeight === '0px' || marquee.style.maxHeight === '') {";
+    marquee += "    marquee.style.maxHeight = '50px';";
+    marquee += "    marquee.style.opacity = '1';";
+    marquee += "    marquee.style.padding = '10px 0';";
     marquee += "    btn.textContent = '🇺🇦 СХОВАТИ 🇺🇦';";
     marquee += "  } else {";
-    marquee += "    marquee.style.display = 'none';";
+    marquee += "    marquee.style.maxHeight = '0px';";
+    marquee += "    marquee.style.opacity = '0';";
+    marquee += "    marquee.style.padding = '0';";
     marquee += "    btn.textContent = '🇺🇦 ТИСНИ, ЯКЩО ЗА УКРАЇНУ! 🇺🇦';";
     marquee += "  }";
     marquee += "}";
@@ -400,15 +409,17 @@ void handleRoot() {
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
     html += "</span></div>";
 
-    // Показуємо попередження про аварійний режим
+    // Контейнер для повідомлення про аварійний режим (оновлюється динамічно)
+    html += "<div id='emergencyAlert'>";
     if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
         html += "<div style='background: #ffebee; border: 2px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 15px;'>";
         html += "<h3 style='color: #d32f2f; margin: 0 0 10px 0;'>🚨 АВАРІЙНИЙ РЕЖИМ АКТИВНИЙ</h3>";
         html += "<p style='margin: 5px 0;'>Система виявила відключення зовнішнього живлення</p>";
-        html += "<p style='margin: 5px 0;'>Етап відновлення: " + String(powerOutageState.recoveryStage) + "</p>";
+        html += "<p style='margin: 5px 0;'>Етап відновлення: <span id='emergencyStage'>" + String(powerOutageState.recoveryStage) + "</span></p>";
         html += "<button class='btn' style='background: #f44336; margin-top: 10px; padding: 12px 20px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>";
         html += "</div>";
     }
+    html += "</div>";
 
     html += "</div>";
     
@@ -464,14 +475,49 @@ void handleRoot() {
     html += "<div>Wi-Fi: " + WiFi.SSID() + " (" + String(WiFi.RSSI()) + " dBm)</div>";
     html += "<div>Пам'ять: <span id='memory'>" + String(ESP.getFreeHeap() / 1024) + " KB</span></div>";
     html += "<div>Час роботи: <span id='uptime'>" + String(millis() / 1000) + " сек</span></div>";
-    html += "<div>Записів: <span id='historyCount'>" + String(historyIndex) + "</span></div>";
+    LoggerStats mainStats = getLoggerStats();
+    html += "<div>Записів: <span id='historyCount'>" + String(mainStats.totalRecordsRAM) + "</span></div>";
     html += "</div>";
     html += "</div>";
     
     html += "<div class='command-section'>";
     html += "<h3>💬 КОМАНДНАЯ СТРОКА (аналогічно Serial Monitor)</h3>";
     html += "<div style='display: flex; gap: 10px; margin-bottom: 15px;'>";
-    html += "<input type='text' id='commandInput' placeholder='Введіть команду (pump 50, fan 40, a50, b40, c30, timer 30, tmin 25, status...)' style='flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;'>";
+    html += "<input type='text' id='commandInput' list='commandList' placeholder='Почніть вводити або виберіть команду...' style='flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;'>";
+    html += "<datalist id='commandList'>";
+    html += "<option value='status'>status - статус системи</option>";
+    html += "<option value='menu'>menu - показати всі команди</option>";
+    html += "<option value='pump '>pump XX - встановити насос 0-100%</option>";
+    html += "<option value='fan '>fan XX - встановити вентилятор 0-100%</option>";
+    html += "<option value='extractor '>extractor XX - встановити витяжку 0-100%</option>";
+    html += "<option value='auto'>auto - автоматичний режим</option>";
+    html += "<option value='manual'>manual - ручний режим</option>";
+    html += "<option value='force'>force - форсований режим</option>";
+    html += "<option value='tmin '>tmin XX - мін. температура</option>";
+    html += "<option value='tmax '>tmax XX - макс. температура</option>";
+    html += "<option value='hmin '>hmin XX - мін. вологість</option>";
+    html += "<option value='hmax '>hmax XX - макс. вологість</option>";
+    html += "<option value='timer on '>timer on XX - таймер на XX хвилин</option>";
+    html += "<option value='timer off'>timer off - вимкнути таймер</option>";
+    html += "<option value='timer set '>timer set XX YY - цикл вкл/викл</option>";
+    html += "<option value='timer power '>timer power XX - потужність таймера</option>";
+    html += "<option value='save'>save - зберегти налаштування</option>";
+    html += "<option value='quiet'>quiet - вимк авто-статус</option>";
+    html += "<option value='verbose'>verbose - увімк авто-статус</option>";
+    html += "<option value='web'>web - інфо про веб-інтерфейс</option>";
+    html += "<option value='reboot'>reboot - перезавантаження</option>";
+    html += "<option value='servo'>servo - калібрування серво</option>";
+    html += "<option value='servo move '>servo move XX - серво в кут XX</option>";
+    html += "<option value='servo test'>servo test - тест серво</option>";
+    html += "<option value='cooling'>cooling - переключити охолодження/обігрів</option>";
+    html += "<option value='seasonal'>seasonal - сезонне відключення</option>";
+    html += "<option value='reset'>reset - скинути аварійний режим</option>";
+    html += "<option value='test vent'>test vent - тест вентиляції</option>";
+    html += "<option value='test pump'>test pump - тест насоса</option>";
+    html += "<option value='test fan'>test fan - тест вентилятора</option>";
+    html += "<option value='sheets-sync'>sheets-sync - синхронізація з Google Sheets</option>";
+    html += "<option value='sheets-stats'>sheets-stats - статистика синхронізації</option>";
+    html += "</datalist>";
     html += "<button class='btn' onclick='executeCommand()'>ВИКОНАТИ</button>";
     html += "<button class='btn' onclick='clearOutput()' style='background: #f44336;'>ОЧИСТИТИ</button>";
     html += "</div>";
@@ -489,6 +535,8 @@ void handleRoot() {
     html += "<button class='quick-btn' onclick=\"quickCommand('manual')\">РУЧНИЙ</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('status')\">СТАТУС</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('save')\">ЗБЕРЕГТИ</button>";
+    html += "<button class='quick-btn' onclick=\"quickCommand('sheets-sync')\" style='background: #4285f4;'>📤 SYNC SHEETS</button>";
+    html += "<button class='quick-btn' onclick=\"quickCommand('sheets-stats')\" style='background: #34a853;'>📊 STATS SHEETS</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('quiet')\" style='background: #ff9800;'>🔇 ВИМК ВИВІД</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('verbose')\" style='background: #4caf50;'>🔊 ВКЛ ВИВІД</button>";
     html += "</div>";
@@ -585,6 +633,28 @@ void handleRoot() {
     html += "      }";
     html += "      if (data.memory) {";
     html += "        document.getElementById('memory').textContent = data.memory + ' KB';";
+    html += "      }";
+    html += "      if (data.historyCount !== undefined) {";
+    html += "        document.getElementById('historyCount').textContent = data.historyCount;";
+    html += "      }";
+    html += "      const emergencyAlert = document.getElementById('emergencyAlert');";
+    html += "      if (emergencyAlert) {";
+    html += "        if (data.powerOutageActive) {";
+    html += "          const currentContent = emergencyAlert.innerHTML;";
+    html += "          if (!currentContent || currentContent.trim() === '') {";
+    html += "            emergencyAlert.innerHTML = \"<div style='background: #ffebee; border: 2px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 15px;'>\" +";
+    html += "              \"<h3 style='color: #d32f2f; margin: 0 0 10px 0;'>🚨 АВАРІЙНИЙ РЕЖИМ АКТИВНИЙ</h3>\" +";
+    html += "              \"<p style='margin: 5px 0;'>Система виявила відключення зовнішнього живлення</p>\" +";
+    html += "              \"<p style='margin: 5px 0;'>Етап відновлення: <span id='emergencyStage'>\" + data.powerOutageStage + \"</span></p>\" +";
+    html += "              \"<button class='btn' style='background: #f44336; margin-top: 10px; padding: 12px 20px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>\" +";
+    html += "              \"</div>\";";
+    html += "          } else {";
+    html += "            const stageSpan = document.getElementById('emergencyStage');";
+    html += "            if (stageSpan) stageSpan.textContent = data.powerOutageStage;";
+    html += "          }";
+    html += "        } else {";
+    html += "          emergencyAlert.innerHTML = '';";
+    html += "        }";
     html += "      }";
     html += "      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();";
     html += "      lastUpdateTime = new Date();";
@@ -701,11 +771,16 @@ void handleStatus() {
     else if (heatingState.forceMode) doc["mode"] = "ФОРСАЖ";
     else if (heatingState.manualMode) doc["mode"] = "РУЧНИЙ";
     else doc["mode"] = "АВТО";
-    
+
+    // Інформація про аварію теплоносія
+    doc["powerOutageActive"] = powerOutageState.emergencyHeatingActive || powerOutageState.detected;
+    doc["powerOutageStage"] = powerOutageState.recoveryStage;
+
     doc["time"] = getTimeString();
     doc["memory"] = ESP.getFreeHeap() / 1024;
     doc["uptime"] = millis() / 1000;
-    doc["historyCount"] = historyIndex;
+    LoggerStats jsonStats = getLoggerStats();
+    doc["historyCount"] = jsonStats.totalRecordsRAM;
     
     String response;
     serializeJson(doc, response);
@@ -747,6 +822,10 @@ String processWebCommand(const String& cmd) {
         heatingState.manualMode = false;
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
+        // Також скидаємо стан аварії при переході в AUTO
+        powerOutageState.detected = false;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.recoveryStage = 0;
         return "✅ Режим: АВТОМАТИЧНИЙ";
     }
     else if (lowerCmd == "manual") {
@@ -1029,8 +1108,25 @@ String processWebCommand(const String& cmd) {
         processLearningCommand(learnCmd);
         return "✅ Команда навчання виконана";
     }
+    else if (lowerCmd == "sheets-sync" || lowerCmd == "sheets sync") {
+        Serial.println("📤 Веб: Запуск синхронізації з Google Sheets...");
+        if (syncToGoogleSheets()) {
+            return "✅ Дані успішно відправлено в Google Sheets";
+        } else {
+            return "❌ Помилка синхронізації з Google Sheets";
+        }
+    }
+    else if (lowerCmd == "sheets-stats" || lowerCmd == "sheets stats") {
+        printSyncInfo();
+        SyncStats stats = getSyncStats();
+        String response = "📊 Статистика синхронізації:\n";
+        response += "Timestamp: " + String(stats.lastSentTimestamp) + "\n";
+        response += "Відправлено: " + String(stats.totalRecordsSent) + "\n";
+        response += "Помилок: " + String(stats.failedSyncs);
+        return response;
+    }
     else {
-        return "❌ Невідома команда: " + cmd + "\n📋 Доступні команди:\npump/fan/extractor XX, timer on/off, tmin/tmax/temp/hmin/hmax/hum XX,\nauto/manual/force, servo, mode, status, save, quiet, verbose, test, web, reboot";
+        return "❌ Невідома команда: " + cmd + "\n📋 Доступні команди:\npump/fan/extractor XX, timer on/off, tmin/tmax/temp/hmin/hmax/hum XX,\nauto/manual/force, servo, mode, status, save, quiet, verbose, test, web, reboot, sheets-sync, sheets-stats";
     }
 }
 
@@ -2157,6 +2253,7 @@ void handleHistoryPage() {
     html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
     html += "<title>📈 Історія даних</title>";
     html += "<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0'></script>";
+    html += "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1'></script>";
     html += "<style>";
     html += "body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }";
     html += ".container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }";
@@ -2169,55 +2266,63 @@ void handleHistoryPage() {
     html += "</style></head><body>";
     html += "<div class='container'>";
     html += "<h1>📈 ІСТОРІЯ ТЕМПЕРАТУРИ І ВОЛОГОСТІ</h1>";
-    html += "<div class='info'>";
-    html += "Записів: " + String(historyIndex) + " / " + String(HISTORY_BUFFER_SIZE);
+    html += "<div class='info' id='statsInfo'>";
+    LoggerStats stats = getLoggerStats();
+    html += "Записів в RAM: " + String(stats.totalRecordsRAM) + " / 1440";
+    html += " | Записів в SPIFFS: " + String(stats.totalRecordsSPIFFS);
     html += " | Оновлення кожну хвилину";
     html += "</div>";
     
+    // Інструкції для масштабування
+    html += "<div style='background:#e3f2fd;padding:15px;border-radius:8px;margin:20px 0;border-left:4px solid #2196f3;'>";
+    html += "<strong>📊 Керування графіками:</strong><br>";
+    html += "🖱️ <strong>Масштабування:</strong> прокрутка коліщатком миші / pinch на сенсорному екрані<br>";
+    html += "👆 <strong>Переміщення:</strong> клік і перетягування графіка<br>";
+    html += "🔄 <strong>Скидання:</strong> подвійний клік по графіку або кнопка нижче";
+    html += "</div>";
+
     // Графік температури
-    html += "<h2>🌡️ Температура</h2>";
+    html += "<h2>🌡️ Температура <button onclick='tempChart.resetZoom()' style='float:right;padding:8px 16px;background:#4caf50;color:white;border:none;border-radius:5px;cursor:pointer;'>🔄 Скинути масштаб</button></h2>";
     html += "<div class='chart-container'><canvas id='tempChart'></canvas></div>";
-    
+
     // Графік вологості
-    html += "<h2>💧 Вологість</h2>";
+    html += "<h2>💧 Вологість <button onclick='humChart.resetZoom()' style='float:right;padding:8px 16px;background:#4caf50;color:white;border:none;border-radius:5px;cursor:pointer;'>🔄 Скинути масштаб</button></h2>";
     html += "<div class='chart-container'><canvas id='humChart'></canvas></div>";
-    
+
     html += "<a href='/' class='back-btn'>← На головну</a>";
     html += "</div>";
     html += getUkraineMarquee();
     
     // JavaScript для графіків
     html += "<script>";
+    html += "let tempChart, humChart;";
+
+    // Завантажуємо дані з нового API
+    html += "fetch('/history/data?source=ram&format=json')";
+    html += ".then(response => response.json())";
+    html += ".then(result => {";
+    html += "const data = result.data || [];";
     html += "const labels = [];";
     html += "const tempCarrier = [];";
     html += "const tempRoom = [];";
     html += "const tempBME = [];";
     html += "const humidity = [];";
-    
-    // Додаємо дані з історії
-    int count = historyIndex > 0 ? historyIndex : HISTORY_BUFFER_SIZE;
-    int step = count > 288 ? count / 288 : 1; // Максимум 288 точок (кожні 5 хв з 24 год)
-    
-    for (int i = 0; i < count; i += step) {
-        HistoryData& h = history[i];
-        if (h.timestamp > 0) {
-            // Обчислюємо реальний час на основі поточного часу та різниці в millis()
-            unsigned long currentMillis = millis();
-            unsigned long recordAge = currentMillis - h.timestamp; // Скільки мс тому був запис
-            time_t recordTime = time(nullptr) - (recordAge / 1000); // Віднімаємо секунди
-            struct tm* timeInfo = localtime(&recordTime);
-            
-            html += "labels.push('" + String(timeInfo->tm_hour) + ":" + 
-                    (timeInfo->tm_min < 10 ? "0" : "") + String(timeInfo->tm_min) + "');";
-            html += "tempCarrier.push(" + String(h.tempCarrier, 1) + ");";
-            html += "tempRoom.push(" + String(h.tempRoom, 1) + ");";
-            html += "tempBME.push(" + String(h.tempBME, 1) + ");";
-            html += "humidity.push(" + String(h.humidity, 1) + ");";
-        }
-    }
+
+    html += "data.forEach(record => {";
+    html += "if (record.timestamp > 0) {";
+    html += "const date = new Date(record.timestamp * 1000);";
+    html += "const hours = String(date.getHours()).padStart(2, '0');";
+    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "labels.push(hours + ':' + minutes);";
+    html += "tempCarrier.push(record.tempCarrier);";
+    html += "tempRoom.push(record.tempRoom);";
+    html += "tempBME.push(record.tempBME);";
+    html += "humidity.push(record.humidity);";
+    html += "}";
+    html += "});";
     
     // Графік температури
-    html += "new Chart(document.getElementById('tempChart'), {";
+    html += "tempChart = new Chart(document.getElementById('tempChart'), {";
     html += "type: 'line',";
     html += "data: {";
     html += "labels: labels,";
@@ -2243,12 +2348,28 @@ void handleHistoryPage() {
     html += "options: {";
     html += "responsive: true,";
     html += "maintainAspectRatio: false,";
-    html += "plugins: { legend: { display: true, position: 'top' } },";
+    html += "interaction: { mode: 'index', intersect: false },";
+    html += "plugins: {";
+    html += "legend: { display: true, position: 'top' },";
+    html += "tooltip: {";
+    html += "callbacks: {";
+    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "label: function(ctx) { return ctx.parsed.y.toFixed(1) + '°C'; }";
+    html += "}},";
+    html += "zoom: {";
+    html += "zoom: {";
+    html += "wheel: { enabled: true },";
+    html += "pinch: { enabled: true },";
+    html += "mode: 'x'";
+    html += "},";
+    html += "pan: { enabled: true, mode: 'x', modifierKey: null },";
+    html += "limits: { x: { min: 'original', max: 'original' } }";
+    html += "}},";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: '°C' } } }";
     html += "}});";
-    
+
     // Графік вологості
-    html += "new Chart(document.getElementById('humChart'), {";
+    html += "humChart = new Chart(document.getElementById('humChart'), {";
     html += "type: 'line',";
     html += "data: {";
     html += "labels: labels,";
@@ -2263,11 +2384,39 @@ void handleHistoryPage() {
     html += "options: {";
     html += "responsive: true,";
     html += "maintainAspectRatio: false,";
-    html += "plugins: { legend: { display: true, position: 'top' } },";
+    html += "interaction: { mode: 'index', intersect: false },";
+    html += "plugins: {";
+    html += "legend: { display: true, position: 'top' },";
+    html += "tooltip: {";
+    html += "callbacks: {";
+    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "label: function(ctx) { return ctx.parsed.y.toFixed(1) + '%'; }";
+    html += "}},";
+    html += "zoom: {";
+    html += "zoom: {";
+    html += "wheel: { enabled: true },";
+    html += "pinch: { enabled: true },";
+    html += "mode: 'x'";
+    html += "},";
+    html += "pan: { enabled: true, mode: 'x', modifierKey: null },";
+    html += "limits: { x: { min: 'original', max: 'original' } }";
+    html += "}},";
     html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
     html += "}});";
+
+    // Подвійний клік для скидання масштабу
+    html += "document.getElementById('tempChart').ondblclick = function() { tempChart.resetZoom(); };";
+    html += "document.getElementById('humChart').ondblclick = function() { humChart.resetZoom(); };";
+
+    // Закриваємо fetch блок
+    html += "})";
+    html += ".catch(error => {";
+    html += "console.error('Помилка завантаження даних:', error);";
+    html += "alert('Помилка завантаження історичних даних. Перезавантажте сторінку.');";
+    html += "});";
+
     html += "</script>";
-    
+
     html += "</body></html>";
     server.send(200, "text/html", html);
 }
@@ -2895,12 +3044,206 @@ void handleServoAPI() {
 }
 
 // ============================================================================
+// API ДЛЯ ІСТОРИЧНИХ ДАНИХ
+// ============================================================================
+
+// API: Отримання даних за період
+void handleHistoryData() {
+  if (WiFi.status() != WL_CONNECTED) {
+    server.send(503, "application/json", "{\"error\":\"WiFi не підключено\"}");
+    return;
+  }
+
+  // Отримуємо параметри запиту
+  String source = server.arg("source");  // "ram" або "spiffs"
+  String startDate = server.arg("start");
+  String endDate = server.arg("end");
+  String format = server.arg("format");  // "json" або "csv"
+
+  if (source == "ram") {
+    // Дані з RAM - використовуємо chunked transfer для економії пам'яті
+    LoggerStats stats = getLoggerStats();
+    uint16_t totalRecords = (stats.totalRecordsRAM > 1440) ? 1440 : stats.totalRecordsRAM;
+
+    if (format == "csv") {
+      // CSV формат - потокова передача
+      server.sendHeader("Content-Disposition", "attachment; filename=klimat_data.csv");
+      server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+      server.send(200, "text/csv", "");
+
+      // Відправляємо заголовок
+      server.sendContent("timestamp,tempCarrier,tempRoom,tempBME,humidity,pumpPower,fanPower,extractorPower,mode\n");
+
+      // Відправляємо дані порціями по 50 записів
+      const uint16_t CHUNK_SIZE = 50;
+      DataRecord chunk[CHUNK_SIZE];
+
+      for (uint16_t offset = 0; offset < totalRecords; offset += CHUNK_SIZE) {
+        uint16_t chunkCount = (totalRecords - offset > CHUNK_SIZE) ? CHUNK_SIZE : (totalRecords - offset);
+
+        // Читаємо порцію даних
+        if (readRAMDataChunk(chunk, offset, chunkCount)) {
+          String csvChunk = "";
+          csvChunk.reserve(chunkCount * 80);  // Приблизний розмір рядка
+
+          for (uint16_t i = 0; i < chunkCount; i++) {
+            if (chunk[i].timestamp > 0) {
+              csvChunk += String(chunk[i].timestamp) + ",";
+              csvChunk += String(chunk[i].tempCarrier, 1) + ",";
+              csvChunk += String(chunk[i].tempRoom, 1) + ",";
+              csvChunk += String(chunk[i].tempBME, 1) + ",";
+              csvChunk += String(chunk[i].humidity, 1) + ",";
+              csvChunk += String(chunk[i].pumpPower) + ",";
+              csvChunk += String(chunk[i].fanPower) + ",";
+              csvChunk += String(chunk[i].extractorPower) + ",";
+              csvChunk += String(chunk[i].mode) + "\n";
+            }
+          }
+          server.sendContent(csvChunk);
+          yield();  // Даємо час watchdog
+        }
+      }
+      server.sendContent("");  // Завершуємо передачу
+
+    } else {
+      // JSON формат - потокова передача
+      server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+      server.send(200, "application/json", "");
+
+      server.sendContent("{\"data\":[");
+
+      // Відправляємо дані порціями по 50 записів
+      const uint16_t CHUNK_SIZE = 50;
+      DataRecord chunk[CHUNK_SIZE];
+      bool firstRecord = true;
+
+      for (uint16_t offset = 0; offset < totalRecords; offset += CHUNK_SIZE) {
+        uint16_t chunkCount = (totalRecords - offset > CHUNK_SIZE) ? CHUNK_SIZE : (totalRecords - offset);
+
+        // Читаємо порцію даних
+        if (readRAMDataChunk(chunk, offset, chunkCount)) {
+          String jsonChunk = "";
+          jsonChunk.reserve(chunkCount * 120);  // Приблизний розмір JSON об'єкта
+
+          for (uint16_t i = 0; i < chunkCount; i++) {
+            if (chunk[i].timestamp > 0) {
+              if (!firstRecord) jsonChunk += ",";
+              jsonChunk += "{";
+              jsonChunk += "\"timestamp\":" + String(chunk[i].timestamp) + ",";
+              jsonChunk += "\"tempCarrier\":" + String(chunk[i].tempCarrier, 1) + ",";
+              jsonChunk += "\"tempRoom\":" + String(chunk[i].tempRoom, 1) + ",";
+              jsonChunk += "\"tempBME\":" + String(chunk[i].tempBME, 1) + ",";
+              jsonChunk += "\"humidity\":" + String(chunk[i].humidity, 1) + ",";
+              jsonChunk += "\"pumpPower\":" + String(chunk[i].pumpPower) + ",";
+              jsonChunk += "\"fanPower\":" + String(chunk[i].fanPower) + ",";
+              jsonChunk += "\"extractorPower\":" + String(chunk[i].extractorPower) + ",";
+              jsonChunk += "\"mode\":" + String(chunk[i].mode);
+              jsonChunk += "}";
+              firstRecord = false;
+            }
+          }
+          server.sendContent(jsonChunk);
+          yield();  // Даємо час watchdog
+        }
+      }
+
+      server.sendContent("]}");
+      server.sendContent("");  // Завершуємо передачу
+    }
+
+  } else if (source == "spiffs") {
+    // Дані з SPIFFS (агреговані)
+    if (startDate.length() == 0 || endDate.length() == 0) {
+      server.send(400, "application/json", "{\"error\":\"Потрібні параметри start та end\"}");
+      return;
+    }
+
+    String data;
+    if (format == "csv") {
+      if (readSPIFFSDataCSV(startDate.c_str(), endDate.c_str(), data)) {
+        server.sendHeader("Content-Disposition", "attachment; filename=klimat_archive.csv");
+        server.send(200, "text/csv", data);
+      } else {
+        server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
+      }
+    } else {
+      if (readSPIFFSData(startDate.c_str(), endDate.c_str(), data)) {
+        server.send(200, "application/json", data);
+      } else {
+        server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
+      }
+    }
+  } else {
+    server.send(400, "application/json", "{\"error\":\"Невірний параметр source\"}");
+  }
+}
+
+// API: Статистика логування
+void handleHistoryStats() {
+  if (WiFi.status() != WL_CONNECTED) {
+    server.send(503, "application/json", "{\"error\":\"WiFi не підключено\"}");
+    return;
+  }
+
+  LoggerStats stats = getLoggerStats();
+
+  String json = "{";
+  json += "\"totalRecordsRAM\":" + String(stats.totalRecordsRAM) + ",";
+  json += "\"totalRecordsSPIFFS\":" + String(stats.totalRecordsSPIFFS) + ",";
+  json += "\"lastLogTimeRAM\":" + String(stats.lastLogTimeRAM) + ",";
+  json += "\"lastLogTimeSPIFFS\":" + String(stats.lastLogTimeSPIFFS) + ",";
+  json += "\"currentFileSize\":" + String(stats.currentFileSize) + ",";
+  json += "\"archiveFilesCount\":" + String(stats.archiveFilesCount) + ",";
+  json += "\"spiffsUsedBytes\":" + String(stats.spiffsUsedBytes) + ",";
+  json += "\"spiffsTotalBytes\":" + String(stats.spiffsTotalBytes) + ",";
+  json += "\"spiffsUsedPercent\":" + String((stats.spiffsUsedBytes * 100.0) / stats.spiffsTotalBytes, 1);
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+// API: Експорт даних
+void handleHistoryExport() {
+  if (WiFi.status() != WL_CONNECTED) {
+    server.send(503, "text/plain", "WiFi не підключено");
+    return;
+  }
+
+  String startDate = server.arg("start");
+  String endDate = server.arg("end");
+  String format = server.arg("format");  // "csv" або "json"
+
+  if (startDate.length() == 0 || endDate.length() == 0) {
+    server.send(400, "text/plain", "Потрібні параметри start та end");
+    return;
+  }
+
+  String data;
+  String contentType;
+  String filename;
+
+  if (format == "json") {
+    data = exportToJSON(startDate.c_str(), endDate.c_str());
+    contentType = "application/json";
+    filename = "klimat_data_" + startDate + "_" + endDate + ".json";
+  } else {
+    data = exportToCSV(startDate.c_str(), endDate.c_str());
+    contentType = "text/csv";
+    filename = "klimat_data_" + startDate + "_" + endDate + ".csv";
+  }
+
+  // Додаємо заголовок для завантаження файлу
+  server.sendHeader("Content-Disposition", "attachment; filename=" + filename);
+  server.send(200, contentType, data);
+}
+
+// ============================================================================
 // ЗАВДАННЯ ВЕБ-СЕРВЕРА
 // ============================================================================
 
 void webTask(void *parameter) {
     Serial.println("✅ Веб-завдання запущено");
-    
+
     while (1) {
         server.handleClient();
         vTaskDelay(pdMS_TO_TICKS(10));

@@ -6,6 +6,7 @@
 #include "learning_system.h"
 #include "utility_functions.h"
 #include "global_declarations.h"
+#include "data_logger.h"
 
 // ============================================================================
 // ВЕБ-ІНТЕРФЕЙС
@@ -23,6 +24,9 @@ void handleSaveSettings();
 void handleTimePage();
 void handleWiFiPage();
 void handleHistoryPage();
+void handleHistoryData();
+void handleHistoryStats();
+void handleHistoryExport();
 void handleHelpPage();
 void handleDebugPage();
 void handleLearningPage();
