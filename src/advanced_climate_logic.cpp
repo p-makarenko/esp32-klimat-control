@@ -419,14 +419,22 @@ void processExtendedCommand(String command) {
     }
     else if (command == "auto") {
         heatingState.manualMode = false;
+        heatingState.manualModeLocked = false;
+        heatingState.manualModeStartTime = 0;
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
         Serial.println("✓ Режим: АВТОМАТИЧНИЙ");
     }
     else if (command == "manual") {
         heatingState.manualMode = true;
+        heatingState.manualModeStartTime = millis();
         heatingState.forceMode = false;
-        Serial.println("✓ Режим: РУЧНИЙ");
+        Serial.println("✓ Режим: РУЧНИЙ (автоповернення через 15 хв)");
+    }
+    else if (command == "lock") {
+        heatingState.manualModeLocked = !heatingState.manualModeLocked;
+        Serial.printf("🔒 Блокування ручного режиму: %s\n",
+                      heatingState.manualModeLocked ? "УВІМКНЕНО" : "ВИМКНЕНО");
     }
     else if (command == "force") {
         heatingState.forceMode = true;
@@ -517,13 +525,16 @@ void processExtendedCommand(String command) {
         String mode = command.substring(5);
         if (mode == "auto") {
             heatingState.manualMode = false;
+            heatingState.manualModeLocked = false;
+            heatingState.manualModeStartTime = 0;
             heatingState.forceMode = false;
             Serial.println("✓ Режим: АВТОМАТИЧНИЙ");
         }
         else if (mode == "manual") {
             heatingState.manualMode = true;
+            heatingState.manualModeStartTime = millis();
             heatingState.forceMode = false;
-            Serial.println("✓ Режим: РУЧНИЙ");
+            Serial.println("✓ Режим: РУЧНИЙ (автоповернення через 15 хв)");
         }
         else if (mode == "compact") {
             compactMode = true;
@@ -1289,12 +1300,21 @@ void cascadeEmergencyHeating() {
             }
 
             if (stageTime >= (config.powerOutageStage1Time * 1000)) {
-                if (tempRise >= config.powerOutageTempRiseThreshold) {
-                    // ✅ Температура ЗРОСЛА = відключення світла, газовий котел працює!
+                // ✅ КОТЕЛ ПРАЦЮЄ якщо:
+                // 1) Температура теплоносія >= 35°C (котел гарячий, точно працює)
+                // 2) АБО температура зросла >= порогу (котел розігрівається)
+                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= config.powerOutageTempRiseThreshold);
+
+                if (boilerWorking) {
+                    // ✅ Температура ЗРОСЛА АБО котел гарячий = відключення світла, газовий котел працює!
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ✅ ДІАГНОЗ: ВІДКЛЮЧЕННЯ СВІТЛА!                     ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    if (tempCarrier >= 35.0f) {
+                        Serial.printf("║  Температура теплоносія: %.1f°C (котел гарячий)     ║\n", tempCarrier);
+                    } else {
+                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    }
                     Serial.println("║  Зовнішній котел працює, проблема лише в електриці   ║");
                     Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції + регульований обігрів ║");
                     Serial.println("╚═══════════════════════════════════════════════════════╝\n");
@@ -1308,11 +1328,12 @@ void cascadeEmergencyHeating() {
                     // Вентилятор буде регулюватися в stage 4 залежно від температури кімнати
 
                 } else {
-                    // ⚠️ Температура НЕ зросла = можлива поломка зовнішнього котла
+                    // ❌ КОТЕЛ НЕ ПРАЦЮЄ якщо:
+                    // Температура < 35°C І приріст < порогу
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ⚠️ ДІАГНОЗ: ВІДМОВА ЗОВНІШНЬОГО ОБІГРІВАЧА!         ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура НЕ зросла (зміна: %.1f°C)              ║\n", tempRise);
+                    Serial.printf("║  Температура: %.1f°C (< 35°C), зміна: %.1f°C         ║\n", tempCarrier, tempRise);
                     Serial.println("║  Насос працює, але котел не гріє!                    ║");
                     Serial.println("║  📋 ЕТАП 2: Спроба підняти насос до 100%%             ║");
                     Serial.println("╚═══════════════════════════════════════════════════════╝\n");
@@ -1343,13 +1364,18 @@ void cascadeEmergencyHeating() {
 
             if (stageTime >= POWER_OUTAGE_RECOVERY_STAGE1_TIME) {
                 tempRise = tempCarrier - powerOutageState.tempAtDetection;
+                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= POWER_OUTAGE_TEMP_RISE_THRESHOLD);
 
-                if (tempRise >= POWER_OUTAGE_TEMP_RISE_THRESHOLD) {
-                    // Температура зросла при 100% - значить котел запрацював
+                if (boilerWorking) {
+                    // Температура зросла при 100% АБО котел гарячий - значить котел запрацював
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ✅ КОТЕЛ ЗАПРАЦЮВАВ ПРИ 100%% НАСОСА!                ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    if (tempCarrier >= 35.0f) {
+                        Serial.printf("║  Температура: %.1f°C (котел гарячий)                 ║\n", tempCarrier);
+                    } else {
+                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    }
                     Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції на 100%%              ║");
                     Serial.println("╚═══════════════════════════════════════════════════════╝\n");
 
@@ -1364,7 +1390,7 @@ void cascadeEmergencyHeating() {
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ⏸️ ПАУЗА 5 ХВИЛИН                                    ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Зростання: %.1f°C (недостатньо)                     ║\n", tempRise);
+                    Serial.printf("║  Температура: %.1f°C, зростання: %.1f°C              ║\n", tempCarrier, tempRise);
                     Serial.println("║  Даємо системі час на стабілізацію...               ║");
                     Serial.println("╚═══════════════════════════════════════════════════════╝\n");
 
@@ -1495,12 +1521,17 @@ void cascadeEmergencyHeating() {
 
             if (stageTime >= (config.powerOutageStage2Time * 1000)) {
                 tempRise = tempCarrier - powerOutageState.tempAtDetection;
+                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= config.powerOutageTempRiseThreshold);
 
-                if (tempRise >= config.powerOutageTempRiseThreshold) {
+                if (boilerWorking) {
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ✅ КОТЕЛ ЗАПРАЦЮВАВ!                                 ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    if (tempCarrier >= 35.0f) {
+                        Serial.printf("║  Температура: %.1f°C (котел гарячий)                 ║\n", tempCarrier);
+                    } else {
+                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
+                    }
                     Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції на 100%%              ║");
                     Serial.println("╚═══════════════════════════════════════════════════════╝\n");
 
@@ -1513,7 +1544,7 @@ void cascadeEmergencyHeating() {
                     Serial.println("\n╔═══════════════════════════════════════════════════════╗");
                     Serial.println("║  ⛔ КРИТИЧНА АВАРІЯ: КОТЕЛ НЕ ЗАПУСКАЄТЬСЯ!          ║");
                     Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Зростання: %.1f°C (недостатньо)                     ║\n", tempRise);
+                    Serial.printf("║  Температура: %.1f°C (< 35°C), зростання: %.1f°C     ║\n", tempCarrier, tempRise);
                     Serial.println("║  Всі спроби вичерпано                                ║");
                     Serial.println("║  🔌 ПОВНЕ ВІДКЛЮЧЕННЯ СИСТЕМИ                        ║");
                     Serial.println("║  ⚠️ ПОТРІБЕН РЕМОНТ КОТЛА!                           ║");
@@ -1706,25 +1737,117 @@ void checkAdaptiveThresholds() {
     }
 }
 
+/**
+ * Перевіряє чи вентилятор працює на максимальній потужності тривалий час
+ * без суттєвого підвищення температури. Якщо так - знижує пороги на 1°C.
+ * Викликається ТІЛЬКИ коли змінюється потужність вентилятора.
+ */
+void checkFanMaxPowerEfficiency() {
+    if (!heatingState.active) {
+        // Скидаємо лічильник якщо обігрів вимкнений
+        heatingState.fan_max_power_start_time = 0;
+        return;
+    }
+
+    // Отримуємо поточні дані
+    float tempRoom = 0;
+    bool roomValid = false;
+
+    if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
+        tempRoom = sensorData.tempRoom;
+        roomValid = sensorData.roomValid;
+        xSemaphoreGive(getSensorMutex());
+    }
+
+    if (!roomValid) {
+        return;
+    }
+
+    unsigned long now = millis();
+    bool fanAtMax = (heatingState.fanPower >= config.fanMaxPercent);
+
+    if (fanAtMax) {
+        // Вентилятор на максимумі
+        if (heatingState.fan_max_power_start_time == 0) {
+            // Тільки що вийшов на максимум - запам'ятовуємо
+            heatingState.fan_max_power_start_time = now;
+            heatingState.fan_max_power_initial_temp = tempRoom;
+            Serial.printf("🔥 Вентилятор на максимумі (%u%%). Моніторинг ефективності...\n", heatingState.fanPower);
+        } else {
+            // Перевіряємо чи пройшло 2 хвилини
+            unsigned long timeAtMax = now - heatingState.fan_max_power_start_time;
+
+            if (timeAtMax >= 120000) { // 2 хвилини = 120000 мс
+                // Перевіряємо приріст температури
+                float tempRise = tempRoom - heatingState.fan_max_power_initial_temp;
+
+                Serial.printf("📊 Вентилятор на максимумі %lu сек. Приріст температури: %.2f°C\n",
+                             timeAtMax / 1000, tempRise);
+
+                // Якщо приріст менше 0.5°C за 2 хвилини - система не справляється
+                if (tempRise < 0.5f) {
+                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
+                    Serial.println("║  ⚡ ВЕНТИЛЯТОР НА МАКСИМУМІ БЕЗ ЕФЕКТУ                ║");
+                    Serial.println("╠═══════════════════════════════════════════════════════╣");
+                    Serial.printf("║  Час на максимумі: %lu сек                            ║\n", timeAtMax / 1000);
+                    Serial.printf("║  Приріст температури: %.2f°C (менше 0.5°C)           ║\n", tempRise);
+                    Serial.println("║  Дія: зниження порогів на 1°C                        ║");
+
+                    // Знижуємо пороги на 1°C
+                    config.tempMin = max(config.tempMin - 1.0f, 18.0f);
+                    config.tempMax = max(config.tempMax - 1.0f, 19.0f);
+
+                    Serial.printf("║  Нові пороги: %.1f-%.1f°C                            ║\n",
+                                 config.tempMin, config.tempMax);
+                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+
+                    saveConfiguration();
+
+                    // Скидаємо лічильник щоб не знижувати пороги знову відразу
+                    heatingState.fan_max_power_start_time = 0;
+                }
+            }
+        }
+    } else {
+        // Вентилятор не на максимумі - скидаємо лічильник
+        if (heatingState.fan_max_power_start_time != 0) {
+            Serial.println("✓ Вентилятор знизив потужність");
+            heatingState.fan_max_power_start_time = 0;
+        }
+    }
+}
+
 // ============================================================================
 // ОСНОВНА ЗАДАЧА РОЗШИРЕНОЇ ЛОГІКИ
 // ============================================================================
 
 void advancedLogicTask(void *parameter) {
     Serial.println("✓ Задача розширеної логіки запущена");
-    
+
     vTaskDelay(pdMS_TO_TICKS(3000));
-    
+
     while (1) {
         float tempRoom = 0, tempCarrier = 0, humidity = 0;
-        
+
         if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
             tempRoom = sensorData.tempRoom;
             tempCarrier = sensorData.tempCarrier;
             humidity = sensorData.humidity;
             xSemaphoreGive(getSensorMutex());
         }
-        
+
+        // Перевірка таймауту ручного режиму (автоповернення до авто через 15 хв)
+        if (heatingState.manualMode && !heatingState.manualModeLocked) {
+            const unsigned long MANUAL_MODE_TIMEOUT = 15UL * 60UL * 1000UL; // 15 хвилин
+
+            if (heatingState.manualModeStartTime > 0 &&
+                (millis() - heatingState.manualModeStartTime) > MANUAL_MODE_TIMEOUT) {
+                heatingState.manualMode = false;
+                heatingState.manualModeStartTime = 0;
+                Serial.println("⏰ Ручний режим: автоповернення до АВТО (таймаут 15 хв)");
+            }
+        }
+
         // ПРІОРИТЕТ 1: Моніторинг відключення живлення (перевірка кожні 5 хв)
         monitorPowerOutage();
 

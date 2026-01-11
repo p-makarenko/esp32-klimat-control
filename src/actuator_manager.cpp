@@ -149,6 +149,9 @@ void setFanPercent(uint8_t percent) {
     ledcWrite(FAN_CHANNEL, pwmValue);
     xSemaphoreGive(getHeatingMutex());
   }
+
+  // Перевіряємо ефективність вентилятора після зміни потужності
+  checkFanMaxPowerEfficiency();
 }
 
 void setExtractorPercent(uint8_t percent) {

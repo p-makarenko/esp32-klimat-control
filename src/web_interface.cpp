@@ -26,11 +26,66 @@ extern bool historyInitialized;
 
 bool checkAuth() {
     if (!config.useAuth) return true;
-    
+
     if (!server.authenticate(config.authLogin.c_str(), config.authPassword.c_str())) {
         server.requestAuthentication();
         return false;
     }
+    return true;
+}
+
+// ============================================================================
+// БЕЗПЕКА: ЕКРАНУВАННЯ HTML
+// ============================================================================
+
+// Функція для екранування HTML символів (захист від XSS)
+String htmlEscape(const String& str) {
+    String escaped = "";
+    escaped.reserve(str.length() * 1.2); // Резервуємо трохи більше місця
+
+    for (size_t i = 0; i < str.length(); i++) {
+        char c = str.charAt(i);
+        switch (c) {
+            case '<':  escaped += "&lt;";   break;
+            case '>':  escaped += "&gt;";   break;
+            case '&':  escaped += "&amp;";  break;
+            case '"':  escaped += "&quot;"; break;
+            case '\'': escaped += "&#x27;"; break;
+            default:   escaped += c;        break;
+        }
+    }
+    return escaped;
+}
+
+// ============================================================================
+// БЕЗПЕКА: CSRF ЗАХИСТ
+// ============================================================================
+
+// Базовий CSRF захист через перевірку Referer
+bool checkCSRF() {
+    // Для GET запитів не перевіряємо
+    if (server.method() != HTTP_POST) {
+        return true;
+    }
+
+    // Якщо є Referer header, перевіряємо його
+    if (server.hasHeader("Referer")) {
+        String referer = server.header("Referer");
+        String host = server.hostHeader();
+
+        // Перевіряємо що Referer містить наш хост
+        if (referer.indexOf(host) == -1 &&
+            referer.indexOf(WiFi.localIP().toString()) == -1 &&
+            referer.indexOf("klimat.local") == -1) {
+            Serial.println("⚠️ CSRF: Невірний Referer: " + referer);
+            return false;
+        }
+    } else {
+        // Якщо Referer відсутній, логуємо попередження але дозволяємо
+        // (деякі браузери не завжди відправляють Referer з форм)
+        Serial.println("⚠️ CSRF: Відсутній Referer header (дозволено для форм)");
+    }
+
     return true;
 }
 
@@ -273,22 +328,37 @@ String wifiStrengthToHTML(int rssi) {
 }
 
 String getUkraineMarquee() {
-    String txt = "🇺🇦 СЛАВА УКРАЇНІ! | 💪 ГЕРОЯМ СЛАВА! | 🔥 москалі - ПІДАРИ! | ✊ Україна переможе! | 💩 рашисти - терористи | 💙💛 Разом до Перемоги! | ⚔️ Смерть ворогам! | 🛡️ ЗСУ - найсильніша! | 🤮 хуйло - злочинець! | 🗡️ За Україну! | 🚀 Крим - наш! | 🔴 moscow delenda est! | 💀 кацапи - genocid | ⚡ Слава Нації! | 🎖️ Честь і Воля! | 🔥 россія - терорист! | 💪 Воля або Смерть! | 🖕 всі москалі - ПІДАРИ на болотах! | 🇺🇦 Україна понад усе! &nbsp;&nbsp;&nbsp;";
-    
+    String txt = "🇺🇦 СЛАВА УКРАЇНІ! | 💪 ГЕРОЯМ СЛАВА! | 🔥 москалі - ПІДАРИ! | ✊ Україна переможе! | 💩 рашисти - терористи | 💙💛 Разом до Перемоги! | ⚔️ Смерть ворогам! | 🛡️ ЗСУ - найсильніші! | 🤮 хуйло - злочинець! | 🗡️ За Україну! | 🚀 Крим - наш! | 🔴 moscow delenda est! | 💀 кацапи - genocid | ⚡ Слава Нації! | 🎖️ Честь і Воля! | 🔥 россія - терорист! | 💪 Воля або Смерть! | 🖕 всі москалі - ПІДАРИ на болотах! | 🇺🇦 Україна понад усе! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+
     String marquee = "<div style='text-align: center; margin-top: 20px;'>";
     marquee += "<button id='ukraineBtn' onclick='toggleUkraine()' style='background: linear-gradient(90deg, #0057B7 50%, #FFD700 50%); color: #000; border: 3px solid #000; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);'>";
     marquee += "🇺🇦 ТИСНИ, ЯКЩО ЗА УКРАЇНУ! 🇺🇦";
     marquee += "</button>";
     marquee += "</div>";
-    
-    marquee += "<div id='ukraineMarquee' style='max-height: 0; opacity: 0; background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 0; margin-top: 20px; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;'>";
-    marquee += "<div style='white-space: nowrap; animation: scroll 40s linear infinite; font-weight: bold;'>" + txt + "</div>";
+
+    // ВИПРАВЛЕНО: Безперервна стрічка з дубльованим текстом
+    marquee += "<div id='ukraineMarquee' style='max-height: 0; opacity: 0; background: linear-gradient(90deg, #0057B7 0%, #0057B7 50%, #FFD700 50%, #FFD700 100%); color: #000; padding: 0; margin-top: 20px; overflow: hidden; position: relative; transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;'>";
+    marquee += "<div class='ukraine-scroll' style='display: inline-block; white-space: nowrap; animation: scroll-seamless 40s linear infinite; font-weight: bold; font-size: 16px;'>";
+    marquee += "<span style='padding-right: 50px;'>" + txt + "</span>";
+    marquee += "<span style='padding-right: 50px;'>" + txt + "</span>";  // Дубль для безперервності
+    marquee += "</div>";
     marquee += "</div>";
 
     marquee += "<style>";
-    marquee += "@keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }";
+    // ВИПРАВЛЕНО: Анімація тепер працює правильно - текст повністю проходить
+    marquee += "@keyframes scroll-seamless {";
+    marquee += "  0% { transform: translateX(0%); }";
+    marquee += "  100% { transform: translateX(-50%); }";  // -50% бо текст подвоєний
+    marquee += "}";
     marquee += "#ukraineBtn:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.4); }";
     marquee += "#ukraineBtn:active { transform: scale(0.98); }";
+    // МОБІЛЬНА ОПТИМІЗАЦІЯ: швидше на малих екранах
+    marquee += "@media (max-width: 768px) {";
+    marquee += "  .ukraine-scroll { animation-duration: 25s !important; font-size: 14px; }";  // Швидше на телефоні
+    marquee += "}";
+    marquee += "@media (max-width: 480px) {";
+    marquee += "  .ukraine-scroll { animation-duration: 20s !important; font-size: 13px; }";  // Ще швидше на малих телефонах
+    marquee += "}";
     marquee += "</style>";
 
     marquee += "<script>";
@@ -400,10 +470,28 @@ void handleRoot() {
     
     // Інформація про мережу
     html += "<div style='background: #e8f5e9; padding: 10px 15px; border-radius: 5px; margin: 10px 0; font-size: 0.85em;'>";
-    html += "📡 <strong>Підключено до:</strong> " + WiFi.SSID() + " | ";
-    html += "<strong>IP:</strong> " + WiFi.localIP().toString() + " | ";
-    html += "<strong>⏰</strong> " + getTimeString();
+    html += "📡 <strong>Підключено до:</strong> " + htmlEscape(WiFi.SSID()) + " | ";
+    html += "<strong>IP:</strong> " + htmlEscape(WiFi.localIP().toString()) + " | ";
+    html += "<strong>⏰</strong> " + htmlEscape(getTimeString());
     html += "</div>";
+
+    // Підказка для мобільних (Android) з QR кодом
+    html += "<div style='background: #fff3cd; padding: 12px 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ff9800; display: flex; align-items: center; gap: 15px;'>";
+    html += "<div style='flex: 1;'>";
+    html += "📱 <strong>Для Android:</strong> Використовуйте IP адресу:<br>";
+    html += "<a href='http://" + WiFi.localIP().toString() + "' style='color: #d84315; font-weight: 600; text-decoration: underline; font-size: 1.1em;'>";
+    html += "http://" + WiFi.localIP().toString();
+    html += "</a>";
+    html += "<br><small style='color: #856404;'>Android не підтримує klimat.local - збережіть IP в закладки!</small>";
+    html += "</div>";
+    // QR код через Google Charts API
+    String qrUrl = "http://" + WiFi.localIP().toString();
+    html += "<div style='text-align: center;'>";
+    html += "<img src='https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" + qrUrl + "' alt='QR код' style='border: 2px solid #ff9800; border-radius: 5px;'>";
+    html += "<br><small style='color: #856404;'>Скануй для підключення</small>";
+    html += "</div>";
+    html += "</div>";
+
     html += "<div style='display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: 600; margin-top: 10px;'>";
     html += "Режим: <span id='currentMode'>";
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
@@ -426,17 +514,17 @@ void handleRoot() {
     html += "<div class='power-indicators'>";
     html += "<div class='power-item'>";
     html += "<div class='power-label'>💧 НАСОС</div>";
-    html += "<div class='power-value' id='pumpPower'>" + String((heatingState.pumpPower * 100) / 255) + "%</div>";
+    html += "<div class='power-value' id='pumpPower'>" + String(round(heatingState.pumpPower * 100.0 / 255.0)) + "%</div>";
     html += "</div>";
     
     html += "<div class='power-item'>";
     html += "<div class='power-label'>🌪️ ВЕНТИЛЯТОР</div>";
-    html += "<div class='power-value' id='fanPower'>" + String((heatingState.fanPower * 100) / 255) + "%</div>";
+    html += "<div class='power-value' id='fanPower'>" + String(round(heatingState.fanPower * 100.0 / 255.0)) + "%</div>";
     html += "</div>";
     
     html += "<div class='power-item'>";
     html += "<div class='power-label'>💨 ВИТЯЖКА</div>";
-    html += "<div class='power-value' id='extractorPower'>" + String((heatingState.extractorPower * 100) / 255) + "%</div>";
+    html += "<div class='power-value' id='extractorPower'>" + String(round(heatingState.extractorPower * 100.0 / 255.0)) + "%</div>";
     html += "</div>";
     html += "</div>";
     
@@ -472,7 +560,7 @@ void handleRoot() {
     html += "<div>Режим: <span class='sys-status' id='mode'>";
     html += heatingState.manualMode ? "РУЧНИЙ" : (heatingState.forceMode ? "ФОРСАЖ" : "АВТО");
     html += "</span></div>";
-    html += "<div>Wi-Fi: " + WiFi.SSID() + " (" + String(WiFi.RSSI()) + " dBm)</div>";
+    html += "<div>Wi-Fi: " + htmlEscape(WiFi.SSID()) + " (" + String(WiFi.RSSI()) + " dBm)</div>";
     html += "<div>Пам'ять: <span id='memory'>" + String(ESP.getFreeHeap() / 1024) + " KB</span></div>";
     html += "<div>Час роботи: <span id='uptime'>" + String(millis() / 1000) + " сек</span></div>";
     LoggerStats mainStats = getLoggerStats();
@@ -533,6 +621,16 @@ void handleRoot() {
     html += "<button class='quick-btn' onclick=\"quickCommand('extractor 0')\">Витяжка ВИМК</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('auto')\">АВТО</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('manual')\">РУЧНИЙ</button>";
+    html += "</div>";
+
+    html += "<div style='margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<label style='display: flex; align-items: center; gap: 8px; cursor: pointer;'>";
+    html += "<input type='checkbox' id='manualLock' " + String(heatingState.manualModeLocked ? "checked" : "") + " onchange='toggleManualLock()' style='width: 18px; height: 18px;'>";
+    html += "<span>🔒 Блокувати ручний режим (без автоповернення)</span>";
+    html += "</label>";
+    html += "</div>";
+
+    html += "<div>";
     html += "<button class='quick-btn' onclick=\"quickCommand('status')\">СТАТУС</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('save')\">ЗБЕРЕГТИ</button>";
     html += "<button class='quick-btn' onclick=\"quickCommand('sheets-sync')\" style='background: #4285f4;'>📤 SYNC SHEETS</button>";
@@ -547,8 +645,6 @@ void handleRoot() {
     html += "<div class='nav'>";
     html += "<a href='/control' class='nav-btn'>🎛️ ПАНЕЛЬ КЕРУВАННЯ</a>";
     html += "<a href='/settings' class='nav-btn'>⚙️ ПАНЕЛЬ НАЛАШТУВАНЬ</a>";
-    html += "<a href='/servo' class='nav-btn'>⚙ КАЛІБРУВАННЯ СЕРВО</a>";
-    html += "<a href='/wifi-settings' class='nav-btn'>📶 WI-FI</a>";
     html += "<a href='/learning' class='nav-btn'>🧠 СИСТЕМА НАВЧАННЯ</a>";
     html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
     html += "<a href='/history' class='nav-btn' style='background: #e91e63;'>📈 ГРАФІКИ</a>";
@@ -637,6 +733,10 @@ void handleRoot() {
     html += "      if (data.historyCount !== undefined) {";
     html += "        document.getElementById('historyCount').textContent = data.historyCount;";
     html += "      }";
+    html += "      if (data.manualModeLocked !== undefined) {";
+    html += "        const lockCheckbox = document.getElementById('manualLock');";
+    html += "        if (lockCheckbox) { lockCheckbox.checked = data.manualModeLocked; }";
+    html += "      }";
     html += "      const emergencyAlert = document.getElementById('emergencyAlert');";
     html += "      if (emergencyAlert) {";
     html += "        if (data.powerOutageActive) {";
@@ -713,6 +813,18 @@ void handleRoot() {
     html += "  }";
     html += "}";
 
+    html += "function toggleManualLock() {";
+    html += "  fetch('/command', {";
+    html += "    method: 'POST',";
+    html += "    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },";
+    html += "    body: 'cmd=lock'";
+    html += "  }).then(response => response.text()).then(text => {";
+    html += "    console.log('Lock toggle:', text);";
+    html += "  }).catch(error => {";
+    html += "    console.error('Lock toggle error:', error);";
+    html += "  });";
+    html += "}";
+
     html += "document.getElementById('commandInput').addEventListener('keypress', function(e) {";
     html += "  if (e.key === 'Enter') executeCommand();";
     html += "});";
@@ -762,9 +874,9 @@ void handleStatus() {
     doc["tempBME"] = sensorData.bmeValid ? sensorData.tempBME : (float)NAN;
     doc["humidity"] = sensorData.bmeValid ? sensorData.humidity : (float)NAN;
     doc["pressure"] = sensorData.bmeValid ? sensorData.pressure : (float)NAN;
-    doc["pumpPower"] = (heatingState.pumpPower * 100) / 255;
-    doc["fanPower"] = (heatingState.fanPower * 100) / 255;
-    doc["extractorPower"] = (heatingState.extractorPower * 100) / 255;
+    doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
+    doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
+    doc["extractorPower"] = round(heatingState.extractorPower * 100.0 / 255.0);
     doc["extractorTimer"] = config.extractorTimer.enabled;
     
     if (heatingState.emergencyMode) doc["mode"] = "АВАРІЯ";
@@ -775,6 +887,9 @@ void handleStatus() {
     // Інформація про аварію теплоносія
     doc["powerOutageActive"] = powerOutageState.emergencyHeatingActive || powerOutageState.detected;
     doc["powerOutageStage"] = powerOutageState.recoveryStage;
+
+    // Інформація про блокування ручного режиму
+    doc["manualModeLocked"] = heatingState.manualModeLocked;
 
     doc["time"] = getTimeString();
     doc["memory"] = ESP.getFreeHeap() / 1024;
@@ -793,12 +908,18 @@ void handleStatus() {
 
 void handleWebCommand() {
     if (!checkAuth()) return;
-    
+
     if (server.method() != HTTP_POST) {
         server.send(405, "text/plain", "Method Not Allowed");
         return;
     }
-    
+
+    // БЕЗПЕКА: Перевірка CSRF
+    if (!checkCSRF()) {
+        server.send(403, "text/plain", "❌ CSRF: Заборонено");
+        return;
+    }
+
     if (!server.hasArg("cmd")) {
         server.send(400, "text/plain", "Missing command");
         return;
@@ -820,6 +941,8 @@ String processWebCommand(const String& cmd) {
     // Перевірка режимів СПОЧАТКУ (щоб "auto" не розпізнавався як "a0")
     if (lowerCmd == "auto") {
         heatingState.manualMode = false;
+        heatingState.manualModeLocked = false;
+        heatingState.manualModeStartTime = 0;
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
         // Також скидаємо стан аварії при переході в AUTO
@@ -830,9 +953,15 @@ String processWebCommand(const String& cmd) {
     }
     else if (lowerCmd == "manual") {
         heatingState.manualMode = true;
+        heatingState.manualModeStartTime = millis();
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
-        return "✅ Режим: РУЧНИЙ";
+        return "✅ Режим: РУЧНИЙ (автоповернення через 15 хв)";
+    }
+    else if (lowerCmd == "lock") {
+        heatingState.manualModeLocked = !heatingState.manualModeLocked;
+        return String("🔒 Блокування ручного режиму: ") +
+               (heatingState.manualModeLocked ? "УВІМКНЕНО" : "ВИМКНЕНО");
     }
     else if (lowerCmd == "force") {
         heatingState.forceMode = true;
@@ -868,6 +997,7 @@ String processWebCommand(const String& cmd) {
             
             if (value >= 0 && value <= 100) {
                 heatingState.manualMode = true;
+                heatingState.manualModeStartTime = millis();
                 heatingState.forceMode = false;
                 heatingState.emergencyMode = false;
                 switch(device) {
@@ -887,6 +1017,7 @@ String processWebCommand(const String& cmd) {
     
     if (lowerCmd.startsWith("pump ")) {
         heatingState.manualMode = true;
+        heatingState.manualModeStartTime = millis();
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
         int percent = cmd.substring(5).toInt();
@@ -896,6 +1027,7 @@ String processWebCommand(const String& cmd) {
     }
     else if (lowerCmd.startsWith("fan ")) {
         heatingState.manualMode = true;
+        heatingState.manualModeStartTime = millis();
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
         int percent = cmd.substring(4).toInt();
@@ -905,6 +1037,7 @@ String processWebCommand(const String& cmd) {
     }
     else if (lowerCmd.startsWith("extractor ")) {
         heatingState.manualMode = true;
+        heatingState.manualModeStartTime = millis();
         heatingState.forceMode = false;
         heatingState.emergencyMode = false;
         int percent = cmd.substring(10).toInt();
@@ -1068,13 +1201,16 @@ String processWebCommand(const String& cmd) {
         mode.toLowerCase();
         if (mode == "auto") {
             heatingState.manualMode = false;
+            heatingState.manualModeLocked = false;
+            heatingState.manualModeStartTime = 0;
             heatingState.forceMode = false;
             return "✅ Режим: АВТОМАТИЧНИЙ";
         }
         else if (mode == "manual") {
             heatingState.manualMode = true;
+            heatingState.manualModeStartTime = millis();
             heatingState.forceMode = false;
-            return "✅ Режим: РУЧНИЙ";
+            return "✅ Режим: РУЧНИЙ (автоповернення через 15 хв)";
         }
         return "❌ Невідомий режим: " + mode;
     }
@@ -1174,19 +1310,20 @@ void handleWiFiSettingsPage() {
     html += "</style>";
     html += "<script>";
     html += "var savedNetworks = {};";
-    
-    // Додаємо збережені мережі з паролями
+
+    // БЕЗПЕКА: Не показуємо паролі в JavaScript!
+    // Замість цього зберігаємо тільки список SSID збережених мереж
     preferences.begin("wifi", true);
     int networkCount = preferences.getInt("netCount", 0);
     for (int i = 0; i < networkCount; i++) {
         String savedSSID = preferences.getString(("ssid" + String(i)).c_str(), "");
-        String savedPass = preferences.getString(("pass" + String(i)).c_str(), "");
         if (savedSSID.length() > 0) {
-            html += "savedNetworks['" + savedSSID + "'] = '" + savedPass + "';";
+            // Зберігаємо тільки true (без пароля!)
+            html += "savedNetworks['" + htmlEscape(savedSSID) + "'] = true;";
         }
     }
     preferences.end();
-    
+
     html += "function showManualForm() {";
     html += "  document.getElementById('manualForm').classList.remove('hidden');";
     html += "  document.getElementById('manualForm').scrollIntoView({ behavior: 'smooth' });";
@@ -1197,10 +1334,12 @@ void handleWiFiSettingsPage() {
     html += "  if (encrypted === 'true') {";
     html += "    document.getElementById('manualForm').classList.remove('hidden');";
     html += "    if (savedNetworks[ssid]) {";
-    html += "      document.getElementById('connectPassword').value = savedNetworks[ssid];";
+    // БЕЗПЕКА: Не заповнюємо пароль автоматично - тільки підказуємо
+    html += "      document.getElementById('connectPassword').placeholder = '🔑 Мережа збережена - введіть пароль';";
     html += "    } else {";
-    html += "      document.getElementById('connectPassword').value = '';";
+    html += "      document.getElementById('connectPassword').placeholder = 'Введіть пароль';";
     html += "    }";
+    html += "    document.getElementById('connectPassword').value = '';";
     html += "    document.getElementById('connectPassword').focus();";
     html += "  } else {";
     html += "    document.getElementById('connectPassword').value = '';";
@@ -1223,9 +1362,9 @@ void handleWiFiSettingsPage() {
     html += "<div class='section'>";
     html += "<h2>Поточне підключення</h2>";
     html += "<div class='current-info'>";
-    html += "<p><strong>SSID:</strong> " + WiFi.SSID() + "</p>";
-    html += "<p><strong>IP адреса:</strong> " + WiFi.localIP().toString() + "</p>";
-    html += "<p><strong>MAC адреса:</strong> " + WiFi.macAddress() + "</p>";
+    html += "<p><strong>SSID:</strong> " + htmlEscape(WiFi.SSID()) + "</p>";
+    html += "<p><strong>IP адреса:</strong> " + htmlEscape(WiFi.localIP().toString()) + "</p>";
+    html += "<p><strong>MAC адреса:</strong> " + htmlEscape(WiFi.macAddress()) + "</p>";
     html += "<p><strong>Сигнал:</strong> " + wifiStrengthToHTML(WiFi.RSSI()) + "</p>";
     html += "<p><strong>Статус:</strong> " + String(WiFi.status() == WL_CONNECTED ? "✅ Підключено" : "❌ Відключено") + "</p>";
     html += "</div>";
@@ -1247,18 +1386,20 @@ void handleWiFiSettingsPage() {
             
             for (int i = 0; i < n; i++) {
                 String ssid = WiFi.SSID(i);
+                String ssidEscaped = htmlEscape(ssid);
                 int rssi = WiFi.RSSI(i);
                 bool encrypted = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN);
-                
+
                 html += "<div class='network-item'>";
                 html += "<div>";
-                html += "<div class='network-ssid'>" + ssid + "</div>";
+                html += "<div class='network-ssid'>" + ssidEscaped + "</div>";
                 html += "<div class='network-details'>";
                 html += "Сигнал: " + String(rssi) + " dBm | ";
                 html += encrypted ? "🔒 Захищена" : "🔓 Відкрита";
                 html += "</div>";
                 html += "</div>";
-                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + ssid + "', '" + String(encrypted ? "true" : "false") + "')\">Підключити</button>";
+                // Екрануємо для JavaScript атрибуту onclick
+                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + ssidEscaped + "', '" + String(encrypted ? "true" : "false") + "')\">Підключити</button>";
                 html += "</div>";
             }
             
@@ -1281,12 +1422,13 @@ void handleWiFiSettingsPage() {
             for (int i = 0; i < networkCount; i++) {
                 String savedSSID = preferences.getString(("ssid" + String(i)).c_str(), "");
                 if (savedSSID.length() > 0) {
+                    String savedSSIDEscaped = htmlEscape(savedSSID);
                     html += "<div class='network-item'>";
                     html += "<div>";
-                    html += "<div class='network-ssid'>📱 " + savedSSID + "</div>";
+                    html += "<div class='network-ssid'>📱 " + savedSSIDEscaped + "</div>";
                     html += "<div class='network-details'>Збережена мережа #" + String(i+1) + "</div>";
                     html += "</div>";
-                    html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
+                    html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSIDEscaped + "', 'true')\">Підключити</button>";
                     html += "</div>";
                 }
             }
@@ -1294,12 +1436,13 @@ void handleWiFiSettingsPage() {
             // Перевірка старого формату (одна мережа)
             String savedSSID = preferences.getString("ssid", "");
             if (savedSSID.length() > 0) {
+                String savedSSIDEscaped = htmlEscape(savedSSID);
                 html += "<div class='network-item'>";
                 html += "<div>";
-                html += "<div class='network-ssid'>📱 " + savedSSID + "</div>";
+                html += "<div class='network-ssid'>📱 " + savedSSIDEscaped + "</div>";
                 html += "<div class='network-details'>Збережена мережа (старий формат)</div>";
                 html += "</div>";
-                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSID + "', 'true')\">Підключити</button>";
+                html += "<button class='connect-btn' onclick=\"connectToNetwork('" + savedSSIDEscaped + "', 'true')\">Підключити</button>";
                 html += "</div>";
             }
         }
@@ -1419,15 +1562,21 @@ void handleScanWiFi() {
 // ============================================================================
 
 void handleSaveWiFiSettings() {
+    // БЕЗПЕКА: Перевірка CSRF
+    if (!checkCSRF()) {
+        server.send(403, "text/plain", "❌ CSRF: Заборонено");
+        return;
+    }
+
     String response = "";
     String ssid = server.arg("ssid");
     String password = server.arg("password");
     bool saveSettings = server.hasArg("save");
-    
+
     Serial.println("💾 Збереження налаштувань Wi-Fi:");
     Serial.println("  SSID: " + ssid);
     Serial.println("  Зберегти: " + String(saveSettings ? "Так" : "Ні"));
-    
+
     if (ssid.length() == 0) {
         server.send(400, "text/plain", "Помилка: SSID не може бути пустим");
         return;
@@ -1551,11 +1700,11 @@ void handleSettingsPage() {
     html += "<title>Налаштування системи</title>";
     html += "<style>";
     html += "body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }";
-    html += ".container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }";
-    html += "h1 { color: #2c3e50; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }";
+    html += ".container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }";
+    html += "h1 { color: #2c3e50; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-bottom: 20px; }";
     html += ".form-group { margin-bottom: 20px; }";
     html += "label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }";
-    html += "input[type='number'], input[type='text'] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }";
+    html += "input[type='number'], input[type='text'] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }";
     html += ".section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3498db; }";
     html += ".section h3 { margin-top: 0; color: #2980b9; }";
     html += ".btn { background: #4CAF50; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s; }";
@@ -1564,15 +1713,50 @@ void handleSettingsPage() {
     html += ".btn-secondary:hover { background: #2980b9; }";
     html += ".back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; }";
     html += ".back-link:hover { color: #34495e; }";
+
+    // ВКЛАДКИ (TABS)
+    html += ".tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 2px solid #ddd; }";
+    html += ".tab { padding: 12px 20px; background: #e0e0e0; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.3s; color: #555; }";
+    html += ".tab:hover { background: #d0d0d0; }";
+    html += ".tab.active { background: #4CAF50; color: white; box-shadow: 0 -2px 8px rgba(76, 175, 80, 0.3); }";
+    html += ".tab-content { display: none; animation: fadeIn 0.3s; }";
+    html += ".tab-content.active { display: block; }";
+    html += "@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
+
+    // МОБІЛЬНА ОПТИМІЗАЦІЯ
+    html += "@media (max-width: 768px) {";
+    html += "  body { margin: 10px; }";
+    html += "  .container { padding: 15px; }";
+    html += "  h1 { font-size: 1.5em; }";
+    html += "  .tabs { gap: 3px; }";
+    html += "  .tab { padding: 10px 12px; font-size: 13px; }";
+    html += "  input[type='number'], input[type='text'] { font-size: 16px; padding: 12px; }";
+    html += "  .btn { width: 100%; margin: 5px 0; }";
+    html += "  .btn-secondary { margin-left: 0; }";
+    html += "}";
     html += "</style>";
     html += "</head><body>";
     
     html += "<div class='container'>";
     html += "<h1>⚙️ ПАНЕЛЬ НАЛАШТУВАНЬ СИСТЕМИ</h1>";
     html += "<p><a href='/' class='back-link'>← На головну</a></p>";
-    
+
+    // ВКЛАДКИ
+    html += "<div class='tabs'>";
+    html += "<button type='button' class='tab active' onclick='switchTab(0)'>🌡️ Клімат</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(1)'>🔧 Пристрої</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(2)'>⏰ Таймер</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(3)'>🔄 Сезон</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(4)'>🚨 Аварія</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(5)'>⚙️ Система</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(6)'>🎯 Серво</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(7)'>📶 WiFi</button>";
+    html += "</div>";
+
     html += "<form method='POST' action='/settings'>";
-    
+
+    // TAB 0: КЛІМАТ
+    html += "<div class='tab-content active' id='tab0'>";
     html += "<div class='section'>";
     html += "<h3>🌡️ ТЕМПЕРАТУРА</h3>";
     html += "<div class='form-group'>";
@@ -1600,7 +1784,10 @@ void handleSettingsPage() {
     html += "<input type='number' name='humHyst' value='" + String(config.humidityConfig.hysteresis) + "' min='1' max='10'>";
     html += "</div>";
     html += "</div>";
-    
+    html += "</div>"; // Закриваємо tab0
+
+    // TAB 1: ПРИСТРОЇ
+    html += "<div class='tab-content' id='tab1'>";
     html += "<div class='section'>";
     html += "<h3>🔧 ОБМЕЖЕННЯ ПРИСТРОЇВ (автоматичний режим)</h3>";
     html += "<div class='form-group'>";
@@ -1612,7 +1799,12 @@ void handleSettingsPage() {
     html += "<input type='number' name='pumpMax' value='" + String(config.pumpMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Максимум вентилятора (%):</label>";
+    html += "<label>Мінімум вентилятора обігріву (%):</label>";
+    html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальна швидкість для стабільної роботи вентилятора</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимум вентилятора обігріву (%):</label>";
     html += "<input type='number' name='fanMax' value='" + String(config.fanMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
@@ -1624,7 +1816,10 @@ void handleSettingsPage() {
     html += "<input type='number' name='extractorMax' value='" + String(config.extractorMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
     html += "</div>";
-    
+    html += "</div>"; // Закриваємо tab1
+
+    // TAB 2: ТАЙМЕР
+    html += "<div class='tab-content' id='tab2'>";
     html += "<div class='section'>";
     html += "<h3>⏰ ТАЙМЕР ВИТЯЖКИ</h3>";
     html += "<div class='form-group'>";
@@ -1651,24 +1846,10 @@ void handleSettingsPage() {
     html += "<label><input type='checkbox' name='extEnabled' " + String(config.extractorTimer.enabled ? "checked" : "") + "> Включити таймер</label>";
     html += "</div>";
     html += "</div>";
-    
-    html += "<div class='section'>";
-    html += "<h3>⚙️ СИСТЕМНІ НАЛАШТУВАННЯ</h3>";
-    html += "<div class='form-group'>";
-    html += "<label>Мінімальна потужність вентилятора (%):</label>";
-    html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Швидкість руху серво (мс/градус):</label>";
-    html += "<input type='number' name='servoSpeed' value='" + String(config.servoSpeed) + "' min='5' max='50'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менше значення = швидше рух (5-10мс швидко, 20-30мс стандарт, 40-50мс повільно)</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Період виведення статусу (секунди):</label>";
-    html += "<input type='number' name='statusPeriod' value='" + String(config.statusPeriod / 1000) + "' min='10' max='600'>";
-    html += "</div>";
-    html += "</div>";
+    html += "</div>"; // Закриваємо tab2
 
+    // TAB 3: СЕЗОН
+    html += "<div class='tab-content' id='tab3'>";
     html += "<div class='section'>";
     html += "<h3>🔄 СЕЗОННІ РЕЖИМИ</h3>";
     html += "<div class='form-group'>";
@@ -1680,7 +1861,10 @@ void handleSettingsPage() {
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Система автоматично відключить обігрів в теплі місяці</small>";
     html += "</div>";
     html += "</div>";
+    html += "</div>"; // Закриваємо tab3
 
+    // TAB 4: АВАРІЯ
+    html += "<div class='tab-content' id='tab4'>";
     html += "<div class='section'>";
     html += "<h3>🚨 МОНІТОРИНГ АВАРІЙ (відключення живлення)</h3>";
     html += "<div class='form-group'>";
@@ -1719,31 +1903,370 @@ void handleSettingsPage() {
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Час оцінювання стабільного зростання температури теплоносія для автоматичного виходу з режиму підтримки</small>";
     html += "</div>";
     html += "</div>";
+    html += "</div>"; // Закриваємо tab4
+
+    // TAB 5: СИСТЕМА
+    html += "<div class='tab-content' id='tab5'>";
+
+    html += "<div class='section'>";
+    html += "<h3>📊 МОНІТОРИНГ ТА ЛОГУВАННЯ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Період виведення статусу (секунди):</label>";
+    html += "<input type='number' name='statusPeriod' value='" + String(config.statusPeriod / 1000) + "' min='10' max='600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто виводити статус у Serial Monitor</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>";
+    String autoStatusChecked = config.autoStatusEnabled ? " checked" : "";
+    html += "<input type='checkbox' name='autoStatus'" + autoStatusChecked + "> Автоматичний вивід статусу в Serial";
+    html += "</label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>";
+    String use24hChecked = config.use24hFormat ? " checked" : "";
+    html += "<input type='checkbox' name='use24h'" + use24hChecked + "> Використовувати 24-годинний формат часу";
+    html += "</label>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div class='section'>";
+    html += "<h3>🔧 РОЗШИРЕНІ ПАРАМЕТРИ</h3>";
+    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>";
+    html += "<small style='color: #856404;'>⚠️ <strong>Увага:</strong> Змінюйте ці параметри тільки якщо розумієте що вони роблять!</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='adaptiveMin' value='" + String(config.a_adaptive_min) + "' min='50' max='100'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальна потужність насоса в адаптивному режимі (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='adaptiveMax' value='" + String(config.a_adaptive_max) + "' min='50' max='100'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Максимальна потужність насоса в адаптивному режимі (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Крок адаптації температури (0.1°C):</label>";
+    html += "<input type='number' name='adaptiveTempStep' value='" + String(config.adaptive_temp_step) + "' min='1' max='20'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>На скільки знижувати ціль температури, якщо система не досягає порогів 30 хв (1=0.1°C)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Крок адаптації вологості (%):</label>";
+    html += "<input type='number' name='adaptiveHumStep' value='" + String(config.adaptive_hum_step) + "' min='1' max='20'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>На скільки % знижувати ціль вологості, якщо система не досягає порогів 30 хв</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Нормальний діапазон мін (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='normalRangeMin' value='" + String(config.a_normal_range_min) + "' min='0' max='100'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Нижня межа нормального діапазону роботи (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Нормальний діапазон макс (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='normalRangeMax' value='" + String(config.a_normal_range_max) + "' min='0' max='100'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Верхня межа нормального діапазону роботи (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Стартова потужність насоса (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='bStartPercent' value='" + String(config.b_start_percent) + "' min='0' max='100'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Початкова швидкість насоса при старті обігріву (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Вікно аналізу тренду (секунди) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='trendWindow' value='" + String(config.trend_window_seconds) + "' min='60' max='600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Період для аналізу тенденції зміни температури (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Поріг падіння температури (°C) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='tempDropThreshold' value='" + String(config.temp_drop_threshold, 1) + "' min='0.1' max='5.0' step='0.1'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Критичне падіння температури для аварійних дій (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Інтервал перевірки обігріву (секунди) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='heatingCheckInt' value='" + String(config.heating_check_interval) + "' min='30' max='600'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто перевіряти ефективність обігріву (зарезервовано для майбутньої версії)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Розмір історії даних <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
+    html += "<input type='number' name='historySize' value='" + String(config.history_size) + "' min='100' max='2000'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Кількість записів у буфері історії (зарезервовано, зараз фіксовано 1440)</small>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "</div>"; // Закриваємо tab5
+
+    // TAB 6: СЕРВО
+    html += "<div class='tab-content' id='tab6'>";
+    html += "<div class='section'>";
+    html += "<h3>🎯 КАЛІБРУВАННЯ СЕРВО</h3>";
+
+    // Поточний стан
+    html += "<div style='background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196F3;'>";
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
+    html += "<div><strong>Поточний кут:</strong><br><span id='servoCurrentAngle' style='font-size: 24px; color: #2196F3;'>" + String(ventState.currentAngle) + "°</span></div>";
+    html += "<div><strong>Закрито:</strong><br><span id='servoClosedVal'>" + String(config.servoClosedAngle) + "°</span></div>";
+    html += "<div><strong>Відкрито:</strong><br><span id='servoOpenVal'>" + String(config.servoOpenAngle) + "°</span></div>";
+    html += "<div><strong>Режим:</strong><br><span id='servoMode' style='font-weight:600;color:";
+    html += ventState.calibrationMode ? "#FF9800'>КАЛІБРУВАННЯ" : "#2196F3'>НОРМАЛЬНИЙ";
+    html += "</span></div>";
+    html += "</div></div>";
+
+    // Кнопки управління
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;'>";
+    html += "<button type='button' class='btn' style='background:#FF9800;color:white;' onclick='toggleServoCalibration()' id='servoCalibBtn'>";
+    html += ventState.calibrationMode ? "🔓 ВИЙТИ З КАЛІБРУВАННЯ" : "🔒 УВІЙТИ В КАЛІБРУВАННЯ";
+    html += "</button>";
+    html += "<button type='button' class='btn' style='background:#9C27B0;color:white;' onclick='autoServoCalibrate()'>🤖 АВТОКАЛІБРУВАННЯ</button>";
+    html += "</div>";
+
+    // Кнопки руху
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;'>";
+    html += "<button type='button' class='btn' style='background:#2196F3;color:white;' onclick='moveServo(\"+1\")'>▲ +1°</button>";
+    html += "<button type='button' class='btn' style='background:#FF9800;color:white;' onclick='moveServo(\"+5\")'>▲▲ +5°</button>";
+    html += "<button type='button' class='btn' style='background:#2196F3;color:white;' onclick='moveServo(\"-1\")'>▼ -1°</button>";
+    html += "<button type='button' class='btn' style='background:#FF9800;color:white;' onclick='moveServo(\"-5\")'>▼▼ -5°</button>";
+    html += "</div>";
+
+    // Швидкі позиції
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;'>";
+    html += "<button type='button' class='btn' style='background:#4CAF50;color:white;' onclick='gotoServoPosition(\"open\")'>➤ Відкрити</button>";
+    html += "<button type='button' class='btn' style='background:#f44336;color:white;' onclick='gotoServoPosition(\"closed\")'>➤ Закрити</button>";
+    html += "</div>";
+
+    // Збереження позицій
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;'>";
+    html += "<button type='button' class='btn' style='background:#4CAF50;color:white;' onclick='saveServoPosition(\"closed\")'>💾 Зберегти як ЗАКРИТО</button>";
+    html += "<button type='button' class='btn' style='background:#4CAF50;color:white;' onclick='saveServoPosition(\"open\")'>💾 Зберегти як ВІДКРИТО</button>";
+    html += "</div>";
+
+    // Тест
+    html += "<button type='button' class='btn' style='background:#9C27B0;color:white;width:100%;margin-bottom:20px;' onclick='testServo()'>🔧 ТЕСТ (відкрити→закрити)</button>";
+
+    // Ручне введення та налаштування
+    html += "<div class='form-group'>";
+    html += "<label>Кут закритої заслонки (градуси):</label>";
+    html += "<input type='number' id='manualServoClosed' name='servoClosed' value='" + String(config.servoClosedAngle) + "' min='0' max='180'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Кут відкритої заслонки (градуси):</label>";
+    html += "<input type='number' id='manualServoOpen' name='servoOpen' value='" + String(config.servoOpenAngle) + "' min='0' max='180'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Швидкість руху серво (мс/градус):</label>";
+    html += "<input type='number' name='servoSpeed' value='" + String(config.servoSpeed) + "' min='5' max='50'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менше = швидше (5-10 швидко, 20-30 стандарт, 40-50 повільно)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>";
+    String manualVentChecked = config.manualVentControl ? " checked" : "";
+    html += "<input type='checkbox' name='manualVent'" + manualVentChecked + "> Ручне керування заслонкою";
+    html += "</label>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Вимкнути автоматичне регулювання заслонки (тільки вимикач)</small>";
+    html += "</div>";
+
+    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;'>";
+    html += "<small style='color: #856404;'>💡 <strong>Порада:</strong> Використовуйте кнопки для точного калібрування в реальному часі, ";
+    html += "або введіть значення вручу та збережіть через кнопку внизу форми.</small>";
+    html += "</div>";
+    html += "</div>";
+    html += "</div>"; // Закриваємо tab6
+
+    // TAB 7: WIFI
+    html += "<div class='tab-content' id='tab7'>";
+
+    // Поточний стан WiFi
+    html += "<div class='section'>";
+    html += "<h3>📶 ПОТОЧНЕ ПІДКЛЮЧЕННЯ</h3>";
+    html += "<div style='background: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;'>";
+    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
+    html += "<div><strong>SSID:</strong><br>" + htmlEscape(WiFi.SSID()) + "</div>";
+    html += "<div><strong>IP адреса:</strong><br>" + WiFi.localIP().toString() + "</div>";
+    html += "<div><strong>Сила сигналу:</strong><br>" + String(WiFi.RSSI()) + " dBm";
+    if (WiFi.RSSI() > -50) html += " (відмінно)";
+    else if (WiFi.RSSI() > -60) html += " (добре)";
+    else if (WiFi.RSSI() > -70) html += " (задовільно)";
+    else html += " (слабко)";
+    html += "</div>";
+    html += "<div><strong>MAC адреса:</strong><br>" + WiFi.macAddress() + "</div>";
+    html += "</div></div></div>";
+
+    // Зміна WiFi мережі
+    html += "<div class='section'>";
+    html += "<h3>🔄 ЗМІНИТИ WI-FI МЕРЕЖУ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>SSID (назва мережі):</label>";
+    html += "<input type='text' name='wifi_ssid' value='" + htmlEscape(WiFi.SSID()) + "' placeholder='Назва WiFi мережі'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Пароль:</label>";
+    html += "<input type='password' name='wifi_password' value='' placeholder='Залиште порожнім щоб не змінювати'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Для безпеки пароль не відображається</small>";
+    html += "</div>";
+    html += "<div style='background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
+    html += "<strong>⚠️ ВАЖЛИВО:</strong> Після зміни WiFi налаштувань пристрій перезавантажиться та підключиться до нової мережі. ";
+    html += "Переконайтеся, що ввели правильні дані!";
+    html += "</div></div>";
+
+    // Статична IP (додатково)
+    html += "<div class='section'>";
+    html += "<h3>🌐 СТАТИЧНА IP (опціонально)</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>";
+    html += "<input type='checkbox' name='use_static_ip' id='use_static_ip'";
+    if (config.useStaticIP) html += " checked";
+    html += " onchange='toggleStaticIP()'> Використовувати статичну IP адресу";
+    html += "</label>";
+    html += "</div>";
+    String staticIPDisplay = config.useStaticIP ? "block" : "none";
+    html += "<div id='static_ip_fields' style='display:" + staticIPDisplay + ";'>";
+    html += "<div class='form-group'>";
+    html += "<label>IP адреса:</label>";
+    html += "<input type='text' name='static_ip' value='" + config.staticIP + "' placeholder='192.168.1.100'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Шлюз (Gateway):</label>";
+    html += "<input type='text' name='gateway' value='" + config.gateway + "' placeholder='192.168.1.1'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Маска підмережі:</label>";
+    html += "<input type='text' name='subnet' value='" + config.subnet + "' placeholder='255.255.255.0'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>DNS сервер:</label>";
+    html += "<input type='text' name='dns' value='" + config.dns + "' placeholder='8.8.8.8'>";
+    html += "</div>";
+    html += "</div></div>";
+
+    // Безпека
+    html += "<div class='section'>";
+    html += "<h3>🔐 БЕЗПЕКА ВЕБ-ІНТЕРФЕЙСУ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>";
+    html += "<input type='checkbox' name='use_auth' id='use_auth'";
+    if (config.useAuth) html += " checked";
+    html += " onchange='toggleAuth()'> Увімкнути автентифікацію (логін/пароль)";
+    html += "</label>";
+    html += "</div>";
+    String authDisplay = config.useAuth ? "block" : "none";
+    html += "<div id='auth_fields' style='display:" + authDisplay + ";'>";
+    html += "<div class='form-group'>";
+    html += "<label>Логін:</label>";
+    html += "<input type='text' name='auth_user' value='" + config.authLogin + "' placeholder='admin'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Пароль:</label>";
+    html += "<input type='password' name='auth_pass' value='' placeholder='Залиште порожнім щоб не змінювати'>";
+    html += "</div>";
+    html += "<div style='background: #ffebee; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f44336;'>";
+    html += "<strong>⚠️ ВАЖЛИВО:</strong> Обов'язково увімкніть автентифікацію якщо плануєте відкрити доступ через інтернет!";
+    html += "</div>";
+    html += "</div></div>";
+
+    html += "</div>"; // Закриваємо tab7
 
     html += "<div style='margin-top: 30px;'>";
     html += "<button type='submit' class='btn'>💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>";
     html += "<button type='button' class='btn btn-secondary' onclick='window.location.href=\"/\"'>← НА ГОЛОВНУ</button>";
     html += "</div>";
-    
+
     html += "</form>";
     
     html += "</div>";
     
     html += "<script>";
+    // Функція перемикання вкладок
+    html += "function switchTab(tabIndex) {";
+    html += "  const tabs = document.querySelectorAll('.tab');";
+    html += "  const contents = document.querySelectorAll('.tab-content');";
+    html += "  tabs.forEach((tab, i) => {";
+    html += "    if (i === tabIndex) {";
+    html += "      tab.classList.add('active');";
+    html += "      contents[i].classList.add('active');";
+    html += "    } else {";
+    html += "      tab.classList.remove('active');";
+    html += "      contents[i].classList.remove('active');";
+    html += "    }";
+    html += "  });";
+    html += "  localStorage.setItem('settingsTab', tabIndex);";
+    html += "}";
+    // Відновлення останньої вкладки при завантаженні
+    html += "window.addEventListener('load', function() {";
+    html += "  const savedTab = localStorage.getItem('settingsTab');";
+    html += "  if (savedTab !== null) switchTab(parseInt(savedTab));";
+    html += "});";
+    // Валідація форми
     html += "document.querySelector('form').addEventListener('submit', function(e) {";
     html += "  const tempMin = parseFloat(document.querySelector('[name=\"tempMin\"]').value);";
     html += "  const tempMax = parseFloat(document.querySelector('[name=\"tempMax\"]').value);";
     html += "  if (tempMin >= tempMax) {";
     html += "    alert('Помилка: Мінімальна температура має бути менше максимальної!');";
     html += "    e.preventDefault();";
+    html += "    switchTab(0);";
+    html += "    return;";
     html += "  }";
     html += "  const humMin = parseFloat(document.querySelector('[name=\"humMin\"]').value);";
     html += "  const humMax = parseFloat(document.querySelector('[name=\"humMax\"]').value);";
     html += "  if (humMin >= humMax) {";
     html += "    alert('Помилка: Мінімальна вологість має бути менше максимальної!');";
     html += "    e.preventDefault();";
+    html += "    switchTab(0);";
+    html += "    return;";
     html += "  }";
     html += "});";
+
+    // Функції для серво
+    html += "function sendServoCommand(cmd) {";
+    html += "  return fetch('/servo/api', {";
+    html += "    method: 'POST',";
+    html += "    headers: {'Content-Type': 'application/x-www-form-urlencoded'},";
+    html += "    body: 'cmd=' + cmd";
+    html += "  }).then(r => r.text()).then(data => {";
+    html += "    if(data.startsWith('ANGLE:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('servoCurrentAngle').innerText = angle + '°';";
+    html += "    } else if(data.startsWith('CLOSED:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('servoClosedVal').innerText = angle + '°';";
+    html += "      document.getElementById('manualServoClosed').value = angle;";
+    html += "      alert('✅ Закрите положення збережено: ' + angle + '°');";
+    html += "    } else if(data.startsWith('OPEN:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('servoOpenVal').innerText = angle + '°';";
+    html += "      document.getElementById('manualServoOpen').value = angle;";
+    html += "      alert('✅ Відкрите положення збережено: ' + angle + '°');";
+    html += "    } else if(data == 'TEST_OK') {";
+    html += "      alert('✅ Тест серво завершено');";
+    html += "    } else if(data.startsWith('MODE:')) {";
+    html += "      location.reload();";
+    html += "    }";
+    html += "    return data;";
+    html += "  });";
+    html += "}";
+    html += "function moveServo(delta) { sendServoCommand('move:' + delta); }";
+    html += "function saveServoPosition(type) { sendServoCommand('save:' + type); }";
+    html += "function gotoServoPosition(type) { sendServoCommand('goto:' + type); }";
+    html += "function toggleServoCalibration() { sendServoCommand('calibration:toggle'); }";
+    html += "function autoServoCalibrate() {";
+    html += "  if(confirm('Автокалібрування: швидко перемикайте вимикач для зміни напряму. Продовжити?')) {";
+    html += "    sendServoCommand('auto:calibrate');";
+    html += "    alert('🤖 Швидко перемикайте вимикач протягом 8 секунд!');";
+    html += "    setTimeout(() => location.reload(), 8000);";
+    html += "  }";
+    html += "}";
+    html += "function testServo() {";
+    html += "  if(confirm('Тест відкриє і закриє заслонку. Продовжити?')) {";
+    html += "    sendServoCommand('test');";
+    html += "  }";
+    html += "}";
+
+    // Функції для WiFi налаштувань
+    html += "function toggleStaticIP() {";
+    html += "  const checked = document.getElementById('use_static_ip').checked;";
+    html += "  document.getElementById('static_ip_fields').style.display = checked ? 'block' : 'none';";
+    html += "}";
+    html += "function toggleAuth() {";
+    html += "  const checked = document.getElementById('use_auth').checked;";
+    html += "  document.getElementById('auth_fields').style.display = checked ? 'block' : 'none';";
+    html += "}";
+
     html += "</script>";
     
     html += "<div style='text-align: center; margin-top: 30px;'><a href='/' style='background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>← На головну</a></div>";
@@ -1755,11 +2278,32 @@ void handleSettingsPage() {
 }
 
 void handleSaveSettings() {
+    // БЕЗПЕКА: Перевірка CSRF
+    if (!checkCSRF()) {
+        server.send(403, "text/plain", "❌ CSRF: Заборонено");
+        return;
+    }
+
+    // ВАЛІДАЦІЯ: Температура
     if (server.hasArg("tempMin")) {
-        config.tempMin = server.arg("tempMin").toFloat();
+        float tempMin = server.arg("tempMin").toFloat();
+        if (tempMin < 10.0 || tempMin > 40.0) {
+            server.send(400, "text/plain", "❌ Мін. температура має бути від 10 до 40°C");
+            return;
+        }
+        config.tempMin = tempMin;
     }
     if (server.hasArg("tempMax")) {
-        config.tempMax = server.arg("tempMax").toFloat();
+        float tempMax = server.arg("tempMax").toFloat();
+        if (tempMax < 10.0 || tempMax > 40.0) {
+            server.send(400, "text/plain", "❌ Макс. температура має бути від 10 до 40°C");
+            return;
+        }
+        if (tempMax <= config.tempMin) {
+            server.send(400, "text/plain", "❌ Макс. температура має бути більшою за мін.");
+            return;
+        }
+        config.tempMax = tempMax;
     }
     if (server.hasArg("humMin")) {
         config.humidityConfig.minHumidity = server.arg("humMin").toFloat();
@@ -1815,6 +2359,66 @@ void handleSaveSettings() {
         config.statusPeriod = server.arg("statusPeriod").toInt() * 1000UL;
     }
 
+    // Системні налаштування TAB 5
+    if (server.hasArg("autoStatus")) {
+        config.autoStatusEnabled = true;
+    } else {
+        config.autoStatusEnabled = false;
+    }
+    if (server.hasArg("use24h")) {
+        config.use24hFormat = true;
+    } else {
+        config.use24hFormat = false;
+    }
+    if (server.hasArg("manualVent")) {
+        config.manualVentControl = true;
+    } else {
+        config.manualVentControl = false;
+    }
+    if (server.hasArg("adaptiveMin")) {
+        config.a_adaptive_min = constrain(server.arg("adaptiveMin").toInt(), 50, 100);
+    }
+    if (server.hasArg("adaptiveMax")) {
+        config.a_adaptive_max = constrain(server.arg("adaptiveMax").toInt(), 50, 100);
+    }
+    if (server.hasArg("adaptiveTempStep")) {
+        config.adaptive_temp_step = constrain(server.arg("adaptiveTempStep").toInt(), 1, 20);
+    }
+    if (server.hasArg("adaptiveHumStep")) {
+        config.adaptive_hum_step = constrain(server.arg("adaptiveHumStep").toInt(), 1, 20);
+    }
+    if (server.hasArg("normalRangeMin")) {
+        config.a_normal_range_min = constrain(server.arg("normalRangeMin").toInt(), 0, 100);
+    }
+    if (server.hasArg("normalRangeMax")) {
+        config.a_normal_range_max = constrain(server.arg("normalRangeMax").toInt(), 0, 100);
+    }
+    if (server.hasArg("bStartPercent")) {
+        config.b_start_percent = constrain(server.arg("bStartPercent").toInt(), 0, 100);
+    }
+    if (server.hasArg("trendWindow")) {
+        config.trend_window_seconds = constrain(server.arg("trendWindow").toInt(), 60, 600);
+    }
+    if (server.hasArg("tempDropThreshold")) {
+        config.temp_drop_threshold = constrain(server.arg("tempDropThreshold").toFloat(), 0.1, 5.0);
+    }
+    if (server.hasArg("heatingCheckInt")) {
+        config.heating_check_interval = constrain(server.arg("heatingCheckInt").toInt(), 30, 600);
+    }
+    if (server.hasArg("historySize")) {
+        config.history_size = constrain(server.arg("historySize").toInt(), 100, 2000);
+    }
+
+    // Калібрування серво
+    if (server.hasArg("servoClosed")) {
+        int closedAngle = constrain(server.arg("servoClosed").toInt(), 0, 180);
+        config.servoClosedAngle = closedAngle;
+    }
+    if (server.hasArg("servoOpen")) {
+        int openAngle = constrain(server.arg("servoOpen").toInt(), 0, 180);
+        config.servoOpenAngle = openAngle;
+    }
+
     // Сезонні режими
     if (server.hasArg("coolingMode")) {
         config.coolingMode = true;
@@ -1850,20 +2454,90 @@ void handleSaveSettings() {
         config.powerOutageAutoExitTime = server.arg("poAutoExit").toInt();
     }
 
+    // WiFi налаштування
+    bool wifiChanged = false;
+    if (server.hasArg("wifi_ssid") && server.arg("wifi_ssid").length() > 0) {
+        String newSSID = server.arg("wifi_ssid");
+        if (newSSID != WiFi.SSID()) {
+            prefs.begin("wifi", false);
+            prefs.putString("ssid", newSSID);
+            prefs.end();
+            wifiChanged = true;
+        }
+    }
+    if (server.hasArg("wifi_password") && server.arg("wifi_password").length() > 0) {
+        String newPassword = server.arg("wifi_password");
+        prefs.begin("wifi", false);
+        prefs.putString("password", newPassword);
+        prefs.end();
+        wifiChanged = true;
+    }
+
+    // Статична IP
+    if (server.hasArg("use_static_ip")) {
+        config.useStaticIP = true;
+        if (server.hasArg("static_ip")) {
+            config.staticIP = server.arg("static_ip");
+        }
+        if (server.hasArg("gateway")) {
+            config.gateway = server.arg("gateway");
+        }
+        if (server.hasArg("subnet")) {
+            config.subnet = server.arg("subnet");
+        }
+        if (server.hasArg("dns")) {
+            config.dns = server.arg("dns");
+        }
+        wifiChanged = true;
+    } else {
+        if (config.useStaticIP) {
+            config.useStaticIP = false;
+            wifiChanged = true;
+        }
+    }
+
+    // Автентифікація
+    if (server.hasArg("use_auth")) {
+        config.useAuth = true;
+        if (server.hasArg("auth_user") && server.arg("auth_user").length() > 0) {
+            config.authLogin = server.arg("auth_user");
+        }
+        if (server.hasArg("auth_pass") && server.arg("auth_pass").length() > 0) {
+            config.authPassword = server.arg("auth_pass");
+        }
+    } else {
+        config.useAuth = false;
+    }
+
     saveConfiguration();
-    
+
     String html = "<!DOCTYPE html><html><head>";
     html += "<meta charset='UTF-8'>";
-    html += "<meta http-equiv='refresh' content='2;url=/settings'>";
+    if (wifiChanged) {
+        html += "<meta http-equiv='refresh' content='3;url=/'>"; // Після перезавантаження на головну
+    } else {
+        html += "<meta http-equiv='refresh' content='2;url=/settings'>";
+    }
     html += "<title>Налаштування збережені</title>";
     html += "<style>body { font-family: Arial; text-align: center; padding: 50px; }</style>";
     html += "</head><body>";
     html += "<h1>✅ Налаштування успішно збережені!</h1>";
-    html += "<p>Перенаправлення обернено на сторінку налаштувань...</p>";
+    if (wifiChanged) {
+        html += "<p><strong>⚠️ WiFi налаштування змінено! Пристрій перезавантажується...</strong></p>";
+        html += "<p>Після перезавантаження підключіться до нової мережі та перейдіть за адресою пристрою.</p>";
+    } else {
+        html += "<p>Перенаправлення обернено на сторінку налаштувань...</p>";
+    }
     html += getUkraineMarquee();
     html += "</body></html>";
-    
+
     server.send(200, "text/html", html);
+
+    // Якщо змінились WiFi налаштування, перезавантажуємо пристрій
+    if (wifiChanged) {
+        delay(2000); // Даємо час показати повідомлення
+        ESP.restart();
+    }
 }
 
 // ============================================================================
@@ -1882,17 +2556,47 @@ void handleControlPage() {
     html += "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');";
     html += "body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f5f5f5; }";
     html += ".container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }";
-    html += ".slider { width: 100%; margin: 10px 0; }";
-    html += ".btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 5px; cursor: pointer; transition: all 0.3s; }";
+
+    // ПОКРАЩЕНІ СЛАЙДЕРИ
+    html += ".slider { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #ddd; outline: none; margin: 15px 0; transition: background 0.3s; }";
+    html += ".slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #4CAF50; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: all 0.3s; }";
+    html += ".slider::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5); }";
+    html += ".slider::-webkit-slider-thumb:active { transform: scale(1.1); }";
+    html += ".slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #4CAF50; cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }";
+    html += ".slider:hover { background: #ccc; }";
+
+    html += ".btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 5px; cursor: pointer; transition: all 0.3s; font-size: 14px; }";
     html += ".btn:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }";
-    html += ".slider-value { display: inline-block; width: 50px; text-align: center; font-weight: 600; }";
+    html += ".btn:active { transform: translateY(0); }";
+    html += ".slider-value { display: inline-block; min-width: 50px; text-align: center; font-weight: 700; font-size: 20px; color: #4CAF50; margin-left: 10px; }";
     html += ".control-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; }";
+    html += ".control-section h3 { margin-top: 0; color: #2c3e50; font-size: 18px; }";
     html += ".mode-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }";
     html += ".mode-btn { padding: 15px 20px; border: 2px solid #ddd; background: #f5f5f5; color: #333; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; position: relative; overflow: hidden; }";
     html += ".mode-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }";
     html += ".mode-btn.active { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border-color: #4CAF50; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); animation: pulse 2s infinite; }";
     html += "@keyframes pulse { 0%, 100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); } 50% { box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6); } }";
     html += ".mode-btn.active::before { content: '✓ '; font-weight: 600; margin-right: 5px; }";
+
+    // МОБІЛЬНА ОПТИМІЗАЦІЯ
+    html += "@media (max-width: 768px) {";
+    html += "  body { margin: 10px; }";
+    html += "  .container { padding: 15px; }";
+    html += "  .control-section { padding: 15px; }";
+    html += "  .slider { height: 12px; margin: 20px 0; }";  // Товстіші слайдери на мобільному
+    html += "  .slider::-webkit-slider-thumb { width: 36px; height: 36px; }";  // Більший thumb для пальця
+    html += "  .slider::-moz-range-thumb { width: 36px; height: 36px; }";
+    html += "  .slider-value { font-size: 24px; display: block; margin: 10px 0; }";  // Відображення значення під слайдером
+    html += "  .btn { padding: 12px 16px; margin: 3px; font-size: 13px; min-width: 60px; }";
+    html += "  .mode-btn { font-size: 14px; padding: 12px 15px; }";
+    html += "  h1 { font-size: 1.5em; }";
+    html += "  .control-section h3 { font-size: 16px; }";
+    html += "}";
+
+    // ДОДАТКОВА ОПТИМІЗАЦІЯ ДЛЯ ДУЖЕ МАЛИХ ЕКРАНІВ
+    html += "@media (max-width: 480px) {";
+    html += "  .btn { display: inline-block; width: calc(33.33% - 6px); margin: 3px; padding: 10px 5px; font-size: 12px; }";
+    html += "}";
     html += "</style>";
     html += "</head><body>";
     
@@ -1902,8 +2606,8 @@ void handleControlPage() {
     
     html += "<div class='control-section'>";
     html += "<h3>НАСОС (A)</h3>";
-    html += "<input type='range' min='0' max='100' value='" + String((heatingState.pumpPower * 100) / 255) + "' class='slider' id='pumpSlider' oninput='updatePump(this.value)'>";
-    html += "<span class='slider-value' id='pumpValue'>" + String((heatingState.pumpPower * 100) / 255) + "%</span>";
+    html += "<input type='range' min='0' max='100' value='" + String(round(heatingState.pumpPower * 100.0 / 255.0)) + "' class='slider' id='pumpSlider' oninput='updatePump(this.value)'>";
+    html += "<span class='slider-value' id='pumpValue'>" + String(round(heatingState.pumpPower * 100.0 / 255.0)) + "%</span>";
     html += "<button class='btn' onclick=\"setPower('pump', 0)\">ВИМК</button>";
     html += "<button class='btn' onclick=\"setPower('pump', 30)\">30%</button>";
     html += "<button class='btn' onclick=\"setPower('pump', 50)\">50%</button>";
@@ -1913,8 +2617,8 @@ void handleControlPage() {
     
     html += "<div class='control-section'>";
     html += "<h3>ВЕНТИЛЯТОР (B)</h3>";
-    html += "<input type='range' min='0' max='100' value='" + String((heatingState.fanPower * 100) / 255) + "' class='slider' id='fanSlider' oninput='updateFan(this.value)'>";
-    html += "<span class='slider-value' id='fanValue'>" + String((heatingState.fanPower * 100) / 255) + "%</span>";
+    html += "<input type='range' min='0' max='100' value='" + String(round(heatingState.fanPower * 100.0 / 255.0)) + "' class='slider' id='fanSlider' oninput='updateFan(this.value)'>";
+    html += "<span class='slider-value' id='fanValue'>" + String(round(heatingState.fanPower * 100.0 / 255.0)) + "%</span>";
     html += "<button class='btn' onclick=\"setPower('fan', 0)\">ВИМК</button>";
     html += "<button class='btn' onclick=\"setPower('fan', 30)\">30%</button>";
     html += "<button class='btn' onclick=\"setPower('fan', 50)\">50%</button>";
@@ -1924,8 +2628,8 @@ void handleControlPage() {
     
     html += "<div class='control-section'>";
     html += "<h3>ВИТЯЖКА (C)</h3>";
-    html += "<input type='range' min='0' max='100' value='" + String((heatingState.extractorPower * 100) / 255) + "' class='slider' id='extractorSlider' oninput='updateExtractor(this.value)'>";
-    html += "<span class='slider-value' id='extractorValue'>" + String((heatingState.extractorPower * 100) / 255) + "%</span>";
+    html += "<input type='range' min='0' max='100' value='" + String(round(heatingState.extractorPower * 100.0 / 255.0)) + "' class='slider' id='extractorSlider' oninput='updateExtractor(this.value)'>";
+    html += "<span class='slider-value' id='extractorValue'>" + String(round(heatingState.extractorPower * 100.0 / 255.0)) + "%</span>";
     html += "<button class='btn' onclick=\"setPower('extractor', 0)\">ВИМК</button>";
     html += "<button class='btn' onclick=\"setPower('extractor', 30)\">30%</button>";
     html += "<button class='btn' onclick=\"setPower('extractor', 50)\">50%</button>";
@@ -1968,12 +2672,6 @@ void handleControlPage() {
     html += "function updatePump(v) { sendCmd('manual'); document.getElementById('pumpValue').textContent = v + '%'; sendCmd('pump ' + v); }";
     html += "function updateFan(v) { sendCmd('manual'); document.getElementById('fanValue').textContent = v + '%'; sendCmd('fan ' + v); }";
     html += "function updateExtractor(v) { sendCmd('manual'); document.getElementById('extractorValue').textContent = v + '%'; sendCmd('extractor ' + v); }";
-    html += "function resetEmergency() {";
-    html += "  if (confirm('Скинути аварійний режим і повернутись до AUTO?')) {";
-    html += "    sendCmd('reset');";
-    html += "    setTimeout(function() { location.reload(); }, 1000);";
-    html += "  }";
-    html += "}";
     html += "function updateModeButtons(activeMode) {";
     html += "  const btns = document.querySelectorAll('.mode-btn');";
     html += "  btns.forEach(btn => {";
@@ -2070,14 +2768,14 @@ void handleWiFiPage() {
     html += "<div style='background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;'>";
     html += "<strong>⚠️ ВАЖЛИВО:</strong><br>";
     html += "Для доступу ваш пристрій (ноутбук/телефон) і ESP32 мають бути підключені до <strong>ОДНІЄЇ WiFi мережі!</strong><br><br>";
-    html += "Якщо ви не бачите цю сторінку з іншої мережі - це нормально. Підключіться до мережі <strong>" + WiFi.SSID() + "</strong>";
+    html += "Якщо ви не бачите цю сторінку з іншої мережі - це нормально. Підключіться до мережі <strong>" + htmlEscape(WiFi.SSID()) + "</strong>";
     html += "</div>";
-    
+
     html += "<div class='info-box'>";
-    html += "<div class='info-item'><span><strong>SSID:</strong></span><span>" + WiFi.SSID() + "</span></div>";
-    html += "<div class='info-item'><span><strong>IP адреса:</strong></span><span>" + WiFi.localIP().toString() + "</span></div>";
+    html += "<div class='info-item'><span><strong>SSID:</strong></span><span>" + htmlEscape(WiFi.SSID()) + "</span></div>";
+    html += "<div class='info-item'><span><strong>IP адреса:</strong></span><span>" + htmlEscape(WiFi.localIP().toString()) + "</span></div>";
     html += "<div class='info-item'><span><strong>mDNS:</strong></span><span>http://klimat.local</span></div>";
-    html += "<div class='info-item'><span><strong>MAC адреса:</strong></span><span>" + WiFi.macAddress() + "</span></div>";
+    html += "<div class='info-item'><span><strong>MAC адреса:</strong></span><span>" + htmlEscape(WiFi.macAddress()) + "</span></div>";
     html += "<div class='info-item'><span><strong>Сигнал (RSSI):</strong></span><span>" + String(WiFi.RSSI()) + " dBm</span></div>";
     html += "<div class='info-item'><span><strong>Статус:</strong></span><span>" + String(WiFi.status() == WL_CONNECTED ? "Підключено ✅" : "Відключено ❌") + "</span></div>";
     html += "</div>";
@@ -2135,7 +2833,7 @@ void handleWiFiPage() {
     html += "<li>✅ Увімкнути автентифікацію вище ☝️ <span style='color: red; font-weight: 600;'>(ОБОВ'ЯЗКОВО!)</span></li>";
     html += "<li>🔧 Налаштувати Port Forwarding на роутері:<br>";
     html += "   <div style='background: white; padding: 8px; margin: 5px 0; border-radius: 3px; font-family: monospace;'>";
-    html += "   Внутрішня IP: <strong>" + WiFi.localIP().toString() + "</strong><br>";
+    html += "   Внутрішня IP: <strong>" + htmlEscape(WiFi.localIP().toString()) + "</strong><br>";
     html += "   Внутрішній порт: <strong>80</strong><br>";
     html += "   Зовнішній порт: <strong>8080</strong> (можна інший)";
     html += "   </div></li>";
@@ -2163,8 +2861,14 @@ void handleWiFiPage() {
 }
 
 void handleSaveNetworkSettings() {
+    // БЕЗПЕКА: Перевірка CSRF
+    if (!checkCSRF()) {
+        server.send(403, "text/plain", "❌ CSRF: Заборонено");
+        return;
+    }
+
     bool needRestart = false;
-    
+
     // Зчитуємо налаштування з форми
     if (server.hasArg("useStaticIP")) {
         config.useStaticIP = true;
@@ -2272,7 +2976,21 @@ void handleHistoryPage() {
     html += " | Записів в SPIFFS: " + String(stats.totalRecordsSPIFFS);
     html += " | Оновлення кожну хвилину";
     html += "</div>";
-    
+
+    // Вибір джерела даних
+    html += "<div style='background:#fff3cd;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid #ffc107;'>";
+    html += "<strong>📁 Джерело даних:</strong><br>";
+    html += "<div style='margin-top:10px;'>";
+    html += "<label style='margin-right:20px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останні 24 години)</label>";
+    html += "<label><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 SPIFFS (архів)</label>";
+    html += "</div>";
+    html += "<div id='dateSelector' style='display:none;margin-top:15px;'>";
+    html += "<label style='margin-right:10px;'>Від: <input type='date' id='startDate' style='padding:5px;border-radius:4px;border:1px solid #ddd;'></label>";
+    html += "<label style='margin-right:10px;'>До: <input type='date' id='endDate' style='padding:5px;border-radius:4px;border:1px solid #ddd;'></label>";
+    html += "<button onclick='loadArchiveData()' style='padding:5px 15px;background:#2196f3;color:white;border:none;border-radius:4px;cursor:pointer;'>📥 Завантажити</button>";
+    html += "</div>";
+    html += "</div>";
+
     // Інструкції для масштабування
     html += "<div style='background:#e3f2fd;padding:15px;border-radius:8px;margin:20px 0;border-left:4px solid #2196f3;'>";
     html += "<strong>📊 Керування графіками:</strong><br>";
@@ -2415,6 +3133,72 @@ void handleHistoryPage() {
     html += "alert('Помилка завантаження історичних даних. Перезавантажте сторінку.');";
     html += "});";
 
+    // Функція переключення джерела даних
+    html += "function switchDataSource() {";
+    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "const dateSelector = document.getElementById('dateSelector');";
+    html += "if (source === 'spiffs') {";
+    html += "dateSelector.style.display = 'block';";
+    html += "const today = new Date().toISOString().split('T')[0];";
+    html += "const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];";
+    html += "document.getElementById('endDate').value = today;";
+    html += "document.getElementById('startDate').value = weekAgo;";
+    html += "} else {";
+    html += "dateSelector.style.display = 'none';";
+    html += "location.reload();";
+    html += "}";
+    html += "}";
+
+    // Функція завантаження архівних даних
+    html += "function loadArchiveData() {";
+    html += "const startDate = document.getElementById('startDate').value;";
+    html += "const endDate = document.getElementById('endDate').value;";
+    html += "if (!startDate || !endDate) {";
+    html += "alert('Оберіть дати!');";
+    html += "return;";
+    html += "}";
+    html += "fetch(`/history/data?source=spiffs&start=${startDate}&end=${endDate}&format=json`)";
+    html += ".then(response => response.json())";
+    html += ".then(result => {";
+    html += "const data = result.data || [];";
+    html += "if (data.length === 0) {";
+    html += "alert('Немає даних за вибраний період');";
+    html += "return;";
+    html += "}";
+    html += "const labels = [];";
+    html += "const tempCarrier = [];";
+    html += "const tempRoom = [];";
+    html += "const tempBME = [];";
+    html += "const humidity = [];";
+    html += "data.forEach(record => {";
+    html += "if (record.timestamp > 0) {";
+    html += "const date = new Date(record.timestamp * 1000);";
+    html += "const day = String(date.getDate()).padStart(2, '0');";
+    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "const hours = String(date.getHours()).padStart(2, '0');";
+    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "labels.push(day + '/' + month + ' ' + hours + ':' + minutes);";
+    html += "tempCarrier.push(record.tempCarrier);";
+    html += "tempRoom.push(record.tempRoom);";
+    html += "tempBME.push(record.tempBME);";
+    html += "humidity.push(record.humidity);";
+    html += "}";
+    html += "});";
+    html += "tempChart.data.labels = labels;";
+    html += "tempChart.data.datasets[0].data = tempCarrier;";
+    html += "tempChart.data.datasets[1].data = tempRoom;";
+    html += "tempChart.data.datasets[2].data = tempBME;";
+    html += "tempChart.update();";
+    html += "humChart.data.labels = labels;";
+    html += "humChart.data.datasets[0].data = humidity;";
+    html += "humChart.update();";
+    html += "})";
+    html += ".catch(error => {";
+    html += "console.error('Помилка:', error);";
+    html += "alert('Помилка завантаження архівних даних');";
+    html += "});";
+    html += "}";
+
     html += "</script>";
 
     html += "</body></html>";
@@ -2462,7 +3246,7 @@ void handleHelpPage() {
     html += "<div class='faq-a'>";
     html += "<strong>Проблема:</strong> Android не підтримує mDNS (адреси типу <code>klimat.local</code>)<br>";
     html += "<strong>Рішення:</strong><br>";
-    html += "1️⃣ Використовуйте IP-адресу: <code>" + WiFi.localIP().toString() + "</code><br>";
+    html += "1️⃣ Використовуйте IP-адресу: <code>" + htmlEscape(WiFi.localIP().toString()) + "</code><br>";
     html += "2️⃣ Відскануйте QR-код на головній сторінці (з ноутбука)<br>";
     html += "3️⃣ Встановіть додаток BonjourBrowser для підтримки mDNS";
     html += "</div></div>";
@@ -2474,7 +3258,7 @@ void handleHelpPage() {
     html += "<strong>Рішення:</strong><br>";
     html += "1️⃣ Підключіть обидва до однієї WiFi мережі<br>";
     html += "2️⃣ Або налаштуйте доступ через інтернет (WiFi → Налаштування → Інтернет-доступ)<br>";
-    html += "<div class='tip'>💡 Поточна мережа ESP32: <strong>" + WiFi.SSID() + "</strong></div>";
+    html += "<div class='tip'>💡 Поточна мережа ESP32: <strong>" + htmlEscape(WiFi.SSID()) + "</strong></div>";
     html += "</div></div>";
     
     html += "<div class='faq-item'>";
@@ -2519,7 +3303,7 @@ void handleHelpPage() {
     html += "<p>✅ Працює в будь-якій мережі автоматично</p>";
     
     html += "<h3>З телефону Android:</h3>";
-    html += "<div class='code'>http://" + WiFi.localIP().toString() + "</div>";
+    html += "<div class='code'>http://" + htmlEscape(WiFi.localIP().toString()) + "</div>";
     html += "<p>⚠️ Використовуйте IP-адресу (Android не підтримує mDNS)</p>";
     
     html += "<div class='tip'>";
@@ -2582,7 +3366,7 @@ void handleHelpPage() {
     html += "</ol>";
     html += "<p><strong>Port Forwarding:</strong></p>";
     html += "<div class='code'>";
-    html += "Внутрішня IP: " + WiFi.localIP().toString() + "<br>";
+    html += "Внутрішня IP: " + htmlEscape(WiFi.localIP().toString()) + "<br>";
     html += "Внутрішній порт: 80<br>";
     html += "Зовнішній порт: 8080";
     html += "</div>";
@@ -2595,12 +3379,25 @@ void handleHelpPage() {
     html += "<h2>🔧 Усунення проблем</h2>";
     html += "<div class='section'>";
     html += "<div class='faq-item'>";
+    html += "<div class='faq-q'>📱 Не можу підключитися з Android телефону</div>";
+    html += "<div class='faq-a'>";
+    html += "<strong>Android НЕ підтримує klimat.local!</strong><br><br>";
+    html += "✅ <strong>Рішення:</strong><br>";
+    html += "1. Використовуйте IP адресу: <span class='code' style='background:#fff;padding:2px 6px;'>" + WiFi.localIP().toString() + "</span><br>";
+    html += "2. Відскануйте QR-код на головній сторінці<br>";
+    html += "3. Збережіть IP в закладки або додайте на головний екран<br>";
+    html += "4. Переконайтесь що телефон в тій самій WiFi мережі: <strong>" + htmlEscape(WiFi.SSID()) + "</strong><br><br>";
+    html += "<strong>💡 Порада:</strong> Налаштуйте статичну IP в розділі WiFi, щоб адреса не змінювалась";
+    html += "</div></div>";
+
+    html += "<div class='faq-item'>";
     html += "<div class='faq-q'>Сторінка не відкривається взагалі</div>";
     html += "<div class='faq-a'>";
     html += "1. Перевірте підключення ESP32 до WiFi (подивіться Serial Monitor)<br>";
-    html += "2. Перевірте що ваш пристрій в тій же мережі<br>";
+    html += "2. <strong>Переконайтесь що пристрій в тій же мережі WiFi!</strong><br>";
     html += "3. Спробуйте перезавантажити ESP32<br>";
-    html += "4. Спробуйте обидві адреси: klimat.local та IP";
+    html += "4. На Android - використовуйте тільки IP адресу<br>";
+    html += "5. На iOS/Mac - спробуйте і klimat.local і IP";
     html += "</div></div>";
     
     html += "<div class='faq-item'>";
@@ -2640,8 +3437,8 @@ void handleHelpPage() {
     html += "<div class='section'>";
     html += "<p><strong>Поточний стан системи:</strong></p>";
     html += "<ul>";
-    html += "<li>Мережа: <strong>" + WiFi.SSID() + "</strong></li>";
-    html += "<li>IP-адреса: <strong>" + WiFi.localIP().toString() + "</strong></li>";
+    html += "<li>Мережа: <strong>" + htmlEscape(WiFi.SSID()) + "</strong></li>";
+    html += "<li>IP-адреса: <strong>" + htmlEscape(WiFi.localIP().toString()) + "</strong></li>";
     html += "<li>mDNS: <strong>klimat.local</strong></li>";
     html += "<li>Сигнал: <strong>" + String(WiFi.RSSI()) + " dBm</strong></li>";
     html += "<li>Версія: <strong>" VERSION "</strong></li>";

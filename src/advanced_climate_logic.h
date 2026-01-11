@@ -30,6 +30,7 @@ void cascadeEmergencyHeating();
 
 // Адаптивне зниження порогів
 void checkAdaptiveThresholds();
+void checkFanMaxPowerEfficiency();
 
 // Сезонне відключення обігріву
 bool isHeatingSeasonActive();

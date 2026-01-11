@@ -119,7 +119,9 @@ struct HeatingState {
   bool forceMode;
   bool emergencyMode;
   bool manualMode;
-  
+  bool manualModeLocked;        // Блокування ручного режиму (не перемикається на авто)
+  unsigned long manualModeStartTime;  // Час входу в ручний режим
+
   float tempHistory[TEMP_HISTORY_SIZE];
   float carrierHistory[TEMP_HISTORY_SIZE];
   int historyIndex;
@@ -142,6 +144,10 @@ struct HeatingState {
   unsigned long last_efficiency_check;
   float last_room_temp_check;
   float last_carrier_temp_check;
+
+  // Відстеження роботи вентилятора на максимумі
+  unsigned long fan_max_power_start_time;  // Час початку роботи на максимумі
+  float fan_max_power_initial_temp;        // Початкова температура при виході на максимум
 };
 
 struct VentilationState {

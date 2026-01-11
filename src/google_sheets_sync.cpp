@@ -1,5 +1,6 @@
 #include "google_sheets_sync.h"
 #include "global_declarations.h"
+#include "config.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <time.h>
@@ -54,60 +55,121 @@ bool syncToGoogleSheets() {
 
   Serial.println("\n📤 Початок синхронізації з Google Sheets...");
   Serial.printf("💾 Heap на початку: %u байт\n", ESP.getFreeHeap());
+  Serial.printf("🕐 Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
 
   syncStats.syncInProgress = true;
 
-  // НЕ виділяємо великий буфер! Читаємо тільки мінімум для підрахунку
-  DataRecord tempRecord;
-  uint16_t totalCount = 0;
-  uint16_t newRecords = 0;
-
-  // Підраховуємо скільки нових записів
-  LoggerStats logStats = getLoggerStats();
-  totalCount = logStats.totalRecordsRAM;
-
-  // Простий підрахунок нових записів без читання всіх даних
-  for (uint16_t i = 0; i < totalCount; i++) {
-    // Читаємо по одному запису
-    uint16_t singleCount = 1;
-    DataRecord singleBuffer[1];
-    // Тут треба читати один запис, але функція readRAMData читає все
-    // Тому просто припустимо що всі записи нові для тесту
+  // Виділяємо пам'ять для ВСЬОГО буфера (1440 записів)
+  // Не можемо використовувати logStats.totalRecordsRAM, бо це НЕ розмір буфера!
+  uint16_t bufferSize = HISTORY_BUFFER_SIZE;
+  DataRecord* allRecords = (DataRecord*)malloc(bufferSize * sizeof(DataRecord));
+  if (!allRecords) {
+    Serial.println("❌ Недостатньо пам'яті для синхронізації");
+    syncStats.syncInProgress = false;
+    return false;
   }
 
-  DataRecord buffer[10];
-  readRAMDataChunk(buffer, 0, 10);
+  uint16_t actualCount = 0;
+  readRAMData(allRecords, &actualCount);
 
+  Serial.printf("📊 Прочитано записів: %u (буфер: %u)\n", actualCount, bufferSize);
+
+  // Підраховуємо і збираємо нові записи
   uint16_t newCount = 0;
-  for (uint16_t i = 0; i < 10; i++) {
-    if (buffer[i].timestamp > syncStats.lastSentTimestamp) {
-      if (newCount != i) {
-        buffer[newCount] = buffer[i];
-      }
+  for (uint16_t i = 0; i < actualCount; i++) {
+    if (allRecords[i].timestamp > syncStats.lastSentTimestamp && allRecords[i].timestamp > 0) {
       newCount++;
     }
   }
 
   if (newCount == 0) {
     Serial.println("📭 Немає нових записів");
+    free(allRecords);
     syncStats.syncInProgress = false;
     return true;
   }
 
-  Serial.printf("📊 Відправка %u нових записів\n", newCount);
+  // Виділяємо пам'ять тільки для нових записів
+  DataRecord* newRecords = (DataRecord*)malloc(newCount * sizeof(DataRecord));
+  if (!newRecords) {
+    Serial.println("❌ Недостатньо пам'яті для нових записів");
+    free(allRecords);
+    syncStats.syncInProgress = false;
+    return false;
+  }
 
-  if (sendBatchToSheets(buffer, newCount)) {
-    syncStats.lastSentTimestamp = buffer[newCount - 1].timestamp;
+  // Копіюємо нові записи
+  uint16_t idx = 0;
+  for (uint16_t i = 0; i < actualCount; i++) {
+    if (allRecords[i].timestamp > syncStats.lastSentTimestamp && allRecords[i].timestamp > 0) {
+      newRecords[idx++] = allRecords[i];
+    }
+  }
+
+  free(allRecords); // Звільняємо великий масив
+
+  // Сортуємо за timestamp для уникнення дублювання
+  for (uint16_t i = 0; i < newCount - 1; i++) {
+    for (uint16_t j = i + 1; j < newCount; j++) {
+      if (newRecords[i].timestamp > newRecords[j].timestamp) {
+        DataRecord temp = newRecords[i];
+        newRecords[i] = newRecords[j];
+        newRecords[j] = temp;
+      }
+    }
+  }
+
+  // Видаляємо дублікати (записи з однаковим timestamp)
+  uint16_t uniqueCount = 0;
+  for (uint16_t i = 0; i < newCount; i++) {
+    bool isDuplicate = false;
+    for (uint16_t j = 0; j < uniqueCount; j++) {
+      if (newRecords[i].timestamp == newRecords[j].timestamp) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    if (!isDuplicate) {
+      if (i != uniqueCount) {
+        newRecords[uniqueCount] = newRecords[i];
+      }
+      uniqueCount++;
+    }
+  }
+
+  if (uniqueCount < newCount) {
+    Serial.printf("⚠️  Видалено %u дублікатів\n", newCount - uniqueCount);
+    newCount = uniqueCount;
+  }
+
+  Serial.printf("📊 Знайдено %u унікальних записів для відправки\n", newCount);
+
+  // Відправляємо всі нові записи
+  bool success = sendBatchToSheets(newRecords, newCount);
+
+  if (success) {
+    // Знаходимо МАКСИМАЛЬНИЙ timestamp серед відправлених (не останній!)
+    unsigned long maxTimestamp = 0;
+    for (uint16_t i = 0; i < newCount; i++) {
+      if (newRecords[i].timestamp > maxTimestamp) {
+        maxTimestamp = newRecords[i].timestamp;
+      }
+    }
+
+    syncStats.lastSentTimestamp = maxTimestamp;
     syncStats.totalRecordsSent += newCount;
     syncStats.lastSyncTime = millis();
     preferences.putULong("last_ts", syncStats.lastSentTimestamp);
 
-    Serial.printf("✅ Синхронізація успішна\n");
+    Serial.printf("✅ Синхронізація успішна: %u записів відправлено\n", newCount);
+    Serial.printf("📅 Оновлено lastSentTimestamp: %lu\n", maxTimestamp);
+    free(newRecords);
     syncStats.syncInProgress = false;
     return true;
   } else {
     syncStats.failedSyncs++;
     Serial.printf("❌ Синхронізація помилка\n");
+    free(newRecords);
     syncStats.syncInProgress = false;
     return false;
   }
@@ -199,7 +261,7 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
         break;
       }
     }
-    yield();
+    delay(10);
   }
 
   client->stop();

@@ -119,6 +119,8 @@ void setup() {
   heatingState.forceMode = false;
   heatingState.emergencyMode = false;
   heatingState.manualMode = false;
+  heatingState.manualModeLocked = false;
+  heatingState.manualModeStartTime = 0;
   heatingState.adaptive_heating_active = false;
   
   humidifierState.active = false;
