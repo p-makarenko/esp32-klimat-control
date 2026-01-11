@@ -1406,13 +1406,17 @@ void cascadeEmergencyHeating() {
             break;
 
         case 3: // ЕТАП 3: Пауза 5 хвилин
-            // Статус кожні 10 секунд
             {
+                // Під час паузи - мінімальна підтримка, але не перегріваємо!
+                int pauseFanPower = (tempRoom >= config.tempMax) ? 0 : config.fanMinPercent;
+                setFanPercent(pauseFanPower);
+
+                // Статус кожні 10 секунд
                 static unsigned long lastStatusPrint3 = 0;
                 if (now - lastStatusPrint3 > 10000) {
                     lastStatusPrint3 = now;
                     Serial.printf("⏸️ [%s] ЕТАП 3 ПАУЗА: T_кімн=%.1f°C, T_тепл=%.1f°C, Насос=0%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, config.fanMinPercent);
+                                 getFormattedTime().c_str(), tempRoom, tempCarrier, pauseFanPower);
                 }
             }
 
@@ -1443,22 +1447,26 @@ void cascadeEmergencyHeating() {
                 float tempDiff = targetTemp - tempRoom;
 
                 int fanPower;
-                if (tempDiff > 1.0f) {
+                // ВАЖЛИВО: Якщо кімната перегріта - зупиняємо вентилятор!
+                if (tempRoom >= config.tempMax) {
+                    // Кімната досягла максимуму - ВИМИКАЄМО вентилятор повністю
+                    fanPower = 0;
+                } else if (tempDiff > 1.0f) {
                     // Температура нижче цілі - обігрів
                     fanPower = config.fanMaxPercent;
                 } else if (tempDiff > 0.5f) {
-                    // Температура близька до цілі - помірний обігрів
+                    // Температура близька до цілі - помірний обігрив
                     fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100,
                                   (config.fanMinPercent + config.fanMaxPercent) / 2, config.fanMaxPercent);
                 } else if (tempDiff > -0.5f) {
                     // Температура в нормі - мінімальна циркуляція
                     fanPower = config.fanMinPercent;
                 } else {
-                    // Температура вище цілі - мінімум (не перегріваємо!)
-                    fanPower = config.fanMinPercent;
+                    // Температура вище цілі - вимикаємо (не перегріваємо!)
+                    fanPower = 0;
                 }
 
-                fanPower = constrain(fanPower, config.fanMinPercent, config.fanMaxPercent);
+                fanPower = constrain(fanPower, 0, config.fanMaxPercent);
                 setFanPercent(fanPower);
 
                 // Перевірка автоматичного виходу з аварії при стабільному зростанні температури
@@ -1507,8 +1515,13 @@ void cascadeEmergencyHeating() {
             break;
 
         case 5: // Перевірка останньої спроби
-            // Статус кожні 5 секунд
             {
+                // Якщо кімната перегріта - вимикаємо вентилятор
+                if (tempRoom >= config.tempMax) {
+                    setFanPercent(0);
+                }
+
+                // Статус кожні 5 секунд
                 static unsigned long lastStatusPrint5 = 0;
                 if (now - lastStatusPrint5 > 5000) {
                     lastStatusPrint5 = now;

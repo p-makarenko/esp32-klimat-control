@@ -65,7 +65,7 @@ void setup() {
   Serial.printf("║  📅 Зібрано:      %-20s %-12s║\n", BUILD_DATE, BUILD_TIME);
   Serial.printf("║  📝 Рядків:       %-33d║\n", TOTAL_CODE_LINES);
   Serial.printf("║  💾 Розмір:       %-29d KB ║\n", FIRMWARE_SIZE_KB);
-  Serial.println("╚════════════════════════════════════════════════════════╝");;
+  Serial.println("╚════════════════════════════════════════════════════════╝");
   
   initMutexes();
   loadConfiguration();
@@ -156,13 +156,21 @@ void setup() {
   
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("╔════════════════════════════════════════════════════════╗");
-    Serial.println("║  🌐 ДОСТУП ДО ВЕБ-ІНТЕРФЕЙСУ:                         ║");
+    Serial.println("║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║");
     Serial.println("╠════════════════════════════════════════════════════════╣");
-    Serial.printf("║  📱 IP адреса:    http://%-28s║\n", WiFi.localIP().toString().c_str());
-    Serial.println("║  💻 Локальне ім'я: http://klimat.local                 ║");
-    Serial.println("╠════════════════════════════════════════════════════════╣");
-    Serial.printf("║  📡 WiFi мережа:  %-33s║\n", WiFi.SSID().c_str());
+    Serial.printf("║  📡 Мережа:       %-33s║\n", WiFi.SSID().c_str());
+    Serial.printf("║  🌐 IP:           %-33s║\n", WiFi.localIP().toString().c_str());
+    Serial.printf("║  🔌 Шлюз:         %-33s║\n", WiFi.gatewayIP().toString().c_str());
     Serial.printf("║  📶 Сигнал:       %-25d dBm ║\n", WiFi.RSSI());
+    Serial.println("╠════════════════════════════════════════════════════════╣");
+    Serial.println("║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║");
+    Serial.printf("║  📱 IP адреса:    http://%-28s║\n", WiFi.localIP().toString().c_str());
+    Serial.println("║  🔧 NetBIOS запуск...                           ✅ ║");
+    Serial.println("║  💻 http://klimat (Windows)                            ║");
+    Serial.println("║  🔧 mDNS запуск...                              ✅ ║");
+    Serial.println("║  🍎 http://klimat.local (Mac/iOS/Linux)                ║");
+    Serial.println("╠════════════════════════════════════════════════════════╣");
+    Serial.println("║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║");
     Serial.println("╚════════════════════════════════════════════════════════╝");
   } else {
     Serial.println("🔗 Веб-інтерфейс: http://192.168.4.1 (точка доступу)");

@@ -11,7 +11,7 @@
 #define VERSION_COMMENT "День 35 розробки"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 10412
+#define TOTAL_CODE_LINES 10433
 #define FIRMWARE_SIZE_KB 1338
 
 // Оголошення всіх глобальних змінних
