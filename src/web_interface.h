@@ -43,6 +43,9 @@ void handleSaveNetworkSettings();
 void handleScanWiFi();
 void handleConnectWiFi();
 
+// Автентифікація
+bool checkAuth();
+
 // Обробка команд із веб-інтерфейсу
 void handleWebCommand();
 String processWebCommand(const String& cmd);
@@ -53,5 +56,13 @@ String encryptionTypeToString(wifi_auth_mode_t type);
 
 // Завдання веб-сервера
 void webTask(void *parameter);
+
+// ============================================================================
+// ЕНЕРГОКОНТРОЛЕР - forward declarations
+// ============================================================================
+void handleEnergyPage();
+void handleEnergyAPI();
+void handleEnergyHistory();
+void handleEnergyHistoryStats();
 
 #endif

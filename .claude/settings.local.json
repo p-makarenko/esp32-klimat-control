@@ -19,7 +19,11 @@
       "Bash(git push:*)",
       "Bash(ping -n 2 192.168.1.100)",
       "Bash(grep:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(pio check:*)",
+      "Bash(python -m platformio:*)",
+      "Bash(C:/Users/$USER/.platformio/penv/Scripts/platformio.exe run)",
+      "Bash(/c/Users/Pavel/.platformio/penv/Scripts/platformio.exe run)"
     ]
   },
   "claude-code.maxTokensPerRequest": 4000,

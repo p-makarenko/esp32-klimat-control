@@ -33,6 +33,7 @@ IQ Level: 145 - expert solutions only
 - PID + adaptive learning
 - Google Sheets sync
 - Emergency: <18°C
+- Energy monitor: PZEM004Tv30 (optional)
 
 ## Auto-archiving (Silent)
 - User messages → pavlo_says.md
@@ -50,6 +51,7 @@ IQ Level: 145 - expert solutions only
 - global_declarations.h - central instances
 - config.h - user settings
 - platformio.ini - build config
+- energy_monitor.* - PZEM004Tv30 integration
 
 ## Detailed Instructions
 See: docs/.ai-instructions/

@@ -6,13 +6,14 @@
 #include "system_core.h"
 #include "sensor_manager.h"
 #include "actuator_manager.h"
-#include "web_interface.h"
 #include "data_storage.h"
 #include "data_logger.h"
-#include "google_sheets_sync.h"
 #include "advanced_climate_logic.h"
 #include "utility_functions.h"
 #include "global_declarations.h"
+#include "web_interface.h"
+#include "google_sheets_sync.h"
+#include "energy_monitor.h"
 #include <Arduino.h>
 
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -107,6 +108,9 @@ void setup() {
   if (!initGoogleSheetsSync()) {
     Serial.println("⚠️  Попередження: Google Sheets синхронізація недоступна");
   }
+
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===");
+  initEnergyMonitor();
 
   Serial.println("\n=== СТВОРЕННЯ ЗАВДАНЬ ===");
   createTasks();
@@ -304,6 +308,7 @@ void loop() {
   autoPrintStatus();
   addToHistory();
   checkEmergencyTimeout();
+  updateEnergyData();  // Оновлення енергоконтролера
   delay(100);
 }
 
@@ -475,3 +480,4 @@ void handleSerialInput() {
   // Автоматична синхронізація з Google Sheets
   autoSyncTask();
 }
+

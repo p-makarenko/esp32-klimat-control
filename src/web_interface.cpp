@@ -9,6 +9,7 @@
 #include "data_storage.h"
 #include "data_logger.h"
 #include "google_sheets_sync.h"
+#include "energy_monitor.h"
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
@@ -290,11 +291,17 @@ void initWiFi() {
     server.on("/debug", HTTP_GET, handleDebugPage);
     server.on("/servo", HTTP_GET, handleServoPage);
     server.on("/servo/api", HTTP_POST, handleServoAPI);
-    
+
+    // Енергоконтролер маршрути
+    server.on("/energy", HTTP_GET, handleEnergyPage);
+    server.on("/energy/api", HTTP_GET, handleEnergyAPI);
+    server.on("/energy/history", HTTP_GET, handleEnergyHistory);
+    server.on("/energy/stats", HTTP_GET, handleEnergyHistoryStats);
+
     server.onNotFound([]() {
         server.send(404, "text/plain", "Сторінка не знайдена");
     });
-    
+
     server.begin();
     Serial.println();
 }
@@ -646,6 +653,7 @@ void handleRoot() {
     html += "<a href='/control' class='nav-btn'>🎛️ ПАНЕЛЬ КЕРУВАННЯ</a>";
     html += "<a href='/settings' class='nav-btn'>⚙️ ПАНЕЛЬ НАЛАШТУВАНЬ</a>";
     html += "<a href='/learning' class='nav-btn'>🧠 СИСТЕМА НАВЧАННЯ</a>";
+    html += "<a href='/energy' class='nav-btn' style='background: #f59e0b;'>⚡ ЕНЕРГОКОНТРОЛЕР</a>";
     html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
     html += "<a href='/history' class='nav-btn' style='background: #e91e63;'>📈 ГРАФІКИ</a>";
     html += "<a href='/status' class='nav-btn'>📊 JSON СТАТУС</a>";

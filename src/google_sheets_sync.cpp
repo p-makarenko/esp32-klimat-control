@@ -5,6 +5,10 @@
 #include <WiFiClientSecure.h>
 #include <time.h>
 
+#if ENABLE_ENERGY_MONITOR
+#include "energy_monitor.h"
+#endif
+
 // Глобальні змінні
 static SyncStats syncStats = {0, 0, 0, 0, false};
 static bool lastDailySyncDone = false;
@@ -144,25 +148,51 @@ bool syncToGoogleSheets() {
 
   Serial.printf("📊 Знайдено %u унікальних записів для відправки\n", newCount);
 
-  // Відправляємо всі нові записи
-  bool success = sendBatchToSheets(newRecords, newCount);
+  // Перевірка heap перед відправкою
+  const uint32_t MIN_HEAP_FOR_SYNC = 60000; // 60KB мінімум
+  if (ESP.getFreeHeap() < MIN_HEAP_FOR_SYNC) {
+    Serial.printf("⚠️ Недостатньо пам'яті для синхронізації (є %u, треба >%u)\n",
+                  ESP.getFreeHeap(), MIN_HEAP_FOR_SYNC);
+    free(newRecords);
+    syncStats.syncInProgress = false;
+    return false;
+  }
 
-  if (success) {
-    // Знаходимо МАКСИМАЛЬНИЙ timestamp серед відправлених (не останній!)
-    unsigned long maxTimestamp = 0;
-    for (uint16_t i = 0; i < newCount; i++) {
-      if (newRecords[i].timestamp > maxTimestamp) {
-        maxTimestamp = newRecords[i].timestamp;
+  // Розбиваємо на пакети по 100 записів
+  const uint16_t BATCH_SIZE = 100;
+  uint16_t totalSent = 0;
+
+  for (uint16_t offset = 0; offset < newCount; offset += BATCH_SIZE) {
+    uint16_t batchSize = min((uint16_t)BATCH_SIZE, (uint16_t)(newCount - offset));
+    Serial.printf("📦 Пакет %u-%u з %u\n", offset + 1, offset + batchSize, newCount);
+
+    if (sendBatchToSheets(&newRecords[offset], batchSize)) {
+      totalSent += batchSize;
+
+      // Оновлюємо timestamp після кожного успішного пакету
+      unsigned long maxTimestamp = 0;
+      for (uint16_t i = offset; i < offset + batchSize; i++) {
+        if (newRecords[i].timestamp > maxTimestamp) {
+          maxTimestamp = newRecords[i].timestamp;
+        }
       }
+
+      if (maxTimestamp > syncStats.lastSentTimestamp) {
+        syncStats.lastSentTimestamp = maxTimestamp;
+        preferences.putULong("last_ts", syncStats.lastSentTimestamp);
+        Serial.printf("✓ Оновлено timestamp: %lu\n", maxTimestamp);
+      }
+    } else {
+      Serial.printf("⚠️ Пакет не відправлено, зупиняємо\n");
+      break;
     }
+    delay(500);
+  }
 
-    syncStats.lastSentTimestamp = maxTimestamp;
-    syncStats.totalRecordsSent += newCount;
+  if (totalSent > 0) {
+    syncStats.totalRecordsSent += totalSent;
     syncStats.lastSyncTime = millis();
-    preferences.putULong("last_ts", syncStats.lastSentTimestamp);
-
-    Serial.printf("✅ Синхронізація успішна: %u записів відправлено\n", newCount);
-    Serial.printf("📅 Оновлено lastSentTimestamp: %lu\n", maxTimestamp);
+    Serial.printf("✅ Відправлено %u з %u записів\n", totalSent, newCount);
     free(newRecords);
     syncStats.syncInProgress = false;
     return true;
@@ -226,7 +256,16 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
     csvData += String(records[i].pumpPower) + ",";
     csvData += String(records[i].fanPower) + ",";
     csvData += String(records[i].extractorPower) + ",";
-    csvData += String(records[i].mode) + "\n";
+    csvData += String(records[i].mode) + ",";
+
+    // Додаємо енергоспоживання (якщо доступно)
+    #if ENABLE_ENERGY_MONITOR
+    EnergyMeasurements energy = getEnergyMeasurements();
+    csvData += String(energy.power, 1);
+    #else
+    csvData += "0";
+    #endif
+    csvData += "\n";
   }
 
   Serial.printf("📤 Відправка %u записів одним пакетом...\n", count);
