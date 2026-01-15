@@ -22,14 +22,15 @@ static bool lastDailySyncDone = false;
 bool initGoogleSheetsSync() {
   Serial.println("\n🔄 Ініціалізація Google Sheets синхронізації...");
 
-  // Відкриваємо NVS для збереження стану
-  if (!preferences.begin("sheets_sync", false)) {
-    Serial.println("❌ Помилка відкриття NVS для синхронізації");
-    return false;
+  // Відкриваємо NVS, читаємо timestamp, закриваємо
+  Preferences sheetsPrefs;
+  if (!sheetsPrefs.begin("sheets_sync", true)) {  // true = read-only
+    Serial.println("⚠️ NVS sheets_sync не існує, буде створено при першій синхронізації");
+    syncStats.lastSentTimestamp = 0;
+  } else {
+    syncStats.lastSentTimestamp = sheetsPrefs.getULong("last_ts", 0);
+    sheetsPrefs.end();  // Закриваємо одразу!
   }
-
-  // Відновлюємо останній відправлений timestamp
-  syncStats.lastSentTimestamp = preferences.getULong("last_ts", 0);
 
   if (syncStats.lastSentTimestamp > 0) {
     Serial.printf("📅 Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
@@ -179,7 +180,12 @@ bool syncToGoogleSheets() {
 
       if (maxTimestamp > syncStats.lastSentTimestamp) {
         syncStats.lastSentTimestamp = maxTimestamp;
-        preferences.putULong("last_ts", syncStats.lastSentTimestamp);
+        // Зберігаємо в NVS з правильним open/close
+        Preferences sheetsPrefs;
+        if (sheetsPrefs.begin("sheets_sync", false)) {
+          sheetsPrefs.putULong("last_ts", syncStats.lastSentTimestamp);
+          sheetsPrefs.end();
+        }
         Serial.printf("✓ Оновлено timestamp: %lu\n", maxTimestamp);
       }
     } else {
@@ -420,5 +426,9 @@ unsigned long getLastSentTimestamp() {
 
 void saveLastSentTimestamp(unsigned long timestamp) {
   syncStats.lastSentTimestamp = timestamp;
-  preferences.putULong("last_ts", timestamp);
+  Preferences sheetsPrefs;
+  if (sheetsPrefs.begin("sheets_sync", false)) {
+    sheetsPrefs.putULong("last_ts", timestamp);
+    sheetsPrefs.end();
+  }
 }

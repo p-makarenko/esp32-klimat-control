@@ -299,8 +299,8 @@ bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
 }
 
 bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData) {
-  unsigned long startTimestamp = stringToTimestamp(startDate);
-  unsigned long endTimestamp = stringToTimestamp(endDate);
+  unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
+  unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
 
   JsonDocument doc;
   JsonArray dataArray = doc["data"].to<JsonArray>();
@@ -366,8 +366,8 @@ bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData
 }
 
 bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvData) {
-  unsigned long startTimestamp = stringToTimestamp(startDate);
-  unsigned long endTimestamp = stringToTimestamp(endDate);
+  unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
+  unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
 
   csvData = "timestamp,tempCarrier,tempRoom,tempBME,humidity,pumpPower,fanPower,extractorPower,mode\n";
 
@@ -577,15 +577,24 @@ String timestampToString(unsigned long timestamp) {
   return String(buffer);
 }
 
-unsigned long stringToTimestamp(const char* dateStr) {
+unsigned long stringToTimestamp(const char* dateStr, bool endOfDay) {
   // Парсимо рядок формату "YYYY-MM-DD" або "YYYY-MM-DD HH:MM:SS"
   struct tm timeinfo = {0};
 
-  if (sscanf(dateStr, "%d-%d-%d %d:%d:%d",
+  int parsed = sscanf(dateStr, "%d-%d-%d %d:%d:%d",
              &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday,
-             &timeinfo.tm_hour, &timeinfo.tm_min, &timeinfo.tm_sec) >= 3) {
+             &timeinfo.tm_hour, &timeinfo.tm_min, &timeinfo.tm_sec);
+
+  if (parsed >= 3) {
     timeinfo.tm_year -= 1900;  // tm_year = роки з 1900
     timeinfo.tm_mon -= 1;       // tm_mon = 0-11
+
+    // Якщо тільки дата без часу і потрібен кінець дня
+    if (parsed == 3 && endOfDay) {
+      timeinfo.tm_hour = 23;
+      timeinfo.tm_min = 59;
+      timeinfo.tm_sec = 59;
+    }
 
     return (unsigned long)mktime(&timeinfo);
   }

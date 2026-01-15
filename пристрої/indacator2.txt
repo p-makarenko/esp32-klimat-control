@@ -1,0 +1,270 @@
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <PZEM004Tv30.h>
+#include <ArduinoJson.h>
+#include "time.h"
+#include "FS.h"
+#include <LittleFS.h>
+
+// --- НАЛАШТУВАННЯ ---
+const char* ssid = "Ваш_SSID";
+const char* password = "Ваш_пароль";
+
+#define PZEM_RX_PIN 16
+#define PZEM_TX_PIN 17
+const char* ntpServer = "pool.ntp.org";
+
+PZEM004Tv30 pzem(&Serial2, PZEM_RX_PIN, PZEM_TX_PIN);
+AsyncWebServer server(80);
+
+struct Measurements {
+  float v, c, p, e, f, pf;
+  bool err = true;
+} data;
+
+int currentHour = -1;
+unsigned long lastUpdate = 0;
+
+// --- ВЕБ-ІНТЕРФЕЙС (HTML/CSS/JS) ---
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Pro Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f1f5f9; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .status { font-size: 0.8rem; padding: 5px 12px; border-radius: 20px; background: #ef4444; transition: 0.3s; }
+        .online { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid #334155; text-align: center; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .card i { color: var(--accent); font-size: 1.2rem; margin-bottom: 10px; opacity: 0.8; }
+        .val { font-size: 1.6rem; font-weight: 700; display: block; margin: 5px 0; }
+        .unit { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+
+        .chart-container { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #334155; position: relative; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: #0f172a; padding: 5px; border-radius: 12px; width: fit-content; }
+        .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; border: none; color: #94a3b8; background: transparent; transition: 0.2s; }
+        .tab.active { background: var(--accent); color: var(--bg); font-weight: 600; }
+        
+        canvas { max-height: 350px; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div><h2 style="margin:0">Energy<span style="color:var(--accent)">Pro</span></h2></div>
+            <div id="statusBtn" class="status">OFFLINE</div>
+        </header>
+
+        <div class="grid">
+            <div class="card"><i class="fas fa-bolt"></i><span class="val" id="v">0</span><span class="unit">Напруга (V)</span></div>
+            <div class="card"><i class="fas fa-microchip"></i><span class="val" id="c">0</span><span class="unit">Струм (A)</span></div>
+            <div class="card"><i class="fas fa-fire"></i><span class="val" id="p">0</span><span class="unit">Потужність (W)</span></div>
+            <div class="card"><i class="fas fa-chart-line"></i><span class="val" id="e">0</span><span class="unit">Всього (kWh)</span></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="tabs">
+                <button class="tab active" onclick="changeMode('live', this)">LIVE</button>
+                <button class="tab" onclick="changeMode('day', this)">ДЕНЬ</button>
+                <button class="tab" onclick="changeMode('month', this)">МІСЯЦЬ</button>
+            </div>
+            <div id="loader"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let mode = 'live';
+        let livePoints = [];
+
+        function initChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets: [] },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { type: 'time', grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        async function updateLive() {
+            if(mode !== 'live') return;
+            try {
+                const r = await fetch('/data');
+                const d = await r.json();
+                if(d.err) return;
+
+                document.getElementById('v').innerText = d.v.toFixed(1);
+                document.getElementById('c').innerText = d.c.toFixed(2);
+                document.getElementById('p').innerText = d.p.toFixed(0);
+                document.getElementById('e').innerText = d.e.toFixed(2);
+                document.getElementById('statusBtn').className = "status online";
+                document.getElementById('statusBtn').innerText = "ONLINE";
+
+                const now = Date.now();
+                livePoints.push({x: now, y: d.p});
+                if(livePoints.length > 40) livePoints.shift();
+
+                chart.data.datasets = [{
+                    label: 'W',
+                    data: livePoints,
+                    borderColor: '#38bdf8',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    pointRadius: 0
+                }];
+                chart.options.scales.x.time.unit = 'second';
+                chart.update('none');
+            } catch(e) { 
+                document.getElementById('statusBtn').className = "status";
+                document.getElementById('statusBtn').innerText = "ERROR";
+            }
+        }
+
+        async function loadHistory(m) {
+            document.getElementById('loader').style.display = 'block';
+            const res = await fetch('/history');
+            const text = await res.text();
+            const lines = text.trim().split('\n');
+            const data = lines.map(l => {
+                const [ts, val] = l.split(',');
+                return { x: parseInt(ts)*1000, y: parseFloat(val) };
+            }).sort((a,b) => a.x - b.x);
+
+            const bars = [];
+            for(let i=1; i<data.length; i++) {
+                let diff = data[i].y - data[i-1].y;
+                if(diff >= 0 && diff < 50) bars.push({ x: data[i].x, y: diff });
+            }
+
+            let filtered = bars;
+            let unit = 'hour';
+            if(m === 'day') {
+                const start = new Date().setHours(0,0,0,0);
+                filtered = bars.filter(b => b.x >= start);
+            } else {
+                unit = 'day';
+                const days = {};
+                bars.forEach(b => {
+                    const d = new Date(b.x).toLocaleDateString();
+                    days[d] = (days[d] || 0) + b.y;
+                });
+                filtered = Object.entries(days).map(([d,v]) => ({ x: new Date(d).getTime(), y: v }));
+            }
+
+            chart.data.datasets = [{
+                type: 'bar',
+                data: filtered,
+                backgroundColor: '#38bdf8',
+                borderRadius: 5
+            }];
+            chart.options.scales.x.time.unit = unit;
+            chart.update();
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function changeMode(m, el) {
+            mode = m;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            chart.config.type = (m === 'live' ? 'line' : 'bar');
+            if(m !== 'live') loadHistory(m);
+        }
+
+        initChart();
+        setInterval(updateLive, 2000);
+    </script>
+</body>
+</html>
+)rawliteral";
+
+// --- ЛОГІКА ESP32 ---
+
+void appendHistory(float energy) {
+    if (isnan(energy) || energy <= 0) return;
+    File f = LittleFS.open("/history.csv", "a");
+    if (f) {
+        time_t now; time(&now);
+        f.printf("%lu,%.3f\n", now, energy);
+        f.close();
+    }
+}
+
+void updateSensors() {
+    float v = pzem.voltage();
+    if (!isnan(v)) {
+        data.v = v;
+        data.c = pzem.current();
+        data.p = pzem.power();
+        data.e = pzem.energy();
+        data.err = false;
+
+        struct tm ti;
+        if (getLocalTime(&ti)) {
+            if (currentHour != ti.tm_hour) {
+                if (currentHour != -1) appendHistory(data.e);
+                currentHour = ti.tm_hour;
+            }
+        }
+    } else { data.err = true; }
+}
+
+void setup() {
+    Serial.begin(115200);
+    LittleFS.begin(true);
+
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+
+    configTime(7200, 3600, ntpServer); // GMT+2 Україна
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *r){
+        r->send_P(200, "text/html", index_html);
+    });
+
+    server.on("/data", HTTP_GET, [](AsyncWebServerRequest *r){
+        String j;
+        StaticJsonDocument<128> doc;
+        doc["v"] = data.v; doc["c"] = data.c; doc["p"] = data.p; doc["e"] = data.e; doc["err"] = data.err;
+        serializeJson(doc, j);
+        r->send(200, "application/json", j);
+    });
+
+    server.on("/history", HTTP_GET, [](AsyncWebServerRequest *r){
+        r->send(LittleFS, "/history.csv", "text/plain");
+    });
+
+    server.begin();
+}
+
+void loop() {
+    if (millis() - lastUpdate > 2000) {
+        updateSensors();
+        lastUpdate = millis();
+        // Реконект WiFi
+        if (WiFi.status() != WL_CONNECTED) WiFi.reconnect();
+    }
+}

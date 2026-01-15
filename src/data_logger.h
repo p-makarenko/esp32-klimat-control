@@ -113,6 +113,6 @@ void dataLoggerTask(void *parameter);             // FreeRTOS таск для п
 // Утиліти
 unsigned long getCurrentTimestamp();              // Отримати поточний Unix timestamp
 String timestampToString(unsigned long timestamp); // Перетворити timestamp у рядок дати
-unsigned long stringToTimestamp(const char* dateStr); // Перетворити рядок дати у timestamp
+unsigned long stringToTimestamp(const char* dateStr, bool endOfDay = false); // Перетворити рядок дати у timestamp
 
 #endif // DATA_LOGGER_H

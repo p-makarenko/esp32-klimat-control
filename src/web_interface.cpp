@@ -3086,10 +3086,10 @@ void handleHistoryPage() {
     html += "zoom: {";
     html += "wheel: { enabled: true },";
     html += "pinch: { enabled: true },";
+    html += "drag: { enabled: true, backgroundColor: 'rgba(33,150,243,0.2)', borderColor: '#2196F3', borderWidth: 1 },";
     html += "mode: 'x'";
     html += "},";
-    html += "pan: { enabled: true, mode: 'x', modifierKey: null },";
-    html += "limits: { x: { min: 'original', max: 'original' } }";
+    html += "pan: { enabled: true, mode: 'x' }";
     html += "}},";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: '°C' } } }";
     html += "}});";
@@ -3122,10 +3122,10 @@ void handleHistoryPage() {
     html += "zoom: {";
     html += "wheel: { enabled: true },";
     html += "pinch: { enabled: true },";
+    html += "drag: { enabled: true, backgroundColor: 'rgba(33,150,243,0.2)', borderColor: '#2196F3', borderWidth: 1 },";
     html += "mode: 'x'";
     html += "},";
-    html += "pan: { enabled: true, mode: 'x', modifierKey: null },";
-    html += "limits: { x: { min: 'original', max: 'original' } }";
+    html += "pan: { enabled: true, mode: 'x' }";
     html += "}},";
     html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
     html += "}});";
