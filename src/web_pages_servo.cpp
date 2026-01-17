@@ -274,7 +274,7 @@ void handleServoAPI() {
         ventState.moving = true;
         moveServoSmooth(config.servoOpenAngle);
         ventState.moving = true;
-        // Коротка затримка для яскравого效果 (не блокує сервер чекаючи на WiFi)
+        // Коротка затримка для прямого ефекту (не блокує вебсервер)
         delay(500);
         moveServoSmooth(config.servoClosedAngle);
         server.send(200, "text/plain", "TEST_OK");
