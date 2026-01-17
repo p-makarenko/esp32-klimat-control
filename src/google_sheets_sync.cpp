@@ -22,20 +22,26 @@ static bool lastDailySyncDone = false;
 bool initGoogleSheetsSync() {
   Serial.println("\n🔄 Ініціалізація Google Sheets синхронізації...");
 
-  // Відкриваємо NVS, читаємо timestamp, закриваємо
+  // Відкриваємо NVS, читаємо sequence та timestamp, закриваємо
   Preferences sheetsPrefs;
   if (!sheetsPrefs.begin("sheets_sync", true)) {  // true = read-only
     Serial.println("⚠️ NVS sheets_sync не існує, буде створено при першій синхронізації");
+    syncStats.lastSentSequence = 0;
     syncStats.lastSentTimestamp = 0;
   } else {
+    // Спочатку перевіряємо нові значення (sequence)
+    syncStats.lastSentSequence = sheetsPrefs.getULong("last_seq", 0);
+    // Для совместимості читаємо і старий timestamp
     syncStats.lastSentTimestamp = sheetsPrefs.getULong("last_ts", 0);
     sheetsPrefs.end();  // Закриваємо одразу!
   }
 
-  if (syncStats.lastSentTimestamp > 0) {
-    Serial.printf("📅 Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
+  if (syncStats.lastSentSequence > 0) {
+    Serial.printf("📊 Останній відправлений sequence: %lu\n", syncStats.lastSentSequence);
+  } else if (syncStats.lastSentTimestamp > 0) {
+    Serial.printf("📅 Legacy - останній timestamp: %lu (буде перейдено на sequence)\n", syncStats.lastSentTimestamp);
   } else {
-    Serial.println("📅 Перша синхронізація - відправимо всі дані");
+    Serial.println("📅 Перша синхронізація - почнемо з sequence=0");
   }
 
   Serial.println("✓ Google Sheets синхронізація готова");
@@ -53,7 +59,13 @@ bool syncToGoogleSheets() {
     return false;
   }
 
+  if (xSemaphoreTake(getSyncMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
+    Serial.println("⚠️  Синхронізація вже виконується");
+    return false;
+  }
+
   if (syncStats.syncInProgress) {
+    xSemaphoreGive(getSyncMutex());
     Serial.println("⚠️  Синхронізація вже виконується");
     return false;
   }
@@ -63,9 +75,9 @@ bool syncToGoogleSheets() {
   Serial.printf("🕐 Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
 
   syncStats.syncInProgress = true;
+  xSemaphoreGive(getSyncMutex());
 
-  // Виділяємо пам'ять для ВСЬОГО буфера (1440 записів)
-  // Не можемо використовувати logStats.totalRecordsRAM, бо це НЕ розмір буфера!
+  // Спочатку тільки підраховуємо кількість нових записів (без виділення пам'яті)
   uint16_t bufferSize = HISTORY_BUFFER_SIZE;
   DataRecord* allRecords = (DataRecord*)malloc(bufferSize * sizeof(DataRecord));
   if (!allRecords) {
@@ -79,10 +91,10 @@ bool syncToGoogleSheets() {
 
   Serial.printf("📊 Прочитано записів: %u (буфер: %u)\n", actualCount, bufferSize);
 
-  // Підраховуємо і збираємо нові записи
+  // Підраховуємо нові записи (за sequenceNumber)
   uint16_t newCount = 0;
   for (uint16_t i = 0; i < actualCount; i++) {
-    if (allRecords[i].timestamp > syncStats.lastSentTimestamp && allRecords[i].timestamp > 0) {
+    if (allRecords[i].sequenceNumber > syncStats.lastSentSequence && allRecords[i].sequenceNumber > 0) {
       newCount++;
     }
   }
@@ -92,6 +104,16 @@ bool syncToGoogleSheets() {
     free(allRecords);
     syncStats.syncInProgress = false;
     return true;
+  }
+
+  // Перевіряємо heap перед виділенням нових записів
+  uint32_t requiredHeap = newCount * sizeof(DataRecord) + 60000;  // +60KB для SSL
+  if (ESP.getFreeHeap() < requiredHeap) {
+    Serial.printf("⚠️ Недостатньо пам'яті для нових записів (є %u, треба >%u)\n",
+                  ESP.getFreeHeap(), requiredHeap);
+    free(allRecords);
+    syncStats.syncInProgress = false;
+    return false;
   }
 
   // Виділяємо пам'ять тільки для нових записів
@@ -106,17 +128,17 @@ bool syncToGoogleSheets() {
   // Копіюємо нові записи
   uint16_t idx = 0;
   for (uint16_t i = 0; i < actualCount; i++) {
-    if (allRecords[i].timestamp > syncStats.lastSentTimestamp && allRecords[i].timestamp > 0) {
+    if (allRecords[i].sequenceNumber > syncStats.lastSentSequence && allRecords[i].sequenceNumber > 0) {
       newRecords[idx++] = allRecords[i];
     }
   }
 
-  free(allRecords); // Звільняємо великий масив
+  free(allRecords); // Звільняємо великий масив одразу
 
-  // Сортуємо за timestamp для уникнення дублювання
+  // Сортуємо за sequenceNumber
   for (uint16_t i = 0; i < newCount - 1; i++) {
     for (uint16_t j = i + 1; j < newCount; j++) {
-      if (newRecords[i].timestamp > newRecords[j].timestamp) {
+      if (newRecords[i].sequenceNumber > newRecords[j].sequenceNumber) {
         DataRecord temp = newRecords[i];
         newRecords[i] = newRecords[j];
         newRecords[j] = temp;
@@ -124,40 +146,8 @@ bool syncToGoogleSheets() {
     }
   }
 
-  // Видаляємо дублікати (записи з однаковим timestamp)
-  uint16_t uniqueCount = 0;
-  for (uint16_t i = 0; i < newCount; i++) {
-    bool isDuplicate = false;
-    for (uint16_t j = 0; j < uniqueCount; j++) {
-      if (newRecords[i].timestamp == newRecords[j].timestamp) {
-        isDuplicate = true;
-        break;
-      }
-    }
-    if (!isDuplicate) {
-      if (i != uniqueCount) {
-        newRecords[uniqueCount] = newRecords[i];
-      }
-      uniqueCount++;
-    }
-  }
-
-  if (uniqueCount < newCount) {
-    Serial.printf("⚠️  Видалено %u дублікатів\n", newCount - uniqueCount);
-    newCount = uniqueCount;
-  }
-
-  Serial.printf("📊 Знайдено %u унікальних записів для відправки\n", newCount);
-
-  // Перевірка heap перед відправкою
-  const uint32_t MIN_HEAP_FOR_SYNC = 60000; // 60KB мінімум
-  if (ESP.getFreeHeap() < MIN_HEAP_FOR_SYNC) {
-    Serial.printf("⚠️ Недостатньо пам'яті для синхронізації (є %u, треба >%u)\n",
-                  ESP.getFreeHeap(), MIN_HEAP_FOR_SYNC);
-    free(newRecords);
-    syncStats.syncInProgress = false;
-    return false;
-  }
+  Serial.printf("📊 Знайдено %u записів для відправки\n", newCount);
+  Serial.printf("💾 Heap перед відправкою: %u байт\n", ESP.getFreeHeap());
 
   // Розбиваємо на пакети по 100 записів
   const uint16_t BATCH_SIZE = 100;
@@ -170,23 +160,23 @@ bool syncToGoogleSheets() {
     if (sendBatchToSheets(&newRecords[offset], batchSize)) {
       totalSent += batchSize;
 
-      // Оновлюємо timestamp після кожного успішного пакету
-      unsigned long maxTimestamp = 0;
+      // Оновлюємо sequence після кожного успішного пакету
+      uint32_t maxSequence = 0;
       for (uint16_t i = offset; i < offset + batchSize; i++) {
-        if (newRecords[i].timestamp > maxTimestamp) {
-          maxTimestamp = newRecords[i].timestamp;
+        if (newRecords[i].sequenceNumber > maxSequence) {
+          maxSequence = newRecords[i].sequenceNumber;
         }
       }
 
-      if (maxTimestamp > syncStats.lastSentTimestamp) {
-        syncStats.lastSentTimestamp = maxTimestamp;
+      if (maxSequence > syncStats.lastSentSequence) {
+        syncStats.lastSentSequence = maxSequence;
         // Зберігаємо в NVS з правильним open/close
         Preferences sheetsPrefs;
         if (sheetsPrefs.begin("sheets_sync", false)) {
-          sheetsPrefs.putULong("last_ts", syncStats.lastSentTimestamp);
+          sheetsPrefs.putULong("last_seq", syncStats.lastSentSequence);
           sheetsPrefs.end();
         }
-        Serial.printf("✓ Оновлено timestamp: %lu\n", maxTimestamp);
+        Serial.printf("✓ Оновлено sequence: %lu\n", maxSequence);
       }
     } else {
       Serial.printf("⚠️ Пакет не відправлено, зупиняємо\n");
@@ -247,6 +237,8 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
   client->setInsecure();
   client->setTimeout(10000);
 
+  // Використовуємо ; як роздільник CSV (для європейської локалі Google Sheets)
+  // Числа з десятковою КОМОЮ щоб Sheets не плутав з датами
   String csvData = "";
   for (uint16_t i = 0; i < count; i++) {
     time_t ts = records[i].timestamp;
@@ -254,20 +246,38 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
     char dateStr[20];
     strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M:%S", timeinfo);
 
-    csvData += String(dateStr) + ",";
-    csvData += String(records[i].tempCarrier, 1) + ",";
-    csvData += String(records[i].tempRoom, 1) + ",";
-    csvData += String(records[i].tempBME, 1) + ",";
-    csvData += String(records[i].humidity, 1) + ",";
-    csvData += String(records[i].pumpPower) + ",";
-    csvData += String(records[i].fanPower) + ",";
-    csvData += String(records[i].extractorPower) + ",";
-    csvData += String(records[i].mode) + ",";
+    // Форматуємо числа з комою як десятковий розділювач
+    char tempCarrier[10], tempRoom[10], tempBME[10], humidity[10];
+    snprintf(tempCarrier, sizeof(tempCarrier), "%.1f", records[i].tempCarrier);
+    snprintf(tempRoom, sizeof(tempRoom), "%.1f", records[i].tempRoom);
+    snprintf(tempBME, sizeof(tempBME), "%.1f", records[i].tempBME);
+    snprintf(humidity, sizeof(humidity), "%.1f", records[i].humidity);
+
+    // Замінюємо крапку на кому
+    for (char* p = tempCarrier; *p; p++) if (*p == '.') *p = ',';
+    for (char* p = tempRoom; *p; p++) if (*p == '.') *p = ',';
+    for (char* p = tempBME; *p; p++) if (*p == '.') *p = ',';
+    for (char* p = humidity; *p; p++) if (*p == '.') *p = ',';
+
+    // Роздільник полів - крапка з комою (;)
+    csvData += String(dateStr) + ";";
+    csvData += String(records[i].sequenceNumber) + ";";
+    csvData += String(tempCarrier) + ";";
+    csvData += String(tempRoom) + ";";
+    csvData += String(tempBME) + ";";
+    csvData += String(humidity) + ";";
+    csvData += String(records[i].pumpPower) + ";";
+    csvData += String(records[i].fanPower) + ";";
+    csvData += String(records[i].extractorPower) + ";";
+    csvData += String(records[i].mode) + ";";
 
     // Додаємо енергоспоживання (якщо доступно)
     #if ENABLE_ENERGY_MONITOR
     EnergyMeasurements energy = getEnergyMeasurements();
-    csvData += String(energy.power, 1);
+    char powerStr[10];
+    snprintf(powerStr, sizeof(powerStr), "%.1f", energy.power);
+    for (char* p = powerStr; *p; p++) if (*p == '.') *p = ',';
+    csvData += String(powerStr);
     #else
     csvData += "0";
     #endif
@@ -275,6 +285,13 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
   }
 
   Serial.printf("📤 Відправка %u записів одним пакетом...\n", count);
+
+  // Виводимо перший рядок для діагностики
+  int firstNewline = csvData.indexOf('\n');
+  if (firstNewline > 0) {
+    Serial.println("📋 Перший рядок:");
+    Serial.println(csvData.substring(0, firstNewline));
+  }
 
   if (!client->connect("script.google.com", 443)) {
     Serial.printf("❌ Підключення не вдалось (heap: %u)\n", ESP.getFreeHeap());
@@ -327,7 +344,15 @@ bool sendBatchToSheets(DataRecord* records, uint16_t count) {
 
 void autoSyncTask() {
   static unsigned long lastCheckTime = 0;
+  static bool startupDelayDone = false;
   unsigned long now = millis();
+
+  // Затримка 5 хвилин після старту - щоб не синхронізувати одразу
+  if (!startupDelayDone) {
+    if (now < 300000) return;  // 5 хвилин
+    startupDelayDone = true;
+    Serial.println("📤 Автосинхронізація активована (затримка старту завершена)");
+  }
 
   // Перевіряємо не частіше ніж раз на хвилину
   if (now - lastCheckTime < 60000) return;
@@ -336,7 +361,7 @@ void autoSyncTask() {
   // Пропускаємо якщо вже синхронізуємось
   if (syncStats.syncInProgress) return;
 
-  // Перевіряємо чи час для щоденної синхронізації
+  // Перевіряємо чи час для щоденної синхронізації (тільки о 23:59)
   if (checkDailySyncTime() && !lastDailySyncDone) {
     Serial.println("🕐 Час щоденної синхронізації (23:59)");
     if (syncToGoogleSheets()) {
@@ -345,16 +370,17 @@ void autoSyncTask() {
     return;
   }
 
-  // Скидаємо прапорець щоденної синхронізації о 00:00
+  // Скидаємо прапорець щоденної синхронізації о 00:05 (не 00:00 щоб уникнути race condition)
   time_t nowTime;
   time(&nowTime);
   struct tm* timeInfo = localtime(&nowTime);
-  if (timeInfo->tm_hour == 0 && timeInfo->tm_min == 0) {
+  if (timeInfo->tm_hour == 0 && timeInfo->tm_min == 5) {
     lastDailySyncDone = false;
   }
 
-  // Перевіряємо інтервал 30 хвилин
-  if (syncStats.lastSyncTime == 0 || (now - syncStats.lastSyncTime) >= SYNC_INTERVAL_MS) {
+  // Перевіряємо інтервал (ТІЛЬКИ якщо пройшло достатньо часу з останньої)
+  // НЕ синхронізуємо одразу після старту (lastSyncTime == 0 ігноруємо)
+  if (syncStats.lastSyncTime > 0 && (now - syncStats.lastSyncTime) >= SYNC_INTERVAL_MS) {
     // Перевіряємо чи є достатньо нових записів
     LoggerStats logStats = getLoggerStats();
 

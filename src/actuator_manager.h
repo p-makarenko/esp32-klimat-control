@@ -24,6 +24,9 @@ void setFanPercent(uint8_t percent);
 void setExtractorPercent(uint8_t percent);
 void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorPercent);
 
+// Валідація перед активацією
+bool isPumpActivationAllowed(float currentTemp);
+
 // Servo функції
 void initServo();
 void moveServoSmooth(int targetAngle);

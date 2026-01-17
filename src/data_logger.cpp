@@ -3,6 +3,7 @@
 #include "sensor_manager.h"
 #include "actuator_manager.h"
 #include <time.h>
+#include <cmath>
 #include <ArduinoJson.h>
 
 // ============================================================================
@@ -12,10 +13,14 @@
 LoggerStats loggerStats;
 DataRecord ramBuffer[1440];  // 24 години × 60 хвилин = 1440 записів
 uint16_t ramBufferIndex = 0;
+uint32_t globalSequence = 0;  // Глобальний лічильник для унікальності записів
 
 // Тимчасовий буфер для агрегації (5 записів по 1 хвилині = 5 хвилин)
 DataRecord aggregationBuffer[5];
 uint8_t aggregationBufferIndex = 0;
+
+// Остання залогована температура кімнати для порівняння порога
+static float lastLoggedTempRoom = -999.0f;
 
 // ============================================================================
 // ІНІЦІАЛІЗАЦІЯ
@@ -23,6 +28,14 @@ uint8_t aggregationBufferIndex = 0;
 
 bool initDataLogger() {
   Serial.println("\n🗄️ Ініціалізація системи логування даних...");
+
+  // Завантажуємо sequence counter з NVS
+  Preferences prefs;
+  if (prefs.begin("data_logger", true)) {  // read-only
+    globalSequence = prefs.getULong("seq_num", 0);
+    prefs.end();
+    Serial.printf("✓ Завантажено sequence counter: %lu\n", globalSequence);
+  }
 
   // Ініціалізація SPIFFS
   if (!SPIFFS.begin(true)) {  // true = format on fail
@@ -102,9 +115,23 @@ bool initDataLogger() {
 // ============================================================================
 
 void logDataToRAM() {
+  // Перевіряємо поріг температури кімнати перед записом
+  float tempDelta = fabs(sensorData.tempRoom - lastLoggedTempRoom);
+
+  if (lastLoggedTempRoom != -999.0f && tempDelta < config.logTempThreshold) {
+    // Температура кімнати змінилася менше ніж на поріг - пропускаємо весь рядок
+    return;
+  }
+
+  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
+    return;
+  }
+
   // Створюємо новий запис
   DataRecord record;
   record.timestamp = getCurrentTimestamp();
+  record.sequenceNumber = ++globalSequence;
+  record.dataVersion = 2;
   record.tempCarrier = sensorData.tempCarrier;
   record.tempRoom = sensorData.tempRoom;
   record.tempBME = sensorData.tempBME;
@@ -125,12 +152,26 @@ void logDataToRAM() {
     record.mode = 0;
   }
 
+  // Оновлюємо останню залоговану температуру кімнати
+  lastLoggedTempRoom = sensorData.tempRoom;
+
   // Зберігаємо у RAM буфер (циклічний буфер)
   ramBuffer[ramBufferIndex] = record;
   ramBufferIndex = (ramBufferIndex + 1) % 1440;
 
+  xSemaphoreGive(getRamBufferMutex());
+
   loggerStats.totalRecordsRAM++;
   loggerStats.lastLogTimeRAM = millis();
+
+  // Зберігаємо sequence counter в NVS кожні 100 записів
+  if (globalSequence % 100 == 0) {
+    Preferences prefs;
+    if (prefs.begin("data_logger", false)) {  // read-write
+      prefs.putULong("seq_num", globalSequence);
+      prefs.end();
+    }
+  }
 
   // Додаємо у буфер агрегації
   aggregationBuffer[aggregationBufferIndex] = record;
@@ -279,8 +320,14 @@ void logDataToSPIFFS() {
 bool readRAMData(DataRecord* buffer, uint16_t* count) {
   if (!buffer || !count) return false;
 
+  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
+    return false;
+  }
+
   // Копіюємо всі дані з RAM буфера
   memcpy(buffer, ramBuffer, sizeof(ramBuffer));
+
+  xSemaphoreGive(getRamBufferMutex());
   *count = 1440;  // Завжди повертаємо всі 1440 записів (можуть бути нульові)
 
   return true;

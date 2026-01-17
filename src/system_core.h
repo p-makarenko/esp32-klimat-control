@@ -109,6 +109,9 @@ struct SystemConfig {
 
   ExtractorTimer extractorTimer;
   uint16_t history_size;
+
+  // Поріг логування даних (для економії пакетів)
+  float logTempThreshold;      // Мінімальна зміна температури кімнати для запису (°C, default 0.5)
 };
 
 struct HeatingState {
@@ -264,6 +267,8 @@ SemaphoreHandle_t getConfigMutex();
 SemaphoreHandle_t getHeatingMutex();
 SemaphoreHandle_t getHistoryMutex();
 SemaphoreHandle_t getTimeMutex();
+SemaphoreHandle_t getSyncMutex();
+SemaphoreHandle_t getRamBufferMutex();
 
 // Функції для роботи з часом
 bool isTimeSynced();

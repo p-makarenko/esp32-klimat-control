@@ -26,6 +26,8 @@ SemaphoreHandle_t configMutex;
 SemaphoreHandle_t heatingMutex;
 SemaphoreHandle_t historyMutex;
 SemaphoreHandle_t timeMutex;
+SemaphoreHandle_t syncMutex;
+SemaphoreHandle_t ramBufferMutex;
 
 // РЎС‚Р°С‚РёС‡РЅС– Р·РјС–РЅРЅС– (С–РЅРєР°РїСЃСѓР»СЊРѕРІР°РЅС– РІ С†СЊРѕРјСѓ С„Р°Р№Р»С–)
 static unsigned long _lastStatusPrint = 0;
@@ -406,6 +408,9 @@ void loadConfiguration() {
   
   config.history_size = preferences.getUShort("historySize", 1440);
 
+  // Поріг логування за температурою кімнати
+  config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
+
   // Сезонне відключення та режим охолодження
   config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
   config.coolingMode = preferences.getBool("coolingMode", false);
@@ -507,6 +512,9 @@ void saveConfiguration() {
   preferences.putUShort("poStage2", config.powerOutageStage2Time);
   preferences.putUShort("poAutoExit", config.powerOutageAutoExitTime);
 
+  // Поріг логування даних
+  preferences.putFloat("logTempThresh", config.logTempThreshold);
+
   preferences.end();
   
   // Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");  // RUS_REMOVED
@@ -522,10 +530,12 @@ void initMutexes() {
   heatingMutex = xSemaphoreCreateMutex();
   historyMutex = xSemaphoreCreateMutex();
   timeMutex = xSemaphoreCreateMutex();
-  
+  syncMutex = xSemaphoreCreateMutex();
+  ramBufferMutex = xSemaphoreCreateMutex();
+
   if (sensorMutex == NULL || configMutex == NULL || 
       heatingMutex == NULL || historyMutex == NULL || 
-      timeMutex == NULL) {
+      timeMutex == NULL || syncMutex == NULL || ramBufferMutex == NULL) {
     // Serial.println("вљ  РџРѕРјРёР»РєР° СЃС‚РІРѕСЂРµРЅРЅСЏ РјКјСЋС‚РµРєСЃС–РІ!");  // RUS_REMOVED
   } else {
     // Serial.println("вњ“ РњКјСЋС‚РµРєСЃРё СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
@@ -687,8 +697,16 @@ SemaphoreHandle_t getTimeMutex() {
     return timeMutex;
 }
 
+SemaphoreHandle_t getSyncMutex() {
+    return syncMutex;
+}
+
+SemaphoreHandle_t getRamBufferMutex() {
+    return ramBufferMutex;
+}
+
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р”РћРЎРўРЈРџРЈ Р”Рћ Р§РђРЎРЈ
+// Р¤РЈРќРљР¦Р†Р‡ Р"Р›РЇ Р"РћРЎРўРЈРџРЈ Р"Рћ Р§РђРЎРЈ
 // ============================================================================
 
 time_t getCurrentTime() {

@@ -11,7 +11,7 @@
 // ============================================================================
 
 // URL Google Apps Script Web App (оновлено для GET запитів)
-#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbwJSvYd1i_82sUEDHumz90wctO1KGyqmDGWuDNuStFR0oysu4NPzMbHBk5Fsefk1fhJ/exec"
+#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbzxEpL3TDOt6VFRjo6el8KJ4aO-PIQNj1A5owrqt_-rSozCo4blvF1Q2_KrwxIQWN6j/exec"
 
 // Налаштування синхронізації
 #define SYNC_INTERVAL_MS 1800000          // 30 хвилин
@@ -26,10 +26,11 @@
 
 struct SyncStats {
   unsigned long lastSyncTime;             // Останній час синхронізації (millis)
-  unsigned long lastSentTimestamp;        // Timestamp останнього відправленого запису
+  unsigned long lastSentTimestamp;        // Timestamp останнього відправленого запису (legacy)
+  uint32_t lastSentSequence;              // Sequence число останнього відправленого запису
   uint16_t totalRecordsSent;              // Всього записів відправлено за сесію
   uint16_t failedSyncs;                   // Кількість невдалих синхронізацій
-  bool syncInProgress;                    // Прапорець що синхронізація триває
+  bool syncInProgress;                    // Прапорець що синхронізація править
 };
 
 // ============================================================================

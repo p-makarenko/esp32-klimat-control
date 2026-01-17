@@ -1,0 +1,249 @@
+// ============================================================================
+// WEB_PAGES_SERVO.CPP - Сторінки калібрування серво
+// ============================================================================
+// Рефакторинг за методом "Скептичного Архітектора"
+// Модуль: Калібрування серво (handleServoPage, handleServoAPI)
+// ============================================================================
+
+#include <WebServer.h>
+#include <WiFi.h>
+#include "web_common.h"
+#include "global_declarations.h"
+
+extern WebServer server;
+extern SystemConfig config;
+extern VentilationState ventState;
+
+// Forward declarations
+extern bool checkAuth();
+extern String getUkraineMarquee();
+extern void moveServoSmooth(int targetAngle);
+extern void startAutoCalibration();
+extern void saveConfiguration();
+
+// ============================================================================
+// СТОРІНКА КАЛІБРУВАННЯ СЕРВО
+// ============================================================================
+
+void handleServoPage() {
+    if (!checkAuth()) return;
+    if (WiFi.status() != WL_CONNECTED) return;
+
+    String html = getHtmlHead("⚙ Калібрування серво");
+    html += "<div class='container'>";
+
+    // Навігація зверху
+    html += getNavHeader("⚙ КАЛІБРУВАННЯ СЕРВО");
+
+    // Додаткові стилі
+    html += "<style>";
+    html += ".status { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196F3; }";
+    html += ".status-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0; }";
+    html += ".status-item:last-child { border-bottom: none; }";
+    html += ".buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }";
+    html += ".btn-servo { padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: 500; }";
+    html += ".btn-servo:active { transform: scale(0.95); }";
+    html += ".btn-small { background: #2196F3; color: white; }";
+    html += ".btn-small:hover { background: #1976D2; }";
+    html += ".btn-big { background: #FF9800; color: white; }";
+    html += ".btn-big:hover { background: #F57C00; }";
+    html += ".btn-save { background: #4CAF50; color: white; grid-column: span 2; }";
+    html += ".btn-save:hover { background: #388E3C; }";
+    html += ".btn-test { background: #9C27B0; color: white; grid-column: span 2; }";
+    html += ".btn-test:hover { background: #7B1FA2; }";
+    html += ".btn-calib { background: #FF9800; color: white; grid-column: span 2; }";
+    html += ".btn-calib:hover { background: #F57C00; }";
+    html += ".btn-auto { background: #9C27B0; color: white; grid-column: span 2; }";
+    html += ".btn-auto:hover { background: #7B1FA2; }";
+    html += ".btn-goto { padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; }";
+    html += ".btn-open { background: #4CAF50; color: white; }";
+    html += ".btn-open:hover { background: #388E3C; }";
+    html += ".btn-close { background: #f44336; color: white; }";
+    html += ".btn-close:hover { background: #D32F2F; }";
+    html += ".angle-display { font-size: 48px; font-weight: 700; text-align: center; color: #2196F3; margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; }";
+
+    // Мобільна оптимізація
+    html += "@media (max-width: 768px) {";
+    html += "  .btn-servo { padding: 18px; font-size: 18px; }";
+    html += "  .angle-display { font-size: 56px; }";
+    html += "}";
+    html += "@media (max-width: 480px) {";
+    html += "  .buttons { gap: 8px; }";
+    html += "  .btn-servo { padding: 15px 10px; font-size: 15px; }";
+    html += "}";
+    html += "</style>";
+
+    // Статус
+    html += "<div class='status'>";
+    html += "<div class='status-item'><span><strong>Поточний кут:</strong></span><span id='current' style='font-weight: 600; color: #2196F3;'>" + String(ventState.currentAngle) + "°</span></div>";
+    html += "<div class='status-item'><span><strong>Закрито:</strong></span><span id='closed'>" + String(config.servoClosedAngle) + "°</span></div>";
+    html += "<div class='status-item'><span><strong>Відкрито:</strong></span><span id='open'>" + String(config.servoOpenAngle) + "°</span></div>";
+    html += "<div class='status-item'><span><strong>Вимикач:</strong></span><span id='switch' style='font-weight: 600; color: ";
+    html += ventState.switchState ? "#4CAF50;'>УВІМКНЕНО" : "#f44336;'>ВИМКНЕНО";
+    html += "</span></div>";
+    html += "<div class='status-item'><span><strong>Режим:</strong></span><span id='mode' style='font-weight: 600; color: ";
+    html += ventState.calibrationMode ? "#FF9800;'>КАЛІБРУВАННЯ" : "#2196F3;'>НОРМАЛЬНИЙ";
+    html += "</span></div>";
+    html += "</div>";
+
+    // Поточний кут
+    html += "<div class='angle-display' id='angle'>" + String(ventState.currentAngle) + "°</div>";
+
+    // Кнопки керування
+    html += "<div class='buttons'>";
+
+    // Режим калібрування
+    html += "<button class='btn-servo btn-calib' onclick='toggleCalibration()' id='calibBtn'>";
+    html += ventState.calibrationMode ? "🔓 ВИЙТИ З КАЛІБРУВАННЯ" : "🔒 УВІЙТИ В КАЛІБРУВАННЯ";
+    html += "</button>";
+
+    // Автокалібрування
+    html += "<button class='btn-servo btn-auto' onclick='autoCalibrate()'>🤖 АВТОКАЛІБРУВАННЯ</button>";
+
+    // Кнопки руху
+    html += "<button class='btn-servo btn-small' onclick='moveServo(1)'>▲ +1°</button>";
+    html += "<button class='btn-servo btn-big' onclick='moveServo(5)'>▲▲ +5°</button>";
+    html += "<button class='btn-servo btn-small' onclick='moveServo(-1)'>▼ -1°</button>";
+    html += "<button class='btn-servo btn-big' onclick='moveServo(-5)'>▼▼ -5°</button>";
+
+    // Швидкі позиції
+    html += "<button class='btn-servo btn-goto btn-open' onclick='gotoPosition(\"open\")'>➤ Відкрити</button>";
+    html += "<button class='btn-servo btn-goto btn-close' onclick='gotoPosition(\"closed\")'>➤ Закрити</button>";
+
+    // Збереження позицій
+    html += "<button class='btn-servo btn-save' onclick='savePosition(\"closed\")'>💾 Зберегти як ЗАКРИТО</button>";
+    html += "<button class='btn-servo btn-save' onclick='savePosition(\"open\")'>💾 Зберегти як ВІДКРИТО</button>";
+
+    // Тест
+    html += "<button class='btn-servo btn-test' onclick='testServo()'>🔧 ТЕСТ (відкрити → закрити)</button>";
+
+    html += "</div>";
+
+    html += "</div>"; // container
+
+    // JavaScript
+    html += "<script>";
+    html += "function sendCommand(cmd) {";
+    html += "  fetch('/servo/api', {";
+    html += "    method: 'POST',";
+    html += "    headers: {'Content-Type': 'application/x-www-form-urlencoded'},";
+    html += "    body: 'cmd=' + encodeURIComponent(cmd)";
+    html += "  }).then(r => r.text()).then(data => {";
+    html += "    if(data.startsWith('ANGLE:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('angle').innerText = angle + '°';";
+    html += "      document.getElementById('current').innerText = angle + '°';";
+    html += "    } else if(data.startsWith('CLOSED:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('closed').innerText = angle + '°';";
+    html += "      alert('✅ Закрите положення збережено: ' + angle + '°');";
+    html += "    } else if(data.startsWith('OPEN:')) {";
+    html += "      let angle = data.split(':')[1];";
+    html += "      document.getElementById('open').innerText = angle + '°';";
+    html += "      alert('✅ Відкрите положення збережено: ' + angle + '°');";
+    html += "    } else if(data == 'TEST_OK') {";
+    html += "      alert('✅ Тест завершено');";
+    html += "      setTimeout(() => location.reload(), 1000);";
+    html += "    } else if(data.startsWith('CALIB:')) {";
+    html += "      location.reload();";
+    html += "    }";
+    html += "  });";
+    html += "}";
+    html += "function moveServo(delta) { sendCommand('move:' + (delta > 0 ? '+' : '') + delta); }";
+    html += "function savePosition(type) { sendCommand('save:' + type); }";
+    html += "function gotoPosition(type) { sendCommand('goto:' + type); }";
+    html += "function toggleCalibration() { sendCommand('calibration:toggle'); }";
+    html += "function autoCalibrate() {";
+    html += "  if(confirm('Автокалібрування: швидко перемикайте вимикач для зміни напряму. Продовжити?')) {";
+    html += "    sendCommand('auto:calibrate');";
+    html += "    alert('🤖 Швидко перемикайте вимикач протягом 8 секунд!');";
+    html += "    setTimeout(() => location.reload(), 8000);";
+    html += "  }";
+    html += "}";
+    html += "function testServo() {";
+    html += "  if(confirm('Тест відкриє і закриє заслонку. Продовжити?')) sendCommand('test');";
+    html += "}";
+    html += "</script>";
+
+    html += getNavFooter();
+    html += getUkraineMarquee();
+    html += getHtmlFooter();
+
+    server.send(200, "text/html", html);
+}
+
+// ============================================================================
+// API СЕРВО
+// ============================================================================
+
+void handleServoAPI() {
+    if (!server.hasArg("cmd")) {
+        server.send(400, "text/plain", "No command");
+        return;
+    }
+
+    String cmd = server.arg("cmd");
+    Serial.println("WEB SERVO CMD: " + cmd);
+
+    if (cmd.startsWith("move:")) {
+        String deltaStr = cmd.substring(5);
+        // Обробка знаків: "+1", "-1", "1", "5"
+        int delta = 0;
+        if (deltaStr.length() > 0) {
+            if (deltaStr[0] == '+') {
+                delta = deltaStr.substring(1).toInt();
+            } else if (deltaStr[0] == '-') {
+                delta = -deltaStr.substring(1).toInt();
+            } else {
+                delta = deltaStr.toInt();
+            }
+        }
+        int newAngle = constrain(ventState.currentAngle + delta, 0, 180);
+        ventState.moving = true;  // Дозволяємо рух для API команд
+        moveServoSmooth(newAngle);
+        server.send(200, "text/plain", "ANGLE:" + String(newAngle));
+    }
+    else if (cmd == "goto:open") {
+        ventState.moving = true;  // Дозволяємо рух для API команд
+        moveServoSmooth(config.servoOpenAngle);
+        server.send(200, "text/plain", "ANGLE:" + String(config.servoOpenAngle));
+    }
+    else if (cmd == "goto:closed") {
+        ventState.moving = true;  // Дозволяємо рух для API команд
+        moveServoSmooth(config.servoClosedAngle);
+        server.send(200, "text/plain", "ANGLE:" + String(config.servoClosedAngle));
+    }
+    else if (cmd == "calibration:toggle") {
+        ventState.calibrationMode = !ventState.calibrationMode;
+        Serial.printf("Режим калібрування: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО");
+        server.send(200, "text/plain", ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF");
+    }
+    else if (cmd == "auto:calibrate") {
+        startAutoCalibration();
+        server.send(200, "text/plain", "AUTO_CALIB_STARTED");
+    }
+    else if (cmd == "save:closed") {
+        config.servoClosedAngle = ventState.currentAngle;
+        saveConfiguration();
+        Serial.printf("💾 Закрито (нижнє) = %d°\n", config.servoClosedAngle);
+        server.send(200, "text/plain", "CLOSED:" + String(config.servoClosedAngle));
+    }
+    else if (cmd == "save:open") {
+        config.servoOpenAngle = ventState.currentAngle;
+        saveConfiguration();
+        Serial.printf("💾 Відкрито (верхнє) = %d°\n", config.servoOpenAngle);
+        server.send(200, "text/plain", "OPEN:" + String(config.servoOpenAngle));
+    }
+    else if (cmd == "test") {
+        ventState.moving = true;
+        moveServoSmooth(config.servoOpenAngle);
+        ventState.moving = true;
+        // Коротка затримка для яскравого效果 (не блокує сервер чекаючи на WiFi)
+        delay(500);
+        moveServoSmooth(config.servoClosedAngle);
+        server.send(200, "text/plain", "TEST_OK");
+    }
+    else {
+        server.send(400, "text/plain", "Unknown command");
+    }
+}

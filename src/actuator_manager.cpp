@@ -154,9 +154,28 @@ void setFanPercent(uint8_t percent) {
   checkFanMaxPowerEfficiency();
 }
 
+// Валідація температури перед активацією насоса
+bool isPumpActivationAllowed(float currentTemp) {
+  // Насос включається тільки якщо температура вище мінімальної безпечної
+  const float MIN_SAFE_TEMP = 5.0;  // 5°C - мінімум для циркуляції
+
+  if (currentTemp < MIN_SAFE_TEMP) {
+    Serial.printf("⚠ БЛОКУВАННЯ: Температура занадто низька (%.1f°C < %f°C)\n",
+                  currentTemp, MIN_SAFE_TEMP);
+    return false;
+  }
+
+  // У аварійному режимі (<18°C) дозволяємо включення незалежно від мінімуму
+  if (currentTemp < 18.0 && heatingState.emergencyMode) {
+    return true;
+  }
+
+  return true;
+}
+
 void setExtractorPercent(uint8_t percent) {
   uint8_t originalPercent = percent;
-  
+
   // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
     // В авто режимі: мінімум з налаштувань при НЕНУЛЬОВОМУ значенні
@@ -171,11 +190,11 @@ void setExtractorPercent(uint8_t percent) {
     // У ручному/форсажному/аварійному режимі: БУДЬ-ЯКЕ значення, включаючи 0%
     percent = constrain(percent, 0, 100);
   }
-  
+
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
-  
+
   // Serial.printf("[DEBUG] setExtractorPercent: %d%% -> %d%% -> PWM=%d\n", originalPercent, percent, pwmValue);
-  
+
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.extractorPower = pwmValue;
     ledcWrite(EXTRACTOR_CHANNEL, pwmValue);
@@ -187,9 +206,13 @@ void moveServoSmooth(int targetAngle) {
   // КРИТИЧНИЙ ЗАХИСТ: Серво рухається ТІЛЬКИ через механічний вимикач!
   // Виняток: режим калібрування (для налаштування кутів)
   if (!ventState.moving && !ventState.calibrationMode) {
-    Serial.println("⚠ БЛОКОВАНО: Серво рухається ТІЛЬКИ через механічний вимикач!");
+    Serial.println("⚠ БЛОКОВАНО: Серво рухається ТІЛЬКИ через механічний вимикач або режим калібрування!");
     return;
   }
+
+  // Дозволяємо рух у режимі калібрування БЕЗ механічного вимикача
+  // Дозволяємо рух при вмиканні флага moving (через вентиляційний вимикач)
+  // Обовʼязково одне з цих умов має бути істинною
   
   if (targetAngle == ventState.currentAngle) {
     ventState.moving = false;

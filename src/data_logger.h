@@ -27,6 +27,7 @@
 // Запис даних (один запис = одна хвилина)
 struct DataRecord {
   unsigned long timestamp;      // Unix timestamp (секунди з 1970-01-01)
+  uint32_t sequenceNumber;      // Унікальний лічильник записів для дублів
   float tempCarrier;           // Температура теплоносія
   float tempRoom;              // Температура кімнати
   float tempBME;               // Температура BME280
@@ -35,6 +36,7 @@ struct DataRecord {
   uint8_t fanPower;            // Потужність вентилятора (0-100%)
   uint8_t extractorPower;      // Потужність витяжки (0-100%)
   uint8_t mode;                // Режим роботи (0=AUTO, 1=MANUAL, 2=FORCE, 3=EMERGENCY)
+  uint8_t dataVersion;         // Версія структури (для міграції)
 };
 
 // Агрегований запис (для SPIFFS - середнє за 5 хвилин)
