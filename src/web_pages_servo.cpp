@@ -167,7 +167,10 @@ void handleServoPage() {
     html += "    alert('❌ Помилка зв\\'язку: ' + err.message);";
     html += "  });";
     html += "}";
-    html += "function moveServo(delta) { sendCommand('move:' + (delta > 0 ? '+' : '') + delta); }";
+    html += "function moveServo(delta) { ";
+    html += "  console.log('🎯 Рух серво:', delta);";
+    html += "  sendCommand('move:' + (delta > 0 ? '+' : '') + delta); ";
+    html += "}";
     html += "function savePosition(type) { sendCommand('save:' + type); }";
     html += "function gotoPosition(type) { sendCommand('goto:' + type); }";
     html += "function toggleCalibration() { ";
