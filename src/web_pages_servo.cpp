@@ -214,7 +214,6 @@ void handleServoAPI() {
 
     if (cmd.startsWith("move:")) {
         String deltaStr = cmd.substring(5);
-        // Обробка знаків: "+1", "-1", "1", "5"
         int delta = 0;
         if (deltaStr.length() > 0) {
             if (deltaStr[0] == '+') {
@@ -226,9 +225,12 @@ void handleServoAPI() {
             }
         }
         int newAngle = constrain(ventState.currentAngle + delta, 0, 180);
-        ventState.moving = true;  // Дозволяємо рух для API команд
+        Serial.printf("SERVO MOVE: delta=%d, current=%d, new=%d, calibMode=%d\n", delta, ventState.currentAngle, newAngle, ventState.calibrationMode);
+        ventState.moving = true;
         moveServoSmooth(newAngle);
-        server.send(200, "text/plain", "ANGLE:" + String(newAngle));
+        String response = "ANGLE:" + String(ventState.currentAngle);
+        Serial.printf("SERVO RESPONSE: %s\n", response.c_str());
+        server.send(200, "text/plain", response);
     }
     else if (cmd == "goto:open") {
         ventState.moving = true;  // Дозволяємо рух для API команд
@@ -242,8 +244,9 @@ void handleServoAPI() {
     }
     else if (cmd == "calibration:toggle") {
         ventState.calibrationMode = !ventState.calibrationMode;
-        Serial.printf("Режим калібрування: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО");
-        server.send(200, "text/plain", ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF");
+        String response = ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF";
+        Serial.printf("Режим калібрування: %s, відповідь: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО", response.c_str());
+        server.send(200, "text/plain", response);
     }
     else if (cmd == "auto:calibrate") {
         startAutoCalibration();
