@@ -241,13 +241,17 @@ void moveServoSmooth(int targetAngle) {
   ventServo.detach();
   ventState.servoAttached = false;
   ventState.moving = false;
-  
-  // КРИТИЧНО: Після завершення руху перевіряємо чи не змінився вимикач під час руху
+
+  // В режимі калібрування НЕ перевіряємо вимикач - користувач керує вручну
+  if (ventState.calibrationMode) {
+    return;
+  }
+
+  // Перевіряємо чи не змінився вимикач під час руху (тільки НЕ в режимі калібрування)
   bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
   if (currentSwitchState != ventState.switchState) {
     Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
     ventState.switchState = currentSwitchState;
-    // Запускаємо рух у зворотному напрямку через 100мс
     delay(100);
     ventState.moving = true;
     int newTargetAngle = currentSwitchState ? config.servoOpenAngle : config.servoClosedAngle;
