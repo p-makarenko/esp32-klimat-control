@@ -399,9 +399,8 @@ void ventilationTask(void *parameter) {
       }
       ventState.lastSwitchChange = now;
 
-      // Викликаємо controlVentilation тільки якщо НЕ в режимі детекції або калібрування
-      // ВАЖЛИВО: НЕ оновлюємо ventState.switchState тут, бо controlVentilation() сам це зробить
-      if (!config.manualVentControl && !ventState.autoCalibrationActive && ventState.switchChangeCount == 0) {
+      // Викликаємо controlVentilation тільки якщо НЕ в режимі калібрування
+      if (!config.manualVentControl && !ventState.autoCalibrationActive && !ventState.calibrationMode && ventState.switchChangeCount == 0) {
         controlVentilation();
       }
     }
