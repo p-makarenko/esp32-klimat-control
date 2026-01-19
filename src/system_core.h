@@ -112,6 +112,10 @@ struct SystemConfig {
 
   // Поріг логування даних (для економії пакетів)
   float logTempThreshold;      // Мінімальна зміна температури кімнати для запису (°C, default 0.5)
+
+  // Пороги для режимів форсаж та аварія
+  float tempCriticalLow;       // Поріг для ФОРСАЖУ - критично низька температура (°C, default 20.0)
+  float tempEmergencyLow;      // Поріг для АВАРІЇ - аварійна температура (°C, default 18.0)
 };
 
 struct HeatingState {

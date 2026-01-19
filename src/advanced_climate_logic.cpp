@@ -763,13 +763,13 @@ void smartHeatingControl() {
 
     // Перевіряємо аварійні режими (тільки в автоматичному режимі)
     if (!heatingState.manualMode) {
-        if (tempRoom <= TEMP_EMERGENCY_LOW) {
+        if (tempRoom <= config.tempEmergencyLow) {
             if (!heatingState.emergencyMode) {
                 setEmergencyStartTime(millis());
                 setEmergencyStartTempCarrier(tempCarrier);
                 setEmergencyStartTempRoom(tempRoom);
             }
-            
+
             heatingState.emergencyMode = true;
             heatingState.forceMode = false;
             setPumpPercent(100);
@@ -777,8 +777,8 @@ void smartHeatingControl() {
             Serial.println("⚠ АВАРІЙНИЙ РЕЖИМ: КРИТИЧНО НИЗЬКА ТЕМПЕРАТУРА!");
             return;
         }
-        
-        if (tempRoom <= TEMP_CRITICAL_LOW) {
+
+        if (tempRoom <= config.tempCriticalLow) {
             heatingState.forceMode = true;
             heatingState.emergencyMode = false;
             setPumpPercent(80);

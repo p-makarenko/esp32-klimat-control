@@ -99,9 +99,6 @@ void handleServoPage() {
     html += ventState.calibrationMode ? "🔓 ВИЙТИ З КАЛІБРУВАННЯ" : "🔒 УВІЙТИ В КАЛІБРУВАННЯ";
     html += "</button>";
 
-    // Автокалібрування
-    html += "<button class='btn-servo btn-auto' onclick='autoCalibrate()'>🤖 АВТОКАЛІБРУВАННЯ</button>";
-
     // Кнопки руху
     html += "<button class='btn-servo btn-small' onclick='moveServo(1)'>▲ +1°</button>";
     html += "<button class='btn-servo btn-big' onclick='moveServo(5)'>▲▲ +5°</button>";
@@ -178,13 +175,6 @@ void handleServoPage() {
     html += "function toggleCalibration() { ";
     html += "  sendCommand('calibration:toggle');";
     html += "}";
-    html += "function autoCalibrate() {";
-    html += "  if(confirm('Автокалібрування: швидко перемикайте вимикач для зміни напряму. Продовжити?')) {";
-    html += "    sendCommand('auto:calibrate');";
-    html += "    alert('🤖 Швидко перемикайте вимикач протягом 8 секунд!');";
-    html += "    setTimeout(() => location.reload(), 8000);";
-    html += "  }";
-    html += "}";
     html += "function testServo() {";
     html += "  if(confirm('Тест відкриє і закриє заслонку. Продовжити?')) {";
     html += "    sendCommand('test');";
@@ -247,10 +237,6 @@ void handleServoAPI() {
         String response = ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF";
         Serial.printf("Режим калібрування: %s, відповідь: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО", response.c_str());
         server.send(200, "text/plain", response);
-    }
-    else if (cmd == "auto:calibrate") {
-        startAutoCalibration();
-        server.send(200, "text/plain", "AUTO_CALIB_STARTED");
     }
     else if (cmd == "save:closed") {
         config.servoClosedAngle = ventState.currentAngle;

@@ -164,13 +164,11 @@ void logDataToRAM() {
   loggerStats.totalRecordsRAM++;
   loggerStats.lastLogTimeRAM = millis();
 
-  // Зберігаємо sequence counter в NVS кожні 100 записів
-  if (globalSequence % 100 == 0) {
-    Preferences prefs;
-    if (prefs.begin("data_logger", false)) {  // read-write
-      prefs.putULong("seq_num", globalSequence);
-      prefs.end();
-    }
+  // Зберігаємо sequence counter в NVS після кожного запису
+  Preferences prefs;
+  if (prefs.begin("data_logger", false)) {  // read-write
+    prefs.putULong("seq_num", globalSequence);
+    prefs.end();
   }
 
   // Додаємо у буфер агрегації

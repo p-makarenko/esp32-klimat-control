@@ -411,6 +411,10 @@ void loadConfiguration() {
   // Поріг логування за температурою кімнати
   config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
 
+  // Пороги для режимів форсаж та аварія
+  config.tempCriticalLow = preferences.getFloat("tempCritLow", 20.0f);
+  config.tempEmergencyLow = preferences.getFloat("tempEmergLow", 18.0f);
+
   // Сезонне відключення та режим охолодження
   config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
   config.coolingMode = preferences.getBool("coolingMode", false);
@@ -514,6 +518,10 @@ void saveConfiguration() {
 
   // Поріг логування даних
   preferences.putFloat("logTempThresh", config.logTempThreshold);
+
+  // Пороги для режимів форсаж та аварія
+  preferences.putFloat("tempCritLow", config.tempCriticalLow);
+  preferences.putFloat("tempEmergLow", config.tempEmergencyLow);
 
   preferences.end();
   

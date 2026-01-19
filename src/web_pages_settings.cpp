@@ -75,6 +75,7 @@ void handleSettingsPage() {
     html += "<button type='button' class='tab' onclick='switchTab(5)'>⚙️ Система</button>";
     html += "<button type='button' class='tab' onclick='switchTab(6)'>🎯 Серво</button>";
     html += "<button type='button' class='tab' onclick='switchTab(7)'>📶 WiFi</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(8)'>📊 Sync</button>";
     html += "</div>";
 
     html += "<form method='POST' action='/settings'>";
@@ -189,6 +190,25 @@ void handleSettingsPage() {
 
     // TAB 4: АВАРІЯ
     html += "<div class='tab-content' id='tab4'>";
+
+    // Пороги температури для форсажу та аварії
+    html += "<div class='section'>";
+    html += "<h3>⚡ ПОРОГИ ФОРСАЖУ ТА АВАРІЇ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Поріг ФОРСАЖУ - критично низька температура (°C):</label>";
+    html += "<input type='number' step='0.5' name='tempCriticalLow' value='" + String(config.tempCriticalLow, 1) + "' min='15.0' max='25.0'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається ФОРСАЖ (насос 80%, вентилятор 80%)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Поріг АВАРІЇ - аварійна температура (°C):</label>";
+    html += "<input type='number' step='0.5' name='tempEmergencyLow' value='" + String(config.tempEmergencyLow, 1) + "' min='10.0' max='22.0'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається АВАРІЯ (насос 100%, вентилятор 100%)</small>";
+    html += "</div>";
+    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
+    html += "<strong>⚠️ ВАЖЛИВО:</strong> Поріг аварії має бути НИЖЧЕ за поріг форсажу!";
+    html += "</div>";
+    html += "</div>";
+
     html += "<div class='section'>";
     html += "<h3>🚨 МОНІТОРИНГ АВАРІЙ (відключення живлення)</h3>";
     html += "<div class='form-group'>";
@@ -461,6 +481,34 @@ void handleSettingsPage() {
 
     html += "</div>"; // tab7
 
+    // TAB 8: GOOGLE SHEETS SYNC
+    html += "<div class='tab-content' id='tab8'>";
+
+    // Поріг логування
+    html += "<div class='section'>";
+    html += "<h3>📊 ПОРІГ ЗАПИСУ ДАНИХ</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімальна зміна температури кімнати для запису (°C):</label>";
+    html += "<input type='number' step='0.1' name='logTempThreshold' value='" + String(config.logTempThreshold, 1) + "' min='0.0' max='5.0'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура змінилась менше ніж на цей поріг, рядок не буде записано. 0 = записувати всі зміни. Типове значення: 0.5°C</small>";
+    html += "</div>";
+    html += "</div>";
+
+    // Інформація про синхронізацію
+    html += "<div class='section'>";
+    html += "<h3>ℹ️ ІНФОРМАЦІЯ</h3>";
+    html += "<div style='background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4CAF50;'>";
+    html += "<p><strong>Як працює фільтрація:</strong></p>";
+    html += "<ul style='margin: 10px 0; padding-left: 20px;'>";
+    html += "<li>Дані записуються в буфер тільки якщо температура кімнати змінилась на вказаний поріг</li>";
+    html += "<li>Це зменшує кількість записів при стабільних умовах</li>";
+    html += "<li>Менший поріг = більше записів, більший поріг = менше записів</li>";
+    html += "</ul>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "</div>"; // tab8
+
     // Кнопки збереження
     html += "<div style='margin-top: 30px;'>";
     html += "<button type='submit' class='btn'>💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>";
@@ -719,6 +767,19 @@ void handleSaveSettings() {
     // Сезонні режими
     config.coolingMode = server.hasArg("coolingMode");
     config.seasonalHeatingDisable = server.hasArg("seasonalDisable");
+
+    // Поріг логування для Google Sheets
+    if (server.hasArg("logTempThreshold")) {
+        config.logTempThreshold = constrain(server.arg("logTempThreshold").toFloat(), 0.0f, 5.0f);
+    }
+
+    // Пороги для режимів форсаж та аварія
+    if (server.hasArg("tempCriticalLow")) {
+        config.tempCriticalLow = constrain(server.arg("tempCriticalLow").toFloat(), 15.0f, 25.0f);
+    }
+    if (server.hasArg("tempEmergencyLow")) {
+        config.tempEmergencyLow = constrain(server.arg("tempEmergencyLow").toFloat(), 10.0f, 22.0f);
+    }
 
     // Параметри моніторингу аварій
     if (server.hasArg("poTempDrop")) {
