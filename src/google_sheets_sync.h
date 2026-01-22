@@ -11,7 +11,7 @@
 // ============================================================================
 
 // URL Google Apps Script Web App (оновлено для GET запитів)
-#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbzxEpL3TDOt6VFRjo6el8KJ4aO-PIQNj1A5owrqt_-rSozCo4blvF1Q2_KrwxIQWN6j/exec"
+#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbzNjLPxfI2AbmTR4rlBTIWrU835YNNmU88qQ2IzltJWOQEomUMZF669IrPmaZS3xw1H/exec"
 
 // Налаштування синхронізації
 #define SYNC_INTERVAL_MS 1800000          // 30 хвилин
@@ -53,5 +53,7 @@ void printSyncInfo();                     // Вивести інформацію
 bool checkDailySyncTime();                // Перевірити чи час для щоденної синхронізації
 unsigned long getLastSentTimestamp();     // Отримати останній відправлений timestamp з NVS
 void saveLastSentTimestamp(unsigned long timestamp); // Зберегти timestamp в NVS
+void setLastSentSequence(uint32_t seq);   // Оновити lastSentSequence вручну (виправлення дублів)
+uint32_t getLastSentSequence();           // Отримати останній відправлений sequence
 
 #endif // GOOGLE_SHEETS_SYNC_H
