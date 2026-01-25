@@ -232,6 +232,13 @@ void handleServoAPI() {
     }
     else if (cmd == "calibration:toggle") {
         ventState.calibrationMode = !ventState.calibrationMode;
+
+        // При виході з калібрування синхронізуємо стан вимикача
+        if (!ventState.calibrationMode) {
+            ventState.switchState = digitalRead(VENT_SWITCH_PIN);
+            Serial.printf("Синхронізовано вимикач: %d\n", ventState.switchState);
+        }
+
         String response = ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF";
         Serial.printf("Режим калібрування: %s, відповідь: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО", response.c_str());
         server.send(200, "text/plain", response);
