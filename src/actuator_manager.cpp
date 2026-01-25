@@ -451,13 +451,9 @@ void ventilationTask(void *parameter) {
   Serial.println("✓ Задачу вентиляції запущено");
 
   while (1) {
-    // Перевірка стану механічного вимикача
-    bool newSwitchState = digitalRead(VENT_SWITCH_PIN);
-    if (newSwitchState != ventState.switchState) {
-      // Викликаємо controlVentilation тільки якщо НЕ в режимі калібрування
-      if (!config.manualVentControl && !ventState.calibrationMode) {
-        controlVentilation();
-      }
+    // В режимі калібрування пропускаємо обробку вимикача
+    if (!ventState.calibrationMode && !config.manualVentControl) {
+      controlVentilation();
     }
 
     vTaskDelay(pdMS_TO_TICKS(100));

@@ -55,8 +55,6 @@ void handleServoPage() {
     html += ".btn-test:hover { background: #7B1FA2; }";
     html += ".btn-calib { background: #FF9800; color: white; grid-column: span 2; }";
     html += ".btn-calib:hover { background: #F57C00; }";
-    html += ".btn-auto { background: #9C27B0; color: white; grid-column: span 2; }";
-    html += ".btn-auto:hover { background: #7B1FA2; }";
     html += ".btn-goto { padding: 15px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; }";
     html += ".btn-open { background: #4CAF50; color: white; }";
     html += ".btn-open:hover { background: #388E3C; }";
