@@ -50,9 +50,17 @@ IQ Level: 145 - expert solutions only
 
 ## Critical Files
 - global_declarations.h - central instances
-- config.h - user settings
+- config.h - user settings (HISTORY_BUFFER_SIZE!)
 - platformio.ini - build config
 - energy_monitor.* - PZEM004Tv30 integration
+
+## Memory Management (Google Sheets Sync)
+- Always check HISTORY_BUFFER_SIZE from config.h before malloc
+- Calculate exact heap: (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + SSL_overhead
+- SSL: prefer stack allocation (WiFiClientSecure obj) over heap (new)
+- Typical requirement: ~95KB (70KB buffer + 25KB SSL)
+- Use in-place filtering, not double malloc
+- SYNC_BATCH_SIZE inversely affects RAM (smaller = less CSV buffer)
 
 ## Detailed Instructions
 See: docs/.ai-instructions/

@@ -20,6 +20,7 @@ void setPWM(uint8_t dutyCycle);
 
 // Основні функції управління
 void setPumpPercent(uint8_t percent);
+void pumpStartupRamp(uint8_t targetPercent);  // Плавний розгон насоса перед запуском
 void setFanPercent(uint8_t percent);
 void setExtractorPercent(uint8_t percent);
 void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorPercent);

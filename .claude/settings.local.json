@@ -33,7 +33,8 @@
       "Bash(powershell -Command:*)",
       "Bash(dir \"d:\\\\ESP32\\\\esp32\\\\klimat_kontrol\\\\src\"\" | grep -i \"web_pages|servo \")",
       "Bash(du:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git mv:*)"
     ]
   },
   "claude-code.maxTokensPerRequest": 4000,

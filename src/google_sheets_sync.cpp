@@ -3,48 +3,61 @@
 #include "config.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if ENABLE_ENERGY_MONITOR
 #include "energy_monitor.h"
 #endif
 
-// Глобальні змінні
-static SyncStats syncStats = {0, 0, 0, 0, false};
-static bool lastDailySyncDone = false;
-static uint32_t lastSentSequence = 0;  // Унікальний sequence для уникнення дублів
+// ============================================================================
+// ГЛОБАЛЬНІ ЗМІННІ
+// ============================================================================
 
-// preferences вже оголошено як extern в global_declarations.h
+// Ініціалізуємо структуру нулями.
+// sequence зберігається ТІЛЬКИ тут.
+static SyncStats syncStats = {0, 0, 0, 0, 0, false};
+static bool lastDailySyncDone = false;
 
 // ============================================================================
 // ІНІЦІАЛІЗАЦІЯ
 // ============================================================================
 
 bool initGoogleSheetsSync() {
-  Serial.println("\n🔄 Ініціалізація Google Sheets синхронізації...");
+  Serial.println("\n🔄 [Sync] Ініціалізація...");
 
-  // Відкриваємо NVS, читаємо sequence і timestamp, закриваємо
   Preferences sheetsPrefs;
-  if (!sheetsPrefs.begin("sheets_sync", true)) {  // true = read-only
-    Serial.println("⚠️ NVS sheets_sync не існує, буде створено при першій синхронізації");
+  if (!sheetsPrefs.begin("sheets_sync", true)) {
+    Serial.println("⚠️ [Sync] NVS не знайдено, старт з нуля.");
     syncStats.lastSentTimestamp = 0;
-    lastSentSequence = 0;
+    syncStats.lastSentSequence = 0;
   } else {
     syncStats.lastSentTimestamp = sheetsPrefs.getULong("last_ts", 0);
-    lastSentSequence = sheetsPrefs.getULong("last_seq", 0);
-    sheetsPrefs.end();  // Закриваємо одразу!
+    syncStats.lastSentSequence = sheetsPrefs.getULong("last_seq", 0);
+    sheetsPrefs.end();
   }
 
-  if (lastSentSequence > 0) {
-    Serial.printf("📊 Останній відправлений sequence: %lu\n", lastSentSequence);
-  } else if (syncStats.lastSentTimestamp > 0) {
-    Serial.printf("📅 Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
-  } else {
-    Serial.println("📅 Перша синхронізація - відправимо всі дані");
-  }
-
-  Serial.println("✓ Google Sheets синхронізація готова");
+  Serial.printf("📊 [Sync] Стан: Seq=%lu, TS=%lu\n", 
+                syncStats.lastSentSequence, syncStats.lastSentTimestamp);
+  
   return true;
+}
+
+// ============================================================================
+// ДОПОМІЖНІ ФУНКЦІЇ
+// ============================================================================
+
+// Компаратор для qsort (сортування DataRecord)
+int compareRecords(const void* a, const void* b) {
+    DataRecord* recA = (DataRecord*)a;
+    DataRecord* recB = (DataRecord*)b;
+    
+    // Сортуємо по Sequence
+    if (recA->sequenceNumber < recB->sequenceNumber) return -1;
+    if (recA->sequenceNumber > recB->sequenceNumber) return 1;
+    return 0;
 }
 
 // ============================================================================
@@ -52,389 +65,369 @@ bool initGoogleSheetsSync() {
 // ============================================================================
 
 bool syncToGoogleSheets() {
+  // 1. Базові перевірки
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("⚠️  Wi-Fi не підключено, синхронізація пропущена");
+    Serial.println("⚠️ [Sync] Немає Wi-Fi");
     syncStats.failedSyncs++;
     return false;
   }
 
   if (syncStats.syncInProgress) {
-    Serial.println("⚠️  Синхронізація вже виконується");
+    Serial.println("⚠️ [Sync] Вже виконується");
     return false;
   }
 
-  Serial.println("\n📤 Початок синхронізації з Google Sheets...");
-  Serial.printf("💾 Heap на початку: %u байт\n", ESP.getFreeHeap());
-  Serial.printf("📊 Останній sequence: %lu, timestamp: %lu\n", lastSentSequence, syncStats.lastSentTimestamp);
+  // 2. Перевірка вільної пам'яті ДО початку
+  // Нам потрібно ~50KB для буфера + ~25KB для SSL. Разом ~75KB.
+  uint32_t freeHeap = ESP.getFreeHeap();
+  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 25000;
+
+  if (freeHeap < requiredHeap) {
+    Serial.printf("❌ [Sync] Критично мало RAM! Free: %u, Req: %u\n", freeHeap, requiredHeap);
+    syncStats.failedSyncs++;
+    return false;
+  }
+
+  Serial.printf("💾 [Sync] Heap: %u вільно, %u потрібно\n", freeHeap, requiredHeap);
 
   syncStats.syncInProgress = true;
+  Serial.println("\n📤 [Sync] Початок сесії...");
 
-  // Виділяємо пам'ять для ВСЬОГО буфера (1440 записів)
-  uint16_t bufferSize = HISTORY_BUFFER_SIZE;
-  DataRecord* allRecords = (DataRecord*)malloc(bufferSize * sizeof(DataRecord));
-  if (!allRecords) {
-    Serial.println("❌ Недостатньо пам'яті для синхронізації");
+  // 3. Виділення пам'яті
+  DataRecord* buffer = (DataRecord*)malloc(HISTORY_BUFFER_SIZE * sizeof(DataRecord));
+  if (!buffer) {
+    Serial.println("❌ [Sync] malloc failed!");
     syncStats.syncInProgress = false;
     return false;
   }
 
-  uint16_t actualCount = 0;
-  readRAMData(allRecords, &actualCount);
+  // 4. Читання та Фільтрація
+  uint16_t totalCount = 0;
+  readRAMData(buffer, &totalCount); // Припускаємо, що це копіює дані в buffer
 
-  Serial.printf("📊 Прочитано записів: %u (буфер: %u)\n", actualCount, bufferSize);
+  uint16_t recordsToSend = 0;
+  
+  // "In-place" фільтрація: зсуваємо потрібні записи на початок масиву
+  for (uint16_t i = 0; i < totalCount; i++) {
+    bool isNew = false;
+    // Головний критерій - Sequence
+    if (buffer[i].sequenceNumber > syncStats.lastSentSequence) {
+        isNew = true;
+    } 
+    // Fallback критерій - Timestamp (якщо sequence скидався)
+    else if (syncStats.lastSentSequence == 0 && buffer[i].timestamp > syncStats.lastSentTimestamp) {
+        isNew = true;
+    }
 
-  // Підраховуємо нові записи за SEQUENCE (унікальний ID)
-  uint16_t newCount = 0;
-  for (uint16_t i = 0; i < actualCount; i++) {
-    // Використовуємо sequence як основний критерій
-    if (allRecords[i].sequenceNumber > lastSentSequence && allRecords[i].timestamp > 0) {
-      newCount++;
+    if (isNew && buffer[i].timestamp > 1000000) { // Проста перевірка на валідний час
+       if (i != recordsToSend) {
+           buffer[recordsToSend] = buffer[i]; // Копіюємо на початок
+       }
+       recordsToSend++;
     }
   }
 
-  if (newCount == 0) {
-    Serial.println("📭 Немає нових записів");
-    free(allRecords);
+  if (recordsToSend == 0) {
+    Serial.println("📭 [Sync] Немає нових даних.");
+    free(buffer);
     syncStats.syncInProgress = false;
     return true;
   }
 
-  // Виділяємо пам'ять тільки для нових записів
-  DataRecord* newRecords = (DataRecord*)malloc(newCount * sizeof(DataRecord));
-  if (!newRecords) {
-    Serial.println("❌ Недостатньо пам'яті для нових записів");
-    free(allRecords);
+  // 5. Сортування відфільтрованих даних
+  qsort(buffer, recordsToSend, sizeof(DataRecord), compareRecords);
+
+  Serial.printf("📊 [Sync] Готуємо до відправки %u записів (Seq %lu -> %lu)\n",
+                recordsToSend, buffer[0].sequenceNumber, buffer[recordsToSend-1].sequenceNumber);
+
+  // 6. Підготовка SSL
+  Serial.printf("💾 [Sync] Heap перед SSL: %u bytes\n", ESP.getFreeHeap());
+
+  WiFiClientSecure sslClient;
+  sslClient.setInsecure(); // Для тестів ок, для проду краще certs
+  sslClient.setTimeout(20000); // Збільшено до 20 сек
+
+  Serial.println("🔐 [Sync] Підключення до script.google.com:443...");
+  if (!sslClient.connect("script.google.com", 443)) {
+    Serial.println("❌ [Sync] Google connection failed");
+    Serial.printf("📶 [Sync] WiFi RSSI: %d dBm\n", WiFi.RSSI());
+    Serial.printf("💾 [Sync] Free heap: %u bytes\n", ESP.getFreeHeap());
+    free(buffer);
     syncStats.syncInProgress = false;
-    return false;
-  }
-
-  // Копіюємо нові записи
-  uint16_t idx = 0;
-  for (uint16_t i = 0; i < actualCount; i++) {
-    if (allRecords[i].sequenceNumber > lastSentSequence && allRecords[i].timestamp > 0) {
-      newRecords[idx++] = allRecords[i];
-    }
-  }
-
-  free(allRecords); // Звільняємо великий масив
-
-  // Сортуємо за sequenceNumber (унікальний, не буде дублікатів)
-  for (uint16_t i = 0; i < newCount - 1; i++) {
-    for (uint16_t j = i + 1; j < newCount; j++) {
-      if (newRecords[i].sequenceNumber > newRecords[j].sequenceNumber) {
-        DataRecord temp = newRecords[i];
-        newRecords[i] = newRecords[j];
-        newRecords[j] = temp;
-      }
-    }
-  }
-
-  Serial.printf("📊 Знайдено %u нових записів для відправки (seq %lu-%lu)\n",
-                newCount, newRecords[0].sequenceNumber, newRecords[newCount-1].sequenceNumber);
-
-  // Перевірка heap перед відправкою
-  const uint32_t MIN_HEAP_FOR_SYNC = 60000; // 60KB мінімум
-  if (ESP.getFreeHeap() < MIN_HEAP_FOR_SYNC) {
-    Serial.printf("⚠️ Недостатньо пам'яті для синхронізації (є %u, треба >%u)\n",
-                  ESP.getFreeHeap(), MIN_HEAP_FOR_SYNC);
-    free(newRecords);
-    syncStats.syncInProgress = false;
-    return false;
-  }
-
-  // Розбиваємо на пакети по 100 записів
-  const uint16_t BATCH_SIZE = 100;
-  uint16_t totalSent = 0;
-
-  for (uint16_t offset = 0; offset < newCount; offset += BATCH_SIZE) {
-    uint16_t batchSize = min((uint16_t)BATCH_SIZE, (uint16_t)(newCount - offset));
-    Serial.printf("📦 Пакет %u-%u з %u\n", offset + 1, offset + batchSize, newCount);
-
-    if (sendBatchToSheets(&newRecords[offset], batchSize)) {
-      totalSent += batchSize;
-
-      // Оновлюємо sequence після кожного успішного пакету
-      uint32_t maxSeq = 0;
-      unsigned long maxTimestamp = 0;
-      for (uint16_t i = offset; i < offset + batchSize; i++) {
-        if (newRecords[i].sequenceNumber > maxSeq) {
-          maxSeq = newRecords[i].sequenceNumber;
-        }
-        if (newRecords[i].timestamp > maxTimestamp) {
-          maxTimestamp = newRecords[i].timestamp;
-        }
-      }
-
-      // Оновлюємо sequence (основний) і timestamp (для сумісності)
-      if (maxSeq > lastSentSequence) {
-        lastSentSequence = maxSeq;
-        syncStats.lastSentTimestamp = maxTimestamp;
-        // Зберігаємо в NVS з правильним open/close
-        Preferences sheetsPrefs;
-        if (sheetsPrefs.begin("sheets_sync", false)) {
-          sheetsPrefs.putULong("last_seq", lastSentSequence);
-          sheetsPrefs.putULong("last_ts", syncStats.lastSentTimestamp);
-          sheetsPrefs.end();
-        }
-        Serial.printf("✓ Оновлено seq: %lu, ts: %lu\n", maxSeq, maxTimestamp);
-      }
-    } else {
-      Serial.printf("⚠️ Пакет не відправлено, зупиняємо\n");
-      break;
-    }
-    delay(500);
-  }
-
-  if (totalSent > 0) {
-    syncStats.totalRecordsSent += totalSent;
-    syncStats.lastSyncTime = millis();
-    Serial.printf("✅ Відправлено %u з %u записів\n", totalSent, newCount);
-    free(newRecords);
-    syncStats.syncInProgress = false;
-    return true;
-  } else {
     syncStats.failedSyncs++;
-    Serial.printf("❌ Синхронізація помилка\n");
-    free(newRecords);
-    syncStats.syncInProgress = false;
     return false;
   }
+  Serial.println("✅ [Sync] SSL з'єднання встановлено");
+
+  // 7. Відправка пакетами
+  uint16_t sessionSentCount = 0;
+
+  for (uint16_t offset = 0; offset < recordsToSend; offset += SYNC_BATCH_SIZE) {
+    uint16_t currentBatchSize = (recordsToSend - offset) > SYNC_BATCH_SIZE ?
+                                 SYNC_BATCH_SIZE : (recordsToSend - offset);
+
+    // Передаємо адресу початку поточного пакету в буфері
+    if (sendBatchToSheets(&sslClient, &buffer[offset], currentBatchSize)) {
+        sessionSentCount += currentBatchSize;
+
+        // Визначаємо останній успішний sequence в цьому пакеті
+        DataRecord* lastRec = &buffer[offset + currentBatchSize - 1];
+
+        // Оновлюємо статистику в пам'яті
+        syncStats.lastSentSequence = lastRec->sequenceNumber;
+        syncStats.lastSentTimestamp = lastRec->timestamp;
+
+        // ! ВАЖЛИВО: Оновлюємо NVS тільки якщо пакет успішний.
+        // Це дозволяє відновитись з правильного місця при ребуті.
+        Preferences prefs;
+        if (prefs.begin("sheets_sync", false)) {
+            prefs.putULong("last_seq", syncStats.lastSentSequence);
+            prefs.putULong("last_ts", syncStats.lastSentTimestamp);
+            prefs.end();
+        }
+
+        Serial.printf("✅ [Sync] Пакет %u/%u OK. Last Seq: %lu\n",
+                      offset/SYNC_BATCH_SIZE + 1, (recordsToSend + SYNC_BATCH_SIZE - 1)/SYNC_BATCH_SIZE,
+                      syncStats.lastSentSequence);
+    } else {
+        Serial.println("❌ [Sync] Помилка пакету. Переривання.");
+        break; // Зупиняємо цикл, щоб не слати дірки
+    }
+
+    // Yield для запобігання Watchdog timeout при великих об'ємах
+    delay(50);
+  }
+
+  // 8. Очищення
+  sslClient.stop();
+  free(buffer);
+
+  syncStats.lastSyncTime = millis();
+  syncStats.totalRecordsSent += sessionSentCount;
+  syncStats.syncInProgress = false;
+
+  return (sessionSentCount > 0);
 }
 
-bool sendBatchToSheets(DataRecord* records, uint16_t count) {
+bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t count) {
   if (count == 0) return true;
 
-  // Перевірка WiFi з'єднання
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("❌ WiFi не підключений");
-    return false;
-  }
+  // Використовуємо HTTPClient для автоматичної обробки redirect
 
-  Serial.printf("📡 WiFi підключений, IP: %s\n", WiFi.localIP().toString().c_str());
-
-  // Перевірка DNS
-  IPAddress serverIP;
-  if (!WiFi.hostByName("script.google.com", serverIP)) {
-    Serial.println("❌ Помилка DNS: не вдалось розв'язати script.google.com");
-    return false;
-  }
-  Serial.printf("✅ DNS OK: script.google.com = %s\n", serverIP.toString().c_str());
-
-  Serial.printf("📤 Відправка %u записів через GET запити...\n", count);
-  Serial.printf("💾 Heap: %u байт, найбільший блок: %u\n", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-
-  // Примусове звільнення пам'яті перед SSL
-  heap_caps_malloc_extmem_enable(1024); // Дозволяємо external RAM якщо є
-
-  Serial.printf("💾 Після оптимізації: %u байт\n", ESP.getFreeHeap());
-
-  WiFiClientSecure* client = new WiFiClientSecure();
-  if (!client) {
-    Serial.println("❌ Помилка створення SSL клієнта");
-    return false;
-  }
-
-  client->setInsecure();
-  client->setTimeout(10000);
-
+  // Формуємо CSV String
   String csvData = "";
+  csvData.reserve(count * 80);
+
   for (uint16_t i = 0; i < count; i++) {
     time_t ts = records[i].timestamp;
-    struct tm* timeinfo = localtime(&ts);
-    char dateStr[20];
-    strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M:%S", timeinfo);
+    struct tm* tm = localtime(&ts);
 
-    csvData += String(dateStr) + ",";
-    csvData += String(records[i].tempCarrier, 1) + ",";
-    csvData += String(records[i].tempRoom, 1) + ",";
-    csvData += String(records[i].tempBME, 1) + ",";
-    csvData += String(records[i].humidity, 1) + ",";
-    csvData += String(records[i].pumpPower) + ",";
-    csvData += String(records[i].fanPower) + ",";
-    csvData += String(records[i].extractorPower) + ",";
-    csvData += String(records[i].mode) + ",";
-
-    // Додаємо енергоспоживання (якщо доступно)
-    #if ENABLE_ENERGY_MONITOR
-    EnergyMeasurements energy = getEnergyMeasurements();
-    csvData += String(energy.power, 1);
-    #else
-    csvData += "0";
-    #endif
-    csvData += "\n";
+    char line[100];
+    snprintf(line, sizeof(line),
+             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d\n",
+             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+             tm->tm_hour, tm->tm_min, tm->tm_sec,
+             records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
+             records[i].humidity, records[i].pumpPower, records[i].fanPower,
+             records[i].extractorPower, records[i].mode);
+    csvData += line;
   }
 
-  Serial.printf("📤 Відправка %u записів одним пакетом...\n", count);
+  Serial.printf("📊 [Sync] Sending %u bytes\n", csvData.length());
+  Serial.printf("🔍 Sample: %.80s\n", csvData.c_str());
 
-  if (!client->connect("script.google.com", 443)) {
-    Serial.printf("❌ Підключення не вдалось (heap: %u)\n", ESP.getFreeHeap());
-    delete client;
-    return false;
+  // Пряме SSL з правильними headers (без HTTPClient)
+  if (!client->connected()) {
+      Serial.println("🔄 Reconnect...");
+      client->stop();
+      delay(100);
+      if (!client->connect("script.google.com", 443)) {
+          Serial.println("❌ Reconnect fail");
+          return false;
+      }
   }
 
-  String path = String(GOOGLE_SCRIPT_URL).substring(String(GOOGLE_SCRIPT_URL).indexOf("/macros"));
+  String path = String(GOOGLE_SCRIPT_URL);
+  path = path.substring(path.indexOf("/macros"));
+
+  // POST з application/x-www-form-urlencoded (замість text/plain)
+  // Це запобігає redirect на cached endpoint
+  String postData = "data=" + csvData;
+  postData.replace("\n", "%0A");
+  postData.replace(",", "%2C");
+  postData.replace(":", "%3A");
+  postData.replace(" ", "+");
 
   client->println("POST " + path + " HTTP/1.1");
   client->println("Host: script.google.com");
-  client->println("Content-Type: text/csv");
-  client->println("Content-Length: " + String(csvData.length()));
+  client->println("User-Agent: ESP32");
+  client->println("Content-Type: application/x-www-form-urlencoded");
+  client->println("Content-Length: " + String(postData.length()));
   client->println("Connection: close");
   client->println();
-  client->print(csvData);
+  client->print(postData);
+  client->flush();
+
+  Serial.println("📤 Request sent, waiting response...");
 
   unsigned long timeout = millis();
-  bool success = false;
-
-  while (client->connected() && millis() - timeout < 10000) {
-    if (client->available()) {
-      String line = client->readStringUntil('\n');
-      if (line.indexOf("HTTP/1.1 200") >= 0 || line.indexOf("HTTP/1.1 302") >= 0) {
-        success = true;
-      }
-      if (line.indexOf("OK") >= 0) {
-        success = true;
-        break;
-      }
-    }
-    delay(10);
+  while (!client->available() && millis() - timeout < 20000) {
+      delay(10);
   }
 
-  client->stop();
-  delete client;
-
-  if (success) {
-    Serial.println("✅ Всі записи відправлено успішно");
-    return true;
-  } else {
-    Serial.println("❌ Помилка відправки");
-    return false;
+  if (!client->available()) {
+      Serial.println("❌ Timeout");
+      return false;
   }
+
+  String response = "";
+  while (client->available()) {
+      response += (char)client->read();
+  }
+
+  // Обробка redirect 302
+  if (response.indexOf("302") >= 0 && response.indexOf("Location:") >= 0) {
+      Serial.println("🔀 Redirect detected, following...");
+
+      int locIdx = response.indexOf("Location: ") + 10;
+      int endIdx = response.indexOf("\r", locIdx);
+      if (endIdx < 0) endIdx = response.indexOf("\n", locIdx);
+
+      String redirectUrl = response.substring(locIdx, endIdx);
+      redirectUrl.trim();
+
+      Serial.println(redirectUrl.substring(0, 120));
+
+      // Парсинг URL
+      int hostStart = redirectUrl.indexOf("://") + 3;
+      int pathStart = redirectUrl.indexOf("/", hostStart);
+      String newHost = redirectUrl.substring(hostStart, pathStart);
+      String newPath = redirectUrl.substring(pathStart);
+
+      // Новий запит
+      client->stop();
+      delay(200);
+
+      if (!client->connect(newHost.c_str(), 443)) {
+          Serial.println("❌ Redirect failed");
+          return false;
+      }
+
+      // Redirect endpoint приймає тільки GET - redirect URL вже містить дані
+      // Просто робимо GET на цей URL
+      Serial.println("⚠️ Switching to GET for redirect endpoint");
+
+      client->println("GET " + newPath + " HTTP/1.1");
+      client->println("Host: " + newHost);
+      client->println("User-Agent: ESP32");
+      client->println("Connection: close");
+      client->println();
+      client->flush();
+
+      timeout = millis();
+      while (!client->available() && millis() - timeout < 20000) delay(10);
+
+      response = "";
+      while (client->available()) {
+          response += (char)client->read();
+      }
+
+      Serial.printf("📥 Final response (%d bytes):\n", response.length());
+  }
+
+  Serial.println(response.substring(0, 400));
+
+  bool success = (response.indexOf("OK:") >= 0 || response.indexOf("200 OK") >= 0);
+  if (success) Serial.println("✅ Success");
+
+  return success;
 }
 
 // ============================================================================
-// АВТОМАТИЧНА СИНХРОНІЗАЦІЯ
+// ІНШІ ФУНКЦІЇ (AutoSync, Utils...) - 
+// (Тут зміни мінімальні, головне - прибрати static lastSentSequence)
 // ============================================================================
 
 void autoSyncTask() {
-  static unsigned long lastCheckTime = 0;
-  unsigned long now = millis();
+    static unsigned long lastCheck = 0;
+    unsigned long now = millis();
 
-  // Перевіряємо не частіше ніж раз на хвилину
-  if (now - lastCheckTime < 60000) return;
-  lastCheckTime = now;
+    // Перевіряємо не частіше ніж раз на хвилину
+    if (now - lastCheck < 60000) return;
+    lastCheck = now;
 
-  // Пропускаємо якщо вже синхронізуємось
-  if (syncStats.syncInProgress) return;
+    if (syncStats.syncInProgress) return;
 
-  // Перевіряємо чи час для щоденної синхронізації
-  if (checkDailySyncTime() && !lastDailySyncDone) {
-    Serial.println("🕐 Час щоденної синхронізації (23:59)");
-    if (syncToGoogleSheets()) {
-      lastDailySyncDone = true;
-    }
-    return;
-  }
-
-  // Скидаємо прапорець щоденної синхронізації о 00:00
-  time_t nowTime;
-  time(&nowTime);
-  struct tm* timeInfo = localtime(&nowTime);
-  if (timeInfo->tm_hour == 0 && timeInfo->tm_min == 0) {
-    lastDailySyncDone = false;
-  }
-
-  // Перевіряємо інтервал 30 хвилин
-  if (syncStats.lastSyncTime == 0 || (now - syncStats.lastSyncTime) >= SYNC_INTERVAL_MS) {
-    // Перевіряємо чи є достатньо нових записів
-    LoggerStats logStats = getLoggerStats();
-
-    // Виділяємо пам'ять в heap замість стеку
-    DataRecord* buffer = (DataRecord*)malloc(1440 * sizeof(DataRecord));
-    if (!buffer) {
-      Serial.println("❌ Помилка виділення пам'яті для autoSync");
-      return;
+    // Перевіряємо чи час для щоденної синхронізації
+    if (checkDailySyncTime() && !lastDailySyncDone) {
+        Serial.println("🕐 [Sync] Щоденна синхронізація (23:59)");
+        if (syncToGoogleSheets()) {
+            lastDailySyncDone = true;
+        }
+        return;
     }
 
-    uint16_t count = 0;
-    readRAMData(buffer, &count);
-
-    uint16_t newRecords = 0;
-    for (uint16_t i = 0; i < count; i++) {
-      // Використовуємо sequence для підрахунку нових записів
-      if (buffer[i].sequenceNumber > lastSentSequence && buffer[i].timestamp > 0) {
-        newRecords++;
-      }
+    // Скидаємо прапорець щоденної синхронізації о 00:00
+    time_t nowTime;
+    time(&nowTime);
+    struct tm* timeInfo = localtime(&nowTime);
+    if (timeInfo->tm_hour == 0 && timeInfo->tm_min == 0) {
+        lastDailySyncDone = false;
     }
 
-    free(buffer); // Звільняємо пам'ять
-
-    if (newRecords >= SYNC_MIN_NEW_RECORDS) {
-      Serial.printf("🤖 Автоматична синхронізація: %u нових записів\n", newRecords);
-      syncToGoogleSheets();
+    // Перевірка інтервалу 30 хвилин
+    if (syncStats.lastSyncTime == 0 || (now - syncStats.lastSyncTime) > SYNC_INTERVAL_MS) {
+        Serial.println("⏰ [Sync] Auto-trigger");
+        syncToGoogleSheets();
     }
-  }
+}
+
+// Гетери/Сетери тепер працюють з syncStats
+SyncStats getSyncStats() { return syncStats; }
+unsigned long getLastSentTimestamp() { return syncStats.lastSentTimestamp; }
+uint32_t getLastSentSequence() { return syncStats.lastSentSequence; }
+
+void saveLastSentTimestamp(unsigned long ts) {
+    // Legacy support
+    syncStats.lastSentTimestamp = ts;
+    // Sequence не міняємо
+    Preferences p;
+    if(p.begin("sheets_sync", false)){
+        p.putULong("last_ts", ts);
+        p.end();
+    }
+}
+
+void setLastSentSequence(uint32_t seq) {
+    syncStats.lastSentSequence = seq;
+    Preferences p;
+    if(p.begin("sheets_sync", false)){
+        p.putULong("last_seq", seq);
+        p.end();
+    }
 }
 
 bool checkDailySyncTime() {
-  time_t now;
-  time(&now);
-  struct tm* timeInfo = localtime(&now);
+    time_t now;
+    time(&now);
+    struct tm* timeInfo = localtime(&now);
 
-  return (timeInfo->tm_hour == SYNC_DAILY_HOUR &&
-          timeInfo->tm_min == SYNC_DAILY_MINUTE);
-}
-
-// ============================================================================
-// СТАТИСТИКА
-// ============================================================================
-
-SyncStats getSyncStats() {
-  return syncStats;
+    return (timeInfo->tm_hour == SYNC_DAILY_HOUR &&
+            timeInfo->tm_min == SYNC_DAILY_MINUTE);
 }
 
 void printSyncInfo() {
-  Serial.println("\n📊 СТАТИСТИКА GOOGLE SHEETS СИНХРОНІЗАЦІЇ");
-  Serial.println("==========================================");
-  Serial.printf("Останній відправлений timestamp: %lu\n", syncStats.lastSentTimestamp);
-  Serial.printf("Всього відправлено за сесію: %u записів\n", syncStats.totalRecordsSent);
-  Serial.printf("Невдалих синхронізацій: %u\n", syncStats.failedSyncs);
-  Serial.printf("Статус: %s\n", syncStats.syncInProgress ? "В процесі..." : "Готово");
+    Serial.println("\n📊 СТАТИСТИКА GOOGLE SHEETS СИНХРОНІЗАЦІЇ");
+    Serial.println("==========================================");
+    Serial.printf("Останній sequence: %lu\n", syncStats.lastSentSequence);
+    Serial.printf("Останній timestamp: %lu\n", syncStats.lastSentTimestamp);
+    Serial.printf("Всього відправлено: %u записів\n", syncStats.totalRecordsSent);
+    Serial.printf("Невдалих синхронізацій: %u\n", syncStats.failedSyncs);
+    Serial.printf("Статус: %s\n", syncStats.syncInProgress ? "В процесі..." : "Готово");
 
-  if (syncStats.lastSyncTime > 0) {
-    unsigned long timeSinceSync = (millis() - syncStats.lastSyncTime) / 1000;
-    Serial.printf("Час з останньої синхронізації: %lu секунд\n", timeSinceSync);
-  }
-  Serial.println("==========================================");
-}
-
-// ============================================================================
-// УТИЛІТИ
-// ============================================================================
-
-unsigned long getLastSentTimestamp() {
-  return syncStats.lastSentTimestamp;
-}
-
-void saveLastSentTimestamp(unsigned long timestamp) {
-  syncStats.lastSentTimestamp = timestamp;
-  Preferences sheetsPrefs;
-  if (sheetsPrefs.begin("sheets_sync", false)) {
-    sheetsPrefs.putULong("last_ts", timestamp);
-    sheetsPrefs.end();
-  }
-}
-
-// Функція для ручного встановлення sequence (якщо потрібно скинути)
-void setLastSentSequence(uint32_t seq) {
-  lastSentSequence = seq;
-  Preferences sheetsPrefs;
-  if (sheetsPrefs.begin("sheets_sync", false)) {
-    sheetsPrefs.putULong("last_seq", seq);
-    sheetsPrefs.end();
-    Serial.printf("✅ lastSentSequence встановлено: %lu\n", seq);
-  }
-}
-
-uint32_t getLastSentSequence() {
-  return lastSentSequence;
+    if (syncStats.lastSyncTime > 0) {
+        unsigned long timeSinceSync = (millis() - syncStats.lastSyncTime) / 1000;
+        Serial.printf("Час з останньої синхронізації: %lu секунд\n", timeSinceSync);
+    }
+    Serial.println("==========================================");
 }

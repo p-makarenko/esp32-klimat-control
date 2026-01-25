@@ -11,7 +11,7 @@
 // ============================================================================
 
 LoggerStats loggerStats;
-DataRecord ramBuffer[1440];  // 24 години × 60 хвилин = 1440 записів
+DataRecord ramBuffer[HISTORY_BUFFER_SIZE];  // RAM буфер для історії
 uint16_t ramBufferIndex = 0;
 uint32_t globalSequence = 0;  // Глобальний лічильник для унікальності записів
 
@@ -157,7 +157,7 @@ void logDataToRAM() {
 
   // Зберігаємо у RAM буфер (циклічний буфер)
   ramBuffer[ramBufferIndex] = record;
-  ramBufferIndex = (ramBufferIndex + 1) % 1440;
+  ramBufferIndex = (ramBufferIndex + 1) % HISTORY_BUFFER_SIZE;
 
   xSemaphoreGive(getRamBufferMutex());
 
@@ -326,7 +326,7 @@ bool readRAMData(DataRecord* buffer, uint16_t* count) {
   memcpy(buffer, ramBuffer, sizeof(ramBuffer));
 
   xSemaphoreGive(getRamBufferMutex());
-  *count = 1440;  // Завжди повертаємо всі 1440 записів (можуть бути нульові)
+  *count = HISTORY_BUFFER_SIZE;  // Повертаємо всі записи з буфера
 
   return true;
 }
@@ -334,8 +334,8 @@ bool readRAMData(DataRecord* buffer, uint16_t* count) {
 // Читання частини даних з RAM (chunked read для економії пам'яті)
 bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
   if (!buffer) return false;
-  if (offset >= 1440) return false;
-  if (offset + count > 1440) count = 1440 - offset;
+  if (offset >= HISTORY_BUFFER_SIZE) return false;
+  if (offset + count > HISTORY_BUFFER_SIZE) count = HISTORY_BUFFER_SIZE - offset;
 
   // Копіюємо тільки потрібну частину
   memcpy(buffer, &ramBuffer[offset], count * sizeof(DataRecord));

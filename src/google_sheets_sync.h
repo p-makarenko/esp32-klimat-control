@@ -10,15 +10,15 @@
 // НАЛАШТУВАННЯ GOOGLE SHEETS
 // ============================================================================
 
-// URL Google Apps Script Web App (оновлено для GET запитів)
-#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbzNjLPxfI2AbmTR4rlBTIWrU835YNNmU88qQ2IzltJWOQEomUMZF669IrPmaZS3xw1H/exec"
+// URL Google Apps Script Web App - замініть на ваш новий deployment URL
+#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbwIpmd9CbyHAm7JS0OUQy5i1bSlniZYrPY6fNtyV5UqEESfkIjOGo3WjPuCw4Gq4oAY/exec"
 
 // Налаштування синхронізації
 #define SYNC_INTERVAL_MS 1800000          // 30 хвилин
 #define SYNC_MIN_NEW_RECORDS 10           // Мінімум нових записів для автосинхронізації
 #define SYNC_DAILY_HOUR 23                // Година щоденної синхронізації (23:00)
 #define SYNC_DAILY_MINUTE 59              // Хвилина щоденної синхронізації (23:59)
-#define SYNC_BATCH_SIZE 50                // Розмір пакету для відправки (записів)
+#define SYNC_BATCH_SIZE 30                // Розмір пакету для відправки (записів)
 
 // ============================================================================
 // СТРУКТУРИ ДАНИХ
@@ -43,7 +43,7 @@ bool initGoogleSheetsSync();              // Ініціалізувати сис
 // Синхронізація
 bool syncToGoogleSheets();                // Ручна синхронізація
 void autoSyncTask();                      // Автоматична синхронізація (викликати в loop)
-bool sendBatchToSheets(DataRecord* records, uint16_t count); // Відправка пакету даних
+bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t count); // Відправка пакету даних
 
 // Статистика
 SyncStats getSyncStats();                 // Отримати статистику синхронізації

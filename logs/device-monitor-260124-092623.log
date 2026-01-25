@@ -1,0 +1,1319 @@
+🏠 [09:26:35] Штатний режим: T_кімн=26.6°C (ціль 18.5°C), T_тепл=41.7°C, Насос=0%, Вентилятор=0%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 112024 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd5a3c. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcebed0 0x4037d191:0x3fcebef0 0x40383235:0x3fcebf10 0x40382e4d:0x3fcec040 0x40378ac5:0x3fcec060 0x40383265:0x3fcec080 0x42012556:0x3fcec0a0 0x420127aa:0x3fcec140 0x42013ef5:0x3fcec170 0x42013f73:0x3fcec1c0 0x4204319d:0x3fcec2f0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x420127aa in autoSyncTask() at src/google_sheets_sync.cpp:325
+  #8  0x42013ef5 in handleSerialInput() at src/main.cpp:481
+  #9  0x42013f73 in loop() at src/main.cpp:307
+  #10 0x4204319d in loopTask(void*) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/cores/esp32/main.cpp:50
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420e7b1a
+  #0  0x420e7b1a in esp_pm_impl_waiti at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_pm/pm_impl.c:855
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -48                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:27:01
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+✓ Таск логування даних запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -47                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+✓ Зволожувач: ВКЛ (Вологість: 29.2, Ціль: 39.1)
+[TIME] Синхронізовано: 24.01.2026 09:27:22
+[SENSOR] T:26.9/42.2°C H:29.2% P:991.5hPa
+🏠 [09:27:36] Штатний режим: T_кімн=26.9°C (ціль 18.5°C), T_тепл=42.4°C, Насос=0%, Вентилятор=0%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 108112 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd705c. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcebed0 0x4037d191:0x3fcebef0 0x40383235:0x3fcebf10 0x40382e4d:0x3fcec040 0x40378ac5:0x3fcec060 0x40383265:0x3fcec080 0x42012556:0x3fcec0a0 0x420127aa:0x3fcec140 0x42013ef5:0x3fcec170 0x42013f73:0x3fcec1c0 0x4204319d:0x3fcec2f0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x420127aa in autoSyncTask() at src/google_sheets_sync.cpp:325
+  #8  0x42013ef5 in handleSerialInput() at src/main.cpp:481
+  #9  0x42013f73 in loop() at src/main.cpp:307
+  #10 0x4204319d in loopTask(void*) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/cores/esp32/main.cpp:50
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420e7b1a
+  #0  0x420e7b1a in esp_pm_impl_waiti at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_pm/pm_impl.c:855
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -49                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:28:02
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+✓ Таск логування даних запущено
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: sheets-sync
+📤 Веб: Запуск синхронізації з Google Sheets...
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+💾 [Sync] Heap: 106876 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀📭 [Sync] Немає нових даних.
+CORRUPT HE
+AP: Bad tail at 0x3fcd7ae8. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcca500 0x4037d191:0x3fcca520 0x40383235:0x3fcca540 0x40382e4d:0x3fcca670 0x40378ac5:0x3fcca690 0x40383265:0x3fcca6b0 0x42012556:0x3fcca6d0 0x4201a783:0x3fcca770 0x4201ae12:0x3fcca820 0x420e5eb9:0x3fcca870 0x4203cb93:0x3fcca890 0x4203ccbe:0x3fcca8b0 0x4203cd0f:0x3fcca8f0 0x4203ceb9:0x3fcca950 0x42019167:0x3fcca9a0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x4201a783 in processWebCommand(String const&) at src/web_pages_command.cpp:423
+  #8  0x4201ae12 in handleWebCommand() at src/web_pages_command.cpp:54
+  #9  0x420e5eb9 in std::_Function_handler<void (), void (*)()>::_M_invoke(std::_Any_data const&) at c:\users\pavel\.platformio\packages\toolchain-xtensa-esp32s3\xtensa-esp32s3-elf\include\c++\8.4.0\bits/std_function.h:297
+  #10 0x4203cb93 in std::function<void ()>::operator()() const at c:\users\pavel\.platformio\packages\toolchain-xtensa-esp32s3\xtensa-esp32s3-elf\include\c++\8.4.0\bits/std_function.h:687
+  #11 0x4203ccbe in FunctionRequestHandler::handle(WebServer&, http_method, String) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/detail/RequestHandlersImpl.h:51
+  #12 0x4203cd0f in WebServer::_handleRequest() at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.cpp:641
+  #13 0x4203ceb9 in WebServer::handleClient() at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.cpp:307
+  #14 0x42019167 in webTask(void*) at src/web_interface.cpp:399 (discriminator 1)
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40377e7c
+  #0  0x40377e7c in esp_restart_noos at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c:151 (discriminator 1)
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -30                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:28:16
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено✓ Таск логування даних запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -42                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+✓ Зволожувач: ВКЛ (Вологість: 28.9, Ціль: 38.8)
+[TIME] Синхронізовано: 24.01.2026 09:28:36
+[SENSOR] T:27.4/43.1°C H:28.8% P:991.5hPa
+🏠 [09:28:50] Штатний режим: T_кімн=27.4°C (ціль 18.5°C), T_тепл=43.2°C, Насос=0%, Вентилятор=0%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 108040 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd6fe0. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcebed0 0x4037d191:0x3fcebef0 0x40383235:0x3fcebf10 0x40382e4d:0x3fcec040 0x40378ac5:0x3fcec060 0x40383265:0x3fcec080 0x42012556:0x3fcec0a0 0x420127aa:0x3fcec140 0x42013ef5:0x3fcec170 0x42013f73:0x3fcec1c0 0x4204319d:0x3fcec2f0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x420127aa in autoSyncTask() at src/google_sheets_sync.cpp:325
+  #8  0x42013ef5 in handleSerialInput() at src/main.cpp:481
+  #9  0x42013f73 in loop() at src/main.cpp:307
+  #10 0x4204319d in loopTask(void*) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/cores/esp32/main.cpp:50
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420e7b1a
+  #0  0x420e7b1a in esp_pm_impl_waiti at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_pm/pm_impl.c:855
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -47                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:29:16
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: sheets-sync
+📤 Веб: Запуск синхронізації з Google Sheets...
+💾 [Sync] Heap: 106860 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+✓ Таск логування даних запущено
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd7728. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcc9b90 0x4037d191:0x3fcc9bb0 0x40383235:0x3fcc9bd0 0x40382e4d:0x3fcc9d00 0x40378ac5:0x3fcc9d20 0x40383265:0x3fcc9d40 0x42012556:0x3fcc9d60 0x4201a783:0x3fcc9e00 0x4201ae12:0x3fcc9eb0 0x420e5eb9:0x3fcc9f00 0x4203cb93:0x3fcc9f20 0x4203ccbe:0x3fcc9f40 0x4203cd0f:0x3fcc9f80 0x4203ceb9:0x3fcc9fe0 0x42019167:0x3fcca030
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x4201a783 in processWebCommand(String const&) at src/web_pages_command.cpp:423
+  #8  0x4201ae12 in handleWebCommand() at src/web_pages_command.cpp:54
+  #9  0x420e5eb9 in std::_Function_handler<void (), void (*)()>::_M_invoke(std::_Any_data const&) at c:\users\pavel\.platformio\packages\toolchain-xtensa-esp32s3\xtensa-esp32s3-elf\include\c++\8.4.0\bits/std_function.h:297
+  #10 0x4203cb93 in std::function<void ()>::operator()() const at c:\users\pavel\.platformio\packages\toolchain-xtensa-esp32s3\xtensa-esp32s3-elf\include\c++\8.4.0\bits/std_function.h:687
+  #11 0x4203ccbe in FunctionRequestHandler::handle(WebServer&, http_method, String) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/detail/RequestHandlersImpl.h:51
+  #12 0x4203cd0f in WebServer::_handleRequest() at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.cpp:641
+  #13 0x4203ceb9 in WebServer::handleClient() at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.cpp:307
+  #14 0x42019167 in webTask(void*) at src/web_interface.cpp:399 (discriminator 1)
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40377e7c
+  #0  0x40377e7c in esp_restart_noos at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/port/soc/esp32s3/system_internal.c:151 (discriminator 1)
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -47                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:29:31
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+✓ Таск логування даних запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -47                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+✓ Зволожувач: ВКЛ (Вологість: 28.8, Ціль: 38.6)
+[TIME] Синхронізовано: 24.01.2026 09:29:51
+[SENSOR] T:27.8/43.9°C H:29.0% P:991.5hPa
+🏠 [09:30:05] Штатний режим: T_кімн=27.9°C (ціль 18.5°C), T_тепл=44.0°C, Насос=0%, Вентилятор=0%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 108192 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd7298. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcebed0 0x4037d191:0x3fcebef0 0x40383235:0x3fcebf10 0x40382e4d:0x3fcec040 0x40378ac5:0x3fcec060 0x40383265:0x3fcec080 0x42012556:0x3fcec0a0 0x420127aa:0x3fcec140 0x42013ef5:0x3fcec170 0x42013f73:0x3fcec1c0 0x4204319d:0x3fcec2f0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x420127aa in autoSyncTask() at src/google_sheets_sync.cpp:325
+  #8  0x42013ef5 in handleSerialInput() at src/main.cpp:481
+  #9  0x42013f73 in loop() at src/main.cpp:307
+  #10 0x4204319d in loopTask(void*) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/cores/esp32/main.cpp:50
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420e7b1a
+  #0  0x420e7b1a in esp_pm_impl_waiti at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_pm/pm_impl.c:855
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -41                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:30:31
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+✓ Таск логування даних запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -40                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+✓ Зволожувач: ВКЛ (Вологість: 29.0, Ціль: 38.4)
+[TIME] Синхронізовано: 24.01.2026 09:30:51
+[SENSOR] T:28.1/44.4°C H:28.8% P:991.5hPa
+🏠 [09:31:05] Штатний режим: T_кімн=28.2°C (ціль 18.5°C), T_тепл=44.6°C, Насос=0%, Вентилятор=0%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 110536 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+CORRUPT HEAP: Bad tail at 0x3fcd6390. Expected 0xbaad5678 got 0x00000000
+
+assert failed: multi_heap_free multi_heap_poisoning.c:259 (head != NULL)
+
+
+Backtrace: 0x4037826e:0x3fcebed0 0x4037d191:0x3fcebef0 0x40383235:0x3fcebf10 0x40382e4d:0x3fcec040 0x40378ac5:0x3fcec060 0x40383265:0x3fcec080 0x42012556:0x3fcec0a0 0x420127aa:0x3fcec140 0x42013ef5:0x3fcec170 0x42013f73:0x3fcec1c0 0x4204319d:0x3fcec2f0
+  #0  0x4037826e in panic_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/panic.c:408
+  #1  0x4037d191 in esp_system_abort at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/esp_system.c:137
+  #2  0x40383235 in __assert_func at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/assert.c:85
+  #3  0x40382e4d in multi_heap_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/multi_heap_poisoning.c:259 (discriminator 1)
+  #4  0x40378ac5 in heap_caps_free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/heap/heap_caps.c:382
+  #5  0x40383265 in free at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/newlib/heap.c:39
+  #6  0x42012556 in syncToGoogleSheets() at src/google_sheets_sync.cpp:131
+  #7  0x420127aa in autoSyncTask() at src/google_sheets_sync.cpp:325
+  #8  0x42013ef5 in handleSerialInput() at src/main.cpp:481
+  #9  0x42013f73 in loop() at src/main.cpp:307
+  #10 0x4204319d in loopTask(void*) at C:/Users/Pavel/.platformio/packages/framework-arduinoespressif32/cores/esp32/main.cpp:50
+
+
+
+
+
+ELF file SHA256: a8ccf905419a6e65
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420e7b1a
+  #0  0x420e7b1a in esp_pm_impl_waiti at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_pm/pm_impl.c:855
+
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D47                         ║
+║  💬 Коментар:     День 47 розробки     ║
+║  📅 Зібрано:      Jan 23 2026          17:05:07    ║
+║  📝 Рядків:       11055                            ║
+║  💾 Розмір:       1359                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -27                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 09:31:31
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7216
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=6859, TS=1769158619
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено✓ Таск логування даних запущено
+
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -34                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані

@@ -127,6 +127,73 @@ General pattern:
 
 **Implementation:** DO NOT disable unless absolutely necessary
 
+## Memory Management (Critical for Google Sheets Sync)
+
+### Heap Calculation Strategy
+**ALWAYS follow this order:**
+
+1. **Read constants from config.h:**
+   - `HISTORY_BUFFER_SIZE` (typically 1440 records = 24 hours)
+   - Check other buffer-related defines
+
+2. **Calculate DataRecord size:**
+   ```cpp
+   sizeof(DataRecord) ≈ 50 bytes (including padding/alignment)
+   ```
+
+3. **Calculate total requirement:**
+   - Buffer: `HISTORY_BUFFER_SIZE * sizeof(DataRecord)` ≈ 70KB
+   - SSL overhead: 20-25KB (depends on allocation method)
+   - CSV String buffer: `SYNC_BATCH_SIZE * 70` bytes
+   - **Total: ~95-100KB minimum**
+
+4. **Check before allocation:**
+   ```cpp
+   uint32_t required = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 25000;
+   if (ESP.getFreeHeap() < required) {
+       // Handle insufficient memory
+   }
+   ```
+
+### Optimization Techniques
+
+**SSL Client:**
+- ✅ Stack allocation: `WiFiClientSecure sslClient;` (saves ~16KB heap)
+- ❌ Heap allocation: `new WiFiClientSecure()` (wastes heap)
+
+**Buffer Management:**
+- ✅ In-place filtering (reuse allocated buffer)
+- ❌ Double malloc (allRecords + newRecords)
+
+**String Optimization:**
+- ✅ Pre-reserve: `csvData.reserve(count * 70);`
+- ✅ snprintf to fixed buffer, then append
+- ❌ String concatenation in loop
+
+**Batch Size:**
+- Smaller `SYNC_BATCH_SIZE` = less CSV buffer memory
+- Larger = more network efficiency
+- Balance: 30 records ≈ 2KB CSV buffer
+
+### Heap Fragmentation
+ESP32 heap fragments over time from:
+- WebServer allocations
+- WiFi stack
+- String operations
+- Multiple malloc/free cycles
+
+**Strategy:**
+- Allocate large buffers early
+- Free immediately after use
+- Consider `heap_caps_get_largest_free_block()` for actual available contiguous memory
+
+### Common Pitfalls
+1. **Not checking HISTORY_BUFFER_SIZE** - assumes fixed 1000
+2. **SSL on heap** - wastes 16KB unnecessarily
+3. **Double malloc** - temporary + filtered arrays
+4. **String += in loop** - causes fragmentation
+5. **Ignoring alignment** - sizeof may be larger than sum of fields
+
 ### Watchdog Protection
 - Hardware timer monitors main loop
 - Must execute quickly

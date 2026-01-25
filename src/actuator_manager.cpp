@@ -95,7 +95,7 @@ void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower
 
 void setPumpPercent(uint8_t percent) {
   uint8_t originalPercent = percent;
-  
+
   // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
     // В авто режимі: мінімум з налаштувань при НЕНУЛЬОВОМУ значенні
@@ -110,16 +110,91 @@ void setPumpPercent(uint8_t percent) {
     // У ручному/форсажному/аварійному режимі: БУДЬ-ЯКЕ значення, включаючи 0%
     percent = constrain(percent, 0, 100);
   }
-  
+
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
-  
+
   // Serial.printf("[DEBUG] setPumpPercent: %d%% -> %d%% -> PWM=%d\n", originalPercent, percent, pwmValue);
-  
+
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.pumpPower = pwmValue;
     ledcWrite(PUMP_CHANNEL, pwmValue);
     xSemaphoreGive(getHeatingMutex());
   }
+}
+
+void pumpStartupRamp(uint8_t targetPercent) {
+  // У ручному режимі - без плавного розгону, просто встановлюємо
+  if (heatingState.manualMode) {
+    setPumpPercent(targetPercent);
+    return;
+  }
+
+  // Якщо ціль >= 50%, плавний розгон не потрібен
+  if (targetPercent >= 50 || targetPercent == 0) {
+    setPumpPercent(targetPercent);
+    return;
+  }
+
+  // АВТОМАТИЧНИЙ РЕЖИМ: Для цілей < 50% застосовуємо плавний розгон через 50%
+  Serial.printf("🔄 Плавний розгон насоса до %d%%...\n", targetPercent);
+
+  // Етап 1: Розгон на 50% за 3 секунди (плавно)
+  const uint8_t rampPercent = 50;
+  const uint16_t rampDurationMs = 3000;
+  const uint16_t stepDurationMs = 50;
+  const uint8_t totalSteps = rampDurationMs / stepDurationMs;
+
+  // Отримуємо поточний стан насоса
+  uint8_t currentPumpPower = 0;
+  if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+    currentPumpPower = map(heatingState.pumpPower, 0, 255, 0, 100);
+    xSemaphoreGive(getHeatingMutex());
+  }
+
+  // Розгін з поточного стану до 50%
+  for (uint8_t step = 0; step <= totalSteps; step++) {
+    uint8_t percent = map(step, 0, totalSteps, currentPumpPower, rampPercent);
+
+    // Прямий запис PWM без виклику setPumpPercent (уникаємо рекурсії мінімумів)
+    uint8_t pwmValue = map(percent, 0, 100, 0, 255);
+    if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+      heatingState.pumpPower = pwmValue;
+      ledcWrite(PUMP_CHANNEL, pwmValue);
+      xSemaphoreGive(getHeatingMutex());
+    }
+
+    if (step < totalSteps) {
+      delay(stepDurationMs);
+    }
+  }
+
+  Serial.printf("  ✓ Досягнуто 50%% після розгону\n");
+
+  // Етап 2: Робота на 50% протягом 1 секунди
+  delay(1000);
+  Serial.printf("  ✓ Робота на 50%% протягом 1 сек\n");
+
+  // Етап 3: Плавне зниження до цільового рівня за 1 секунду
+  const uint16_t downDurationMs = 1000;
+  const uint8_t downSteps = downDurationMs / stepDurationMs;
+
+  for (uint8_t step = 0; step <= downSteps; step++) {
+    uint8_t percent = map(step, 0, downSteps, rampPercent, targetPercent);
+
+    // Прямий запис PWM
+    uint8_t pwmValue = map(percent, 0, 100, 0, 255);
+    if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+      heatingState.pumpPower = pwmValue;
+      ledcWrite(PUMP_CHANNEL, pwmValue);
+      xSemaphoreGive(getHeatingMutex());
+    }
+
+    if (step < downSteps) {
+      delay(stepDurationMs);
+    }
+  }
+
+  Serial.printf("  ✓ Насос встановлено на %d%%\n", targetPercent);
 }
 
 void setFanPercent(uint8_t percent) {

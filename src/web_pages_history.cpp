@@ -42,7 +42,7 @@ void handleHistoryPage() {
     // Статистика
     LoggerStats stats = getLoggerStats();
     html += "<div class='info' id='statsInfo' style='text-align: center; color: #666; margin-bottom: 20px; font-size: 0.9em;'>";
-    html += "Записів в RAM: " + String(stats.totalRecordsRAM) + " / 1440";
+    html += "Записів в RAM: " + String(stats.totalRecordsRAM) + " / " + String(HISTORY_BUFFER_SIZE);
     html += " | Записів в SPIFFS: " + String(stats.totalRecordsSPIFFS);
     html += " | Оновлення кожну хвилину";
     html += "</div>";
@@ -343,7 +343,7 @@ void handleHistoryData() {
 
     if (source == "ram") {
         LoggerStats stats = getLoggerStats();
-        uint16_t totalRecords = (stats.totalRecordsRAM > 1440) ? 1440 : stats.totalRecordsRAM;
+        uint16_t totalRecords = (stats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : stats.totalRecordsRAM;
 
         if (format == "csv") {
             server.sendHeader("Content-Disposition", "attachment; filename=klimat_data.csv");

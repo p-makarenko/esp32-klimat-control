@@ -1,0 +1,1677 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x23 (DOWNLOAD(USB/UART0))
+waiting for download
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+
+
+╔════════════════════════════════════════════════════════╗
+║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║
+╠════════════════════════════════════════════════════════╣
+║  📦 Версія:       v4.7-D48                         ║
+║  💬 Коментар:     День 48 розробки     ║
+║  📅 Зібрано:      Jan 24 2026          12:40:49    ║
+║  📝 Рядків:       11121                            ║
+║  💾 Розмір:       1362                          KB ║
+╚════════════════════════════════════════════════════════╝
+
+=== ІНІЦІАЛІЗАЦІЯ WI-FI ===
+
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -38                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+✅ Локальна мережа доступна
+✅ Інтернет доступний (NTP синхронізований)
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===
+Сервер: pool.ntp.org
+Отримано: 2026-01-24 12:42:15
+
+=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===
+Знайдено DS18B20 датчиків: 2
+✓ DS18B20 датчики ініціалізовано
+✅  Датчики температури готові
+✓ BME280 ініціалізовано
+✅  Датчик BME280 готовий
+
+=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===
+✓ GPIO ініціалізовано. Серво: ЗАКРИТО (0°)
+✓ PWM канали ініціалізовано
+✓ Сервопривід ініціалізовано: ВІДКРИТА (0°)
+✅  Виконавчі пристрої готові
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГІКИ ===
+✓ Розширена логіка ініціалізована
+✓ Новий режим Serial Monitor готовий до роботи
+
+══════════════════════════════════════════════════════════
+        РЕЖИМ ШВИДКОГО УПРАВЛІННЯ
+══════════════════════════════════════════════════════════
+ШВИДКІ КОМАНДИ (буква + число):
+  aXX - насос XX%        (приклад: a50)
+  bXX - вентилятор XX%   (приклад: b40)
+  cXX - витяжка XX%      (приклад: c30, c0)
+
+НАЛАШТУВАННЯ:
+  tmin XX - мін. темп.   (приклад: tmin 25)
+  tmax XX - макс. темп.  (приклад: tmax 26)
+  hmin XX - мін. вл.     (приклад: hmin 65)
+  hmax XX - макс. вл.    (приклад: hmax 70)
+
+ТАЙМЕРИ:
+  ton XX  - вкл на XX хв (приклад: ton 30)
+  toff    - вимкнути таймер
+  tcycle X:Y Z:W - цикл X хв Y сек вкл, Z хв W сек викл
+
+СЕЗОННІ РЕЖИМИ:
+  cool   - перемкнути охолодження/обігрів
+  season - увімк/вимк сезонне відключення
+
+СЕРВІС:
+  s      - статус системи
+  m      - повне меню
+  mode   - змінити режим (компактний/повний)
+  reset  - скинути аварійний режим
+  quiet  - вимкнути авто-вивід статусу
+  verbose- увімкнути авто-вивід статусу
+  web    - інформація про веб-інтерфейс
+══════════════════════════════════════════════════════════
+
+
+=== ІНІЦІАЛІЗАЦІЯ ЛОГУВАННЯ ДАНИХ ===
+
+🗄️ Ініціалізація системи логування даних...
+✓ Завантажено sequence counter: 7381
+✓ SPIFFS ініціалізовано
+  Загальний обсяг: 1438481 байт (1.37 МБ)
+  Використано: 502 байт (0.00 МБ)
+  Вільно: 1437979 байт (1.37 МБ)
+✓ Створено директорію /logs
+✓ Знайдено існуючий лог-файл: 88 байт
+✓ Знайдено 0 архівних файлів
+✅ Систему логування ініціалізовано успішно!
+
+
+=== ІНІЦІАЛІЗАЦІЯ GOOGLE SHEETS СИНХРОНІЗАЦІЇ ===
+
+🔄 [Sync] Ініціалізація...
+📊 [Sync] Стан: Seq=7227, TS=1769241728
+
+=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===
+ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)
+
+=== СТВОРЕННЯ ЗАВДАНЬ ===
+✓ Задача датчиків запущена
+✓ Задачу обігріву запущено
+✅ Веб-завдання запущено
+✓ Задача розширеної логіки запущена
+✓ Задачу вентиляції запущено
+✓ Таск логування даних запущено
+
+=== ІНІЦІАЛІЗАЦІЯ СИСТЕМИ ===
+
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+║        ✅ СИСТЕМА ГОТОВА ДО РОБОТИ                    ║
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+╔════════════════════════════════════════════════════════╗
+║         ✅ ПІДКЛЮЧЕНО ДО WiFi МЕРЕЖІ                  ║
+╠════════════════════════════════════════════════════════╣
+║  📡 Мережа:       Redmi Note 14                    ║
+║  🌐 IP:           10.17.70.166                     ║
+║  🔌 Шлюз:         10.17.70.19                      ║
+║  📶 Сигнал:       -41                       dBm ║
+╠════════════════════════════════════════════════════════╣
+║  🔗 ПОСИЛАННЯ ДЛЯ ДОСТУПУ:                            ║
+║  📱 IP адреса:    http://10.17.70.166                ║
+║  🔧 NetBIOS запуск...                           ✅ ║
+║  💻 http://klimat (Windows)                            ║
+║  🔧 mDNS запуск...                              ✅ ║
+║  🍎 http://klimat.local (Mac/iOS/Linux)                ║
+╠════════════════════════════════════════════════════════╣
+║  💡 РЕКОМЕНДАЦІЯ: використовуйте IP адресу            ║
+╚════════════════════════════════════════════════════════╝
+
+💡 Команди Serial:
+  'm' - Меню | 's' - Статус
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+
+✅  Початковий стан встановлений
+✅  Всі системи ініціалізовані
+✓ Зволожувач: УВІМКНЕНО (Вологість: 35.8%, Ціль: 43.6%)
+[TIME] Синхронізовано: 24.01.2026 12:42:35
+[SENSOR] T:17.8/35.8°C H:35.5% P:992.3hPa
+🏠 [12:42:50] Штатний режим: T_кімн=17.9°C (ціль 18.5°C), T_тепл=34.8°C, Насос=0%, Вентилятор=39%
+⏰ [Sync] Auto-trigger
+💾 [Sync] Heap: 134028 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📭 [Sync] Немає нових даних.
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:43:04
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 18.0°C (ціль: 18.0-19.0°C)
+  Теплоносій: 34.6°C
+  Вологість: 32.4% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 0%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-31 dBm)
+  Пам'ять: 130 KB
+  Записів в історії: 0
+══════════════════════════════════════════════════════════
+
+[SENSOR] T:18.0/34.7°C H:32.1% P:992.3hPa
+⚠️ Система не досягає цільових порогів. Моніторинг почато...
+   Дефіцит температури: 0.5°C, дефіцит вологості: 10.4%
+[TIME] Синхронізовано: 24.01.2026 12:43:06
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:43:06                                     ║
+║  🌡️  Теплоносій: 34.7°C                            ║
+║  🏠 Кімната: 18.0°C                                ║
+║  💧 Вологість: 32.1%                                ║
+║  🎛️  Режим: 🤖 АВТО                          ║
+║  💧 Насос:   0% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 130KB | Записів: 1 | Uptime: 0h 1м  ║
+╚═══════════════════════════════════════════════════════╝
+
+🏠 [12:43:20] Штатний режим: T_кімн=18.0°C (ціль 18.5°C), T_тепл=35.2°C, Насос=0%, Вентилятор=0%
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: sheets-sync
+📤 Веб: Запуск синхронізації з Google Sheets...
+💾 [Sync] Heap: 130804 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📊 [Sync] Готуємо до відправки 1 записів (Seq 7382 -> 7382)
+💾 [Sync] Heap перед SSL: 107748 bytes
+🔐 [Sync] Підключення до script.google.com:443...
+✅ [Sync] SSL з'єднання встановлено
+📊 [Sync] Sending 48 bytes
+🔍 Sample: 2026-01-24 12:43:05,34.6,18.0,18.9,32.4,0,0,0,0
+
+📤 Request sent, waiting response...
+🔀 Redirect detected, following...
+https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgOLkfEGa4jd_-ksJn0tCRboQIbnAHXvM-62s_MBuJzSvyh-O
+📥 Final response (3832 bytes):
+HTTP/1.1 405 Method Not Allowed
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: Mon, 01 Jan 1990 00:00:00 GMT
+Date: Sat, 24 Jan 2026 10:43:29 GMT
+Content-Type: text/html; charset=utf-8
+Referrer-Policy: origin
+Allow: HEAD, GET
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Server: GSE
+Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma
+❌ [Sync] Помилка пакету. Переривання.
+[TIME] Синхронізовано: 24.01.2026 12:43:36
+[SENSOR] T:17.9/35.8°C H:33.9% P:992.3hPa
+🏠 [12:43:50] Штатний режим: T_кімн=17.9°C (ціль 18.5°C), T_тепл=36.0°C, Насос=0%, Вентилятор=39%
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:44:04
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 17.9°C (ціль: 18.0-19.0°C)
+  Теплоносій: 35.3°C
+  Вологість: 33.0% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 0%
+  Вентилятор (B): 38%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-33 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 1
+══════════════════════════════════════════════════════════
+
+✓ Система відновила досягнення цільових порогів
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:44:06                                     ║
+║  🌡️  Теплоносій: 35.3°C                            ║
+║  🏠 Кімната: 17.9°C                                ║
+║  💧 Вологість: 33.0%                                ║
+║  🎛️  Режим: 🤖 АВТО                          ║
+║  💧 Насос:   0% | 🌪️ Вентилятор:  38% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 127KB | Записів: 2 | Uptime: 0h 2м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:17.9/35.2°C H:32.5% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:44:07
+🏠 [12:44:20] Штатний режим: T_кімн=18.0°C (ціль 18.5°C), T_тепл=34.9°C, Насос=0%, Вентилятор=0%
+[SENSOR] T:18.0/35.4°C H:32.7% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:44:38
+🏠 [12:44:50] Штатний режим: T_кімн=17.9°C (ціль 18.5°C), T_тепл=35.8°C, Насос=0%, Вентилятор=29%
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:45:04
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 17.9°C (ціль: 18.0-19.0°C)
+  Теплоносій: 36.1°C
+  Вологість: 35.6% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 0%
+  Вентилятор (B): 28%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-48 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 2
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:45:06                                     ║
+║  🌡️  Теплоносій: 36.1°C                            ║
+║  🏠 Кімната: 17.9°C                                ║
+║  💧 Вологість: 35.6%                                ║
+║  🎛️  Режим: 🤖 АВТО                          ║
+║  💧 Насос:   0% | 🌪️ Вентилятор:  38% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 127KB | Записів: 3 | Uptime: 0h 3м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:17.9/36.1°C H:35.5% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:45:08
+🏠 [12:45:20] Штатний режим: T_кімн=17.9°C (ціль 18.5°C), T_тепл=35.8°C, Насос=0%, Вентилятор=39%
+[SENSOR] T:17.9/35.0°C H:31.4% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:45:39
+🏠 [12:45:50] Штатний режим: T_кімн=18.0°C (ціль 18.5°C), T_тепл=35.0°C, Насос=0%, Вентилятор=0%
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:46:05
+  Режим: 🤖 АВТО
+----------------------------------------------
+  Температура: 18.0°C (ціль: 18.0-19.0°C)
+  Теплоносій: 35.5°C
+  Вологість: 32.7% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 0%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-29 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 3
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:46:06                                     ║
+║  🌡️  Теплоносій: 35.6°C                            ║
+║  🏠 Кімната: 18.0°C                                ║
+║  💧 Вологість: 32.8%                                ║
+║  🎛️  Режим: 🤖 АВТО                          ║
+║  💧 Насос:   0% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 127KB | Записів: 4 | Uptime: 0h 4м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:18.0/35.6°C H:32.6% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:46:09
+🏠 [12:46:20] Штатний режим: T_кімн=17.9°C (ціль 18.5°C), T_тепл=35.9°C, Насос=0%, Вентилятор=29%
+[SENSOR] T:17.8/36.2°C H:34.8% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:46:40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: lock
+🏠 [12:46:50] Штатний режим: T_кімн=17.8°C (ціль 18.5°C), T_тепл=35.8°C, Насос=0%, Вентилятор=48%
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: fan 0
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 30
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 31
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 32
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:47:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 17.9°C (ціль: 18.0-19.0°C)
+  Теплоносій: 35.1°C
+  Вологість: 32.4% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 40%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-37 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 4
+══════════════════════════════════════════════════════════
+
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ Система не досягає цільових порогів. Моніторинг почато...
+   Дефіцит температури: 0.6°C, дефіцит вологості: 10.1%
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:47:06                                     ║
+║  🌡️  Теплоносій: 35.2°C                            ║
+║  🏠 Кімната: 17.9°C                                ║
+║  💧 Вологість: 32.4%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  40% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 5 | Uptime: 0h 5м  ║
+╚═══════════════════════════════════════════════════════╝
+
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+[SENSOR] T:17.9/35.3°C H:32.4% P:992.2hPa
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+[TIME] Синхронізовано: 24.01.2026 12:47:10
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 31
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 26
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 19
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 13
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 9
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 7
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 5
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 3
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 1
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 0
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 1
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 2
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 3
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 4
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 5
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 6
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 7
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 8
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 10
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 12
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 15
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 17
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 18
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 19
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 20
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 21
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 22
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 23
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 24
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 25
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 27
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 28
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 29
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 30
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 31
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 32
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 43
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 44
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 45
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+[SENSOR] T:17.8/37.9°C H:34.1% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:47:40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 44
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 43
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 44
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 45
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 47
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 48
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 49
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 50
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 51
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 52
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 53
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 55
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 56
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 57
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 58
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 59
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 61
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 62
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 63
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 64
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 65
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 66
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 67
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 69
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 71
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 73
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 74
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 75
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 76
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 77
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 78
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 79
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 80
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 81
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 80
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 78
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 77
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 75
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 73
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 70
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 68
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 66
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 64
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 63
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 62
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 60
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 58
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 57
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 56
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 54
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 53
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 52
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 51
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 50
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 49
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 48
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 46
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 45
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 44
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 43
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 32
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 31
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 30
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 31
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 32
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 43
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 34
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 32
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 33
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 35
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 36
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 43
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 42
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:48:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 17.7°C (ціль: 18.0-19.0°C)
+  Теплоносій: 41.7°C
+  Вологість: 33.4% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 41%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-36 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 5
+══════════════════════════════════════════════════════════
+
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 41
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 40
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 39
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 38
+✓ Система відновила досягнення цільових порогів
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:48:06                                     ║
+║  🌡️  Теплоносій: 42.0°C                            ║
+║  🏠 Кімната: 17.6°C                                ║
+║  💧 Вологість: 33.5%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  37% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 6 | Uptime: 0h 6м  ║
+╚═══════════════════════════════════════════════════════╝
+
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: pump 37
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: manual
+[TIME] Синхронізовано: 24.01.2026 12:48:11
+[SENSOR] T:17.6/43.0°C H:33.4% P:992.2hPa
+[SENSOR] T:17.5/47.7°C H:35.7% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:48:42
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:49:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 17.4°C (ціль: 18.0-19.0°C)
+  Теплоносій: 50.4°C
+  Вологість: 35.0% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-31 dBm)
+  Пам'ять: 126 KB
+  Записів в історії: 6
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:49:07                                     ║
+║  🌡️  Теплоносій: 50.7°C                            ║
+║  🏠 Кімната: 17.3°C                                ║
+║  💧 Вологість: 35.0%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 7 | Uptime: 0h 7м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[TIME] Синхронізовано: 24.01.2026 12:49:12
+[SENSOR] T:17.3/51.2°C H:35.3% P:992.2hPa
+[SENSOR] T:17.2/53.6°C H:34.0% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:49:43
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:50:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 17.1°C (ціль: 18.0-19.0°C)
+  Теплоносій: 54.7°C
+  Вологість: 35.4% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-38 dBm)
+  Пам'ять: 126 KB
+  Записів в історії: 7
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:50:07                                     ║
+║  🌡️  Теплоносій: 54.8°C                            ║
+║  🏠 Кімната: 17.1°C                                ║
+║  💧 Вологість: 35.0%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 8 | Uptime: 0h 8м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[TIME] Синхронізовано: 24.01.2026 12:50:13
+[SENSOR] T:17.1/55.1°C H:34.6% P:992.2hPa
+[SENSOR] T:16.9/56.1°C H:31.8% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:50:44
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:51:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.9°C (ціль: 18.0-19.0°C)
+  Теплоносій: 56.5°C
+  Вологість: 33.9% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-37 dBm)
+  Пам'ять: 128 KB
+  Записів в історії: 8
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:51:07                                     ║
+║  🌡️  Теплоносій: 56.6°C                            ║
+║  🏠 Кімната: 16.9°C                                ║
+║  💧 Вологість: 34.1%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 128KB | Записів: 9 | Uptime: 0h 9м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.8/56.7°C H:33.9% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:51:15
+[SENSOR] T:16.8/57.1°C H:33.3% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:51:46
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:52:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.7°C (ціль: 18.0-19.0°C)
+  Теплоносій: 57.2°C
+  Вологість: 33.8% (ціль: 40.0-45.0%)
+  Тиск: 992.2 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-30 dBm)
+  Пам'ять: 129 KB
+  Записів в історії: 9
+══════════════════════════════════════════════════════════
+
+[HISTORY] Записано запис 10
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:52:07                                     ║
+║  🌡️  Теплоносій: 57.2°C                            ║
+║  🏠 Кімната: 16.7°C                                ║
+║  💧 Вологість: 33.8%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 129KB | Записів: 10 | Uptime: 0h 10м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.7/57.2°C H:32.7% P:992.2hPa
+[TIME] Синхронізовано: 24.01.2026 12:52:17
+⚠ Зволожувач: автоматично вимкнений через максимальний час роботи
+✓ Зволожувач: УВІМКНЕНО (Вологість: 34.9%, Ціль: 44.2%)
+[SENSOR] T:16.6/57.4°C H:34.0% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:52:48
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:53:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.6°C (ціль: 18.0-19.0°C)
+  Теплоносій: 57.4°C
+  Вологість: 35.2% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-26 dBm)
+  Пам'ять: 129 KB
+  Записів в історії: 10
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:53:07                                     ║
+║  🌡️  Теплоносій: 57.5°C                            ║
+║  🏠 Кімната: 16.6°C                                ║
+║  💧 Вологість: 35.0%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 129KB | Записів: 11 | Uptime: 0h 11м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.6/57.5°C H:33.2% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:53:19
+[SENSOR] T:16.6/57.6°C H:34.4% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:53:49
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:54:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.5°C (ціль: 18.0-19.0°C)
+  Теплоносій: 57.6°C
+  Вологість: 34.5% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-40 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 11
+══════════════════════════════════════════════════════════
+
+⚠️ Система не досягає цільових порогів. Моніторинг почато...
+   Дефіцит температури: 2.0°C, дефіцит вологості: 8.2%
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:54:07                                     ║
+║  🌡️  Теплоносій: 57.6°C                            ║
+║  🏠 Кімната: 16.5°C                                ║
+║  💧 Вологість: 34.3%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 127KB | Записів: 12 | Uptime: 0h 12м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.5/57.6°C H:32.1% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:54:20
+[SENSOR] T:16.4/57.7°C H:34.1% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:54:50
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:55:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.4°C (ціль: 18.0-19.0°C)
+  Теплоносій: 57.7°C
+  Вологість: 33.1% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-37 dBm)
+  Пам'ять: 126 KB
+  Записів в історії: 12
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:55:07                                     ║
+║  🌡️  Теплоносій: 57.7°C                            ║
+║  🏠 Кімната: 16.4°C                                ║
+║  💧 Вологість: 33.3%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 13 | Uptime: 0h 13м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.4/57.8°C H:34.0% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:55:21
+[SENSOR] T:16.4/57.8°C H:35.7% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:55:51
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:56:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.4°C (ціль: 18.0-19.0°C)
+  Теплоносій: 57.8°C
+  Вологість: 35.3% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-51 dBm)
+  Пам'ять: 127 KB
+  Записів в історії: 13
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:56:07                                     ║
+║  🌡️  Теплоносій: 57.9°C                            ║
+║  🏠 Кімната: 16.4°C                                ║
+║  💧 Вологість: 35.0%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 128KB | Записів: 14 | Uptime: 0h 14м  ║
+╚═══════════════════════════════════════════════════════╝
+
+⚠️ CSRF: Відсутній Referer header (дозволено для форм)
+WEB COMMAND: sheets-sync
+📤 Веб: Запуск синхронізації з Google Sheets...
+💾 [Sync] Heap: 128940 вільно, 48040 потрібно
+
+📤 [Sync] Початок сесії...
+📊 [Sync] Готуємо до відправки 14 записів (Seq 7382 -> 7395)
+💾 [Sync] Heap перед SSL: 105884 bytes
+🔐 [Sync] Підключення до script.google.com:443...
+✅ [Sync] SSL з'єднання встановлено
+📊 [Sync] Sending 684 bytes
+🔍 Sample: 2026-01-24 12:43:05,34.6,18.0,18.9,32.4,0,0,0,0
+2026-01-24 12:44:05,35.3,17.9,18
+📤 Request sent, waiting response...
+[SENSOR] T:16.4/57.9°C H:35.0% P:992.3hPa
+🔀 Redirect detected, following...
+https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLi7FFc-r_7BX7KigcEy1YsJvueQ7HXvO4g63_vaEMOBbKiax3
+📥 Final response (3832 bytes):
+HTTP/1.1 405 Method Not Allowed
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: Mon, 01 Jan 1990 00:00:00 GMT
+Date: Sat, 24 Jan 2026 10:56:21 GMT
+Content-Type: text/html; charset=utf-8
+Referrer-Policy: origin
+Allow: HEAD, GET
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Server: GSE
+Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma
+❌ [Sync] Помилка пакету. Переривання.
+[TIME] Синхронізовано: 24.01.2026 12:56:22
+[SENSOR] T:16.4/58.0°C H:34.7% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:56:53
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:57:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.4°C (ціль: 18.0-19.0°C)
+  Теплоносій: 58.0°C
+  Вологість: 34.5% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-33 dBm)
+  Пам'ять: 126 KB
+  Записів в історії: 14
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:57:08                                     ║
+║  🌡️  Теплоносій: 58.0°C                            ║
+║  🏠 Кімната: 16.4°C                                ║
+║  💧 Вологість: 34.8%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 15 | Uptime: 0h 15м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.4/58.1°C H:33.1% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:57:24
+[SENSOR] T:16.4/58.2°C H:32.4% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:57:55
+
+══════════════════════════════════════════════════════════
+           📊 СТАТУС СИСТЕМИ
+══════════════════════════════════════════════════════════
+  Час: 24.01.2026 12:58:05
+  Режим: 👆 РУЧНИЙ
+----------------------------------------------
+  Температура: 16.4°C (ціль: 18.0-19.0°C)
+  Теплоносій: 58.2°C
+  Вологість: 33.5% (ціль: 40.0-45.0%)
+  Тиск: 992.3 hPa
+----------------------------------------------
+  Насос (A): 36%
+  Вентилятор (B): 0%
+  Витяжка (C): 0%
+  Зволожувач: ВКЛ
+  Вентиляція: ВІДКРИТА
+----------------------------------------------
+  Wi-Fi: Redmi Note 14 (-37 dBm)
+  Пам'ять: 126 KB
+  Записів в історії: 15
+══════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════╗
+║  📋 СТАТУС СИСТЕМИ - v4.7-D48                        ║
+╠═══════════════════════════════════════════════════════╣
+║  🕐 Час: 12:58:08                                     ║
+║  🌡️  Теплоносій: 58.3°C                            ║
+║  🏠 Кімната: 16.4°C                                ║
+║  💧 Вологість: 33.1%                                ║
+║  🎛️  Режим: ✋ РУЧНИЙ                       ║
+║  💧 Насос:  36% | 🌪️ Вентилятор:   0% | 💨 Витяжка:   0% ║
+╠═══════════════════════════════════════════════════════╣
+║  ✅ Всі системи працюють нормально                   ║
+╠═══════════════════════════════════════════════════════╣
+║  📊 Пам'ять: 126KB | Записів: 16 | Uptime: 0h 16м  ║
+╚═══════════════════════════════════════════════════════╝
+
+[SENSOR] T:16.4/58.3°C H:35.0% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:58:25
+[SENSOR] T:16.4/58.4°C H:32.8% P:992.3hPa
+[TIME] Синхронізовано: 24.01.2026 12:58:56

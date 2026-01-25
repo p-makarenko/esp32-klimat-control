@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include "FS.h"
 #include "SPIFFS.h"
+#include "config.h"  // Для HISTORY_BUFFER_SIZE
 
 // ============================================================================
 // НАЛАШТУВАННЯ ЛОГУВАННЯ
@@ -73,7 +74,7 @@ struct LoggerStats {
 // ============================================================================
 
 extern LoggerStats loggerStats;
-extern DataRecord ramBuffer[1440];     // Буфер на 24 години (1440 хвилин)
+extern DataRecord ramBuffer[HISTORY_BUFFER_SIZE];  // RAM буфер для історії
 extern uint16_t ramBufferIndex;        // Поточний індекс у буфері
 
 // ============================================================================
