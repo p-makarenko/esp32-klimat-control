@@ -166,11 +166,6 @@ struct VentilationState {
   bool moving;
   bool calibrationMode;  // Режим калібрування - ігнорує вимикач
   
-  // Автокалібрування
-  unsigned long lastSwitchChange;
-  uint8_t switchChangeCount;
-  bool autoCalibrationActive;
-  uint8_t autoCalibrationStep;  // 0=idle, 1=move to first stop, 2=move to second stop, 3=test
 };
 
 struct HumidifierState {

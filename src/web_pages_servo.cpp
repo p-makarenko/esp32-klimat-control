@@ -18,7 +18,6 @@ extern VentilationState ventState;
 extern bool checkAuth();
 extern String getUkraineMarquee();
 extern void moveServoSmooth(int targetAngle);
-extern void startAutoCalibration();
 extern void saveConfiguration();
 
 // ============================================================================

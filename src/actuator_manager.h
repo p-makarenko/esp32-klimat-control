@@ -42,9 +42,6 @@ void controlFan(bool state);
 void controlHumidifier(bool state);
 bool isVentSwitchOpen();
 
-// Auto calibration
-void startAutoCalibration();
-void processAutoCalibration();
 
 // Task функції (для FreeRTOS)
 void heatingTask(void* parameter);

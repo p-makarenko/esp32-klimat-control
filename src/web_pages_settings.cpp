@@ -337,11 +337,10 @@ void handleSettingsPage() {
     html += "</div></div>";
 
     // Кнопки управління
-    html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;'>";
-    html += "<button type='button' class='btn' style='background:#FF9800;color:white;' onclick='toggleServoCalibration()' id='servoCalibBtn'>";
+    html += "<div style='margin-bottom: 20px;'>";
+    html += "<button type='button' class='btn' style='background:#FF9800;color:white;width:100%;' onclick='toggleServoCalibration()' id='servoCalibBtn'>";
     html += ventState.calibrationMode ? "🔓 ВИЙТИ З КАЛІБРУВАННЯ" : "🔒 УВІЙТИ В КАЛІБРУВАННЯ";
     html += "</button>";
-    html += "<button type='button' class='btn' style='background:#9C27B0;color:white;' onclick='autoServoCalibrate()'>🤖 АВТОКАЛІБРУВАННЯ</button>";
     html += "</div>";
 
     // Кнопки руху
@@ -591,13 +590,6 @@ void handleSettingsPage() {
     html += "function saveServoPosition(type) { sendServoCommand('save:' + type); }";
     html += "function gotoServoPosition(type) { sendServoCommand('goto:' + type); }";
     html += "function toggleServoCalibration() { sendServoCommand('calibration:toggle'); }";
-    html += "function autoServoCalibrate() {";
-    html += "  if(confirm('Автокалібрування: швидко перемикайте вимикач для зміни напряму. Продовжити?')) {";
-    html += "    sendServoCommand('auto:calibrate');";
-    html += "    alert('🤖 Швидко перемикайте вимикач протягом 8 секунд!');";
-    html += "    setTimeout(() => location.reload(), 8000);";
-    html += "  }";
-    html += "}";
     html += "function testServo() {";
     html += "  if(confirm('Тест відкриє і закриє заслонку. Продовжити?')) {";
     html += "    sendServoCommand('test');";

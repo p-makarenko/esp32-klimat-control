@@ -32,10 +32,6 @@ void initServo() {
   ventState.moving = false;
   ventState.servoAttached = false;
   ventState.calibrationMode = false;
-  ventState.lastSwitchChange = 0;
-  ventState.switchChangeCount = 0;
-  ventState.autoCalibrationActive = false;
-  ventState.autoCalibrationStep = 0;
   
   ventServo.attach(SERVO_PIN);
   ventServo.write(ventState.currentAngle);
