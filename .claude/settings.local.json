@@ -34,7 +34,9 @@
       "Bash(dir \"d:\\\\ESP32\\\\esp32\\\\klimat_kontrol\\\\src\"\" | grep -i \"web_pages|servo \")",
       "Bash(du:*)",
       "Bash(git checkout:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(cmd /c \"pio run\")",
+      "Bash(C:/Users/Pavel/.platformio/penv/Scripts/pio.exe run -d \"d:/ESP32/esp32/klimat_kontrol\")"
     ]
   },
   "claude-code.maxTokensPerRequest": 4000,

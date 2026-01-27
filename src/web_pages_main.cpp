@@ -66,7 +66,7 @@ void handleRoot() {
     html += "<div class='info-banner'>";
     html += "📡 <strong>Підключено до:</strong> " + htmlEscape(WiFi.SSID()) + " | ";
     html += "<strong>IP:</strong> " + htmlEscape(WiFi.localIP().toString()) + " | ";
-    html += "<strong>⏰</strong> " + htmlEscape(getTimeString());
+    html += "<strong>⏰</strong> <span id='currentTime'>" + htmlEscape(getTimeString()) + "</span>";
     html += "</div>";
 
     // Підказка для Android з QR кодом
@@ -270,6 +270,7 @@ void handleRoot() {
     html += "        document.getElementById('currentMode').textContent = modeIcon + ' ' + data.mode;";
     html += "      }";
     html += "      if (data.memory) document.getElementById('memory').textContent = data.memory + ' KB';";
+    html += "      if (data.time) document.getElementById('currentTime').textContent = data.time;";
     html += "      if (data.historyCount !== undefined) document.getElementById('historyCount').textContent = data.historyCount;";
     html += "      if (data.manualModeLocked !== undefined) {";
     html += "        const lockCheckbox = document.getElementById('manualLock');";

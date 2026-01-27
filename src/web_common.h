@@ -189,6 +189,8 @@ inline String getHtmlHead(const String& title, bool includeChartJS = false) {
 
     if (includeChartJS) {
         html += "<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0'></script>";
+        // Hammer.js потрібен для pinch/pan на touch-екранах
+        html += "<script src='https://cdn.jsdelivr.net/npm/hammerjs@2.0.8'></script>";
         html += "<script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1'></script>";
     }
 

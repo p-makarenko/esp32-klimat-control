@@ -249,15 +249,19 @@ void aggregateAndSave() {
 void logDataToSPIFFS() {
   if (aggregationBufferIndex == 0) return;
 
+  Serial.printf("💾 [SPIFFS] Writing %d aggregated records...\n", aggregationBufferIndex);
+
   // Скидаємо watchdog перед файловою операцією
   yield();
 
   // Відкриваємо файл для дозапису
   File file = SPIFFS.open(LOG_CURRENT_FILE, "a");
   if (!file) {
-    Serial.println("❌ Помилка відкриття файлу для запису");
+    Serial.println("❌ [SPIFFS] Failed to open file for writing");
     return;
   }
+
+  Serial.printf("✓ [SPIFFS] File opened, size before: %u bytes\n", file.size());
 
   // Агрегуємо дані перед записом
   AggregatedRecord aggRecord;
@@ -302,13 +306,17 @@ void logDataToSPIFFS() {
   file = SPIFFS.open(LOG_CURRENT_FILE, "r");
   if (file) {
     loggerStats.currentFileSize = file.size();
+    Serial.printf("✓ [SPIFFS] File written, size after: %u bytes\n", loggerStats.currentFileSize);
     file.close();
 
     // Перевіряємо чи потрібна ротація
     if (loggerStats.currentFileSize > LOG_FILE_MAX_SIZE) {
+      Serial.printf("🔄 [SPIFFS] File rotation needed (%u > %u)\n", loggerStats.currentFileSize, LOG_FILE_MAX_SIZE);
       rotateLogFiles();
     }
   }
+
+  aggregationBufferIndex = 0;  // Очищуємо буфер агрегації
 }
 
 // ============================================================================
@@ -655,6 +663,7 @@ void dataLoggerTask(void *parameter) {
   Serial.println("✓ Таск логування даних запущено");
 
   unsigned long lastRAMLog = 0;
+  unsigned long lastSPIFFSLog = 0;
   unsigned long lastCleanup = 0;
   const unsigned long CLEANUP_INTERVAL = 24UL * 60UL * 60UL * 1000UL;  // 24 години
 
@@ -665,6 +674,12 @@ void dataLoggerTask(void *parameter) {
     if (now - lastRAMLog >= LOG_INTERVAL_RAM) {
       logDataToRAM();
       lastRAMLog = now;
+    }
+
+    // Запис в SPIFFS кожні 5 хвилин
+    if (now - lastSPIFFSLog >= LOG_INTERVAL_SPIFFS) {
+      logDataToSPIFFS();
+      lastSPIFFSLog = now;
     }
 
     // Очищення старих логів раз на добу

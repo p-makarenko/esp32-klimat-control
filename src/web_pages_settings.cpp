@@ -580,6 +580,11 @@ void handleSettingsPage() {
     html += "      alert('✅ Відкрите положення збережено: ' + angle + '°');";
     html += "    } else if(data == 'TEST_OK') {";
     html += "      alert('✅ Тест серво завершено');";
+    html += "    } else if(data.trim() === 'CALIB:ON' || data.trim() === 'CALIB:OFF') {";
+    html += "      var isOn = (data.trim() === 'CALIB:ON');";
+    html += "      var calibBtn = document.getElementById('servoCalibBtn');";
+    html += "      if(calibBtn) calibBtn.innerHTML = isOn ? '🔓 ВИЙТИ З КАЛІБРУВАННЯ' : '🔒 УВІЙТИ В КАЛІБРУВАННЯ';";
+    html += "      alert(isOn ? '✅ Режим калібрування УВІМКНЕНО' : '✅ Режим калібрування ВИМКНЕНО');";
     html += "    } else if(data.startsWith('MODE:')) {";
     html += "      location.reload();";
     html += "    }";

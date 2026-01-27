@@ -81,7 +81,7 @@
 #define TREND_WINDOW_SIZE      60      // Розмір вікна для тренду (60*5с=5хв)
 #define TEMP_HISTORY_SIZE      300     // Історія температури (5 хв при 1с)
 #define HEATING_CHECK_INTERVAL 300000  // Перевірка ефективності (5 хв)
-#define HISTORY_BUFFER_SIZE    1440    // Зберігаємо 24 години даних (1440 хвилин)
+#define HISTORY_BUFFER_SIZE    720     // Зберігаємо 12 годин даних (720 хвилин, оптимізовано для RAM)
 #define NTP_UPDATE_INTERVAL    3600000 // Оновлення часу NTP кожну годину
 #define EXTRACTOR_TIMER_CYCLE  3600000 // Цикл таймера витяжки (1 година)
 

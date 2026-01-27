@@ -431,17 +431,25 @@ void handleHistoryData() {
         }
 
         String data;
+
+        Serial.printf("📥 SPIFFS read request: %s to %s (format: %s)\n",
+                      startDate.c_str(), endDate.c_str(), format.c_str());
+
         if (format == "csv") {
             if (readSPIFFSDataCSV(startDate.c_str(), endDate.c_str(), data)) {
+                Serial.printf("✅ SPIFFS CSV: %u bytes\n", data.length());
                 server.sendHeader("Content-Disposition", "attachment; filename=klimat_archive.csv");
                 server.send(200, "text/csv", data);
             } else {
+                Serial.println("❌ SPIFFS CSV read failed");
                 server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
             }
         } else {
             if (readSPIFFSData(startDate.c_str(), endDate.c_str(), data)) {
+                Serial.printf("✅ SPIFFS JSON: %u bytes\n", data.length());
                 server.send(200, "application/json", data);
             } else {
+                Serial.println("❌ SPIFFS JSON read failed");
                 server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
             }
         }

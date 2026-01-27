@@ -7,11 +7,11 @@
 
 // Версія та інформація про збірку (автоматично оновлюється при компіляції)
 #define PROJECT_START_DATE "Dec 7 2025"
-#define VERSION "v4.7-D49"
-#define VERSION_COMMENT "День 49 розробки"
+#define VERSION "v4.8-D51"
+#define VERSION_COMMENT "День 51 розробки"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 11188
+#define TOTAL_CODE_LINES 11208
 #define FIRMWARE_SIZE_KB 1362
 
 // Оголошення всіх глобальних змінних

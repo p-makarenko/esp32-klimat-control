@@ -145,12 +145,15 @@ void handleServoPage() {
     html += "      alert('✅ Тест завершено');";
     html += "      setTimeout(() => location.reload(), 1000);";
     html += "    } else if(data.indexOf('CALIB:') === 0) {";
-    html += "      var isOn = (data === 'CALIB:ON');";
-    html += "      alert(isOn ? '✅ Режим калібрування УВІМКНЕНО' : '✅ Режим калібрування ВИМКНЕНО');";
+    html += "      console.log('CALIB response: [' + data + ']');";
+    html += "      var isOn = (data.trim() === 'CALIB:ON');";
+    html += "      console.log('isOn:', isOn);";
     html += "      var calibBtn = document.getElementById('calibBtn');";
     html += "      var modeSpan = document.getElementById('mode');";
-    html += "      if(calibBtn) calibBtn.innerHTML = isOn ? '🔓 ВИЙТИ З КАЛІБРУВАННЯ' : '🔒 УВІЙТИ В КАЛІБРУВАННЯ';";
+    html += "      console.log('calibBtn:', calibBtn, 'modeSpan:', modeSpan);";
+    html += "      if(calibBtn) { calibBtn.innerHTML = isOn ? '🔓 ВИЙТИ З КАЛІБРУВАННЯ' : '🔒 УВІЙТИ В КАЛІБРУВАННЯ'; console.log('Button updated'); }";
     html += "      if(modeSpan) { modeSpan.innerHTML = isOn ? 'КАЛІБРУВАННЯ' : 'НОРМАЛЬНИЙ'; modeSpan.style.color = isOn ? '#FF9800' : '#2196F3'; }";
+    html += "      alert(isOn ? '✅ Режим калібрування УВІМКНЕНО' : '✅ Режим калібрування ВИМКНЕНО');";
     html += "    } else {";
     html += "      console.warn('⚠️ Невідома відповідь:', data);";
     html += "    }";
@@ -232,14 +235,15 @@ void handleServoAPI() {
     else if (cmd == "calibration:toggle") {
         ventState.calibrationMode = !ventState.calibrationMode;
 
-        // При виході з калібрування синхронізуємо стан вимикача
+        // При виході з калібрування зберігаємо поточний стан вимикача
+        // щоб controlVentilation() правильно синхронізувався
         if (!ventState.calibrationMode) {
             ventState.switchState = digitalRead(VENT_SWITCH_PIN);
-            Serial.printf("Синхронізовано вимикач: %d\n", ventState.switchState);
+            Serial.printf("Вихід з калібрування, запам'ятовано вимикач: %d\n", ventState.switchState);
         }
 
         String response = ventState.calibrationMode ? "CALIB:ON" : "CALIB:OFF";
-        Serial.printf("Режим калібрування: %s, відповідь: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО", response.c_str());
+        Serial.printf("Режим калібрування: %s\n", ventState.calibrationMode ? "УВІМКНЕНО" : "ВИМКНЕНО");
         server.send(200, "text/plain", response);
     }
     else if (cmd == "save:closed") {

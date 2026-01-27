@@ -449,7 +449,12 @@ void handleSerialInput() {
   if (Serial.available()) {
     String input = Serial.readStringUntil('\n');
     input.trim();
-    
+
+    // Ігноруємо пусті рядки
+    if (input.length() == 0) {
+      return;
+    }
+
     if (input == "test") {
       runSystemTest();
     }
@@ -469,6 +474,12 @@ void handleSerialInput() {
     }
     else if (input == "debug") {
       debugCommands();
+    }
+    else if (input == "m" || input == "menu") {
+      printExtendedMode();
+    }
+    else if (input == "s" || input == "status") {
+      autoPrintStatus();
     }
     else {
       // Передаємо ВСІ інші команди (включно sheets-sync) в розширений обробник
