@@ -196,12 +196,12 @@ void handleSettingsPage() {
     html += "<h3>⚡ ПОРОГИ ФОРСАЖУ ТА АВАРІЇ</h3>";
     html += "<div class='form-group'>";
     html += "<label>Поріг ФОРСАЖУ - критично низька температура (°C):</label>";
-    html += "<input type='number' step='0.5' name='tempCriticalLow' value='" + String(config.tempCriticalLow, 1) + "' min='15.0' max='25.0'>";
+    html += "<input type='number' step='0.5' name='tempCriticalLow' value='" + String(config.tempCriticalLow, 1) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається ФОРСАЖ (насос 80%, вентилятор 80%)</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Поріг АВАРІЇ - аварійна температура (°C):</label>";
-    html += "<input type='number' step='0.5' name='tempEmergencyLow' value='" + String(config.tempEmergencyLow, 1) + "' min='10.0' max='22.0'>";
+    html += "<input type='number' step='0.5' name='tempEmergencyLow' value='" + String(config.tempEmergencyLow, 1) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається АВАРІЯ (насос 100%, вентилятор 100%)</small>";
     html += "</div>";
     html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
@@ -213,37 +213,37 @@ void handleSettingsPage() {
     html += "<h3>🚨 МОНІТОРИНГ АВАРІЙ (відключення живлення)</h3>";
     html += "<div class='form-group'>";
     html += "<label>Поріг падіння температури (°C):</label>";
-    html += "<input type='number' step='0.1' name='poTempDrop' value='" + String(config.powerOutageTempDropThreshold, 1) + "' min='0.5' max='50.0'>";
+    html += "<input type='number' step='0.1' name='poTempDrop' value='" + String(config.powerOutageTempDropThreshold, 1) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне падіння температури теплоносія для виявлення аварії</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Поріг зростання температури (°C):</label>";
-    html += "<input type='number' step='0.1' name='poTempRise' value='" + String(config.powerOutageTempRiseThreshold, 1) + "' min='0.5' max='5.0'>";
+    html += "<input type='number' step='0.1' name='poTempRise' value='" + String(config.powerOutageTempRiseThreshold, 1) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне зростання температури теплоносія для підтвердження відновлення</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Інтервал перевірки тренду (секунди):</label>";
-    html += "<input type='number' name='poCheckInt' value='" + String(config.powerOutageCheckInterval) + "' min='10' max='300'>";
+    html += "<input type='number' name='poCheckInt' value='" + String(config.powerOutageCheckInterval) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто перевіряти тренд температури</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Тривалість етапу 1 діагностики (секунди):</label>";
-    html += "<input type='number' name='poStage1' value='" + String(config.powerOutageStage1Time) + "' min='30' max='600'>";
+    html += "<input type='number' name='poStage1' value='" + String(config.powerOutageStage1Time) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для першої спроби аварійного обігріву</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Тривалість паузи між спробами (секунди):</label>";
-    html += "<input type='number' name='poPause' value='" + String(config.powerOutagePauseTime) + "' min='60' max='1800'>";
+    html += "<input type='number' name='poPause' value='" + String(config.powerOutagePauseTime) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Час очікування перед наступною спробою</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Тривалість етапів 2/3 (секунди):</label>";
-    html += "<input type='number' name='poStage2' value='" + String(config.powerOutageStage2Time) + "' min='30' max='600'>";
+    html += "<input type='number' name='poStage2' value='" + String(config.powerOutageStage2Time) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для другої та третьої спроби аварійного обігріву</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Час автовиходу з аварії (секунди):</label>";
-    html += "<input type='number' name='poAutoExit' value='" + String(config.powerOutageAutoExitTime) + "' min='60' max='3600'>";
+    html += "<input type='number' name='poAutoExit' value='" + String(config.powerOutageAutoExitTime) + "'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Час оцінювання стабільного зростання температури теплоносія для автоматичного виходу з режиму підтримки</small>";
     html += "</div>";
     html += "</div>";
@@ -772,10 +772,10 @@ void handleSaveSettings() {
 
     // Пороги для режимів форсаж та аварія
     if (server.hasArg("tempCriticalLow")) {
-        config.tempCriticalLow = constrain(server.arg("tempCriticalLow").toFloat(), 15.0f, 25.0f);
+        config.tempCriticalLow = server.arg("tempCriticalLow").toFloat();
     }
     if (server.hasArg("tempEmergencyLow")) {
-        config.tempEmergencyLow = constrain(server.arg("tempEmergencyLow").toFloat(), 10.0f, 22.0f);
+        config.tempEmergencyLow = server.arg("tempEmergencyLow").toFloat();
     }
 
     // Параметри моніторингу аварій

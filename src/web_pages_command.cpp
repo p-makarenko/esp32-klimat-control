@@ -437,6 +437,21 @@ String processWebCommand(const String& cmd) {
     }
 
     // ========================================================================
+    // СКИДАННЯ WIFI
+    // ========================================================================
+
+    else if (lowerCmd == "wifi reset" || lowerCmd == "reset wifi") {
+        Preferences prefs;
+        prefs.begin("wifi", false);
+        prefs.clear();
+        prefs.end();
+        Serial.println("🔄 WiFi налаштування очищені. Перезавантаження...");
+        delay(2000);
+        ESP.restart();
+        return "✅ WiFi скинуто";
+    }
+
+    // ========================================================================
     // НЕВІДОМА КОМАНДА
     // ========================================================================
 
@@ -444,6 +459,6 @@ String processWebCommand(const String& cmd) {
         return "❌ Невідома команда: " + cmd + "\n📋 Доступні команди:\n"
                "pump/fan/extractor XX, timer on/off, tmin/tmax/temp/hmin/hmax/hum XX,\n"
                "auto/manual/force, servo, mode, status, save, quiet, verbose, test, web, reboot,\n"
-               "sheets-sync, sheets-stats";
+               "sheets-sync, sheets-stats, wifi reset";
     }
 }

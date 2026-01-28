@@ -614,6 +614,17 @@ void processExtendedCommand(String command) {
     else if (command == "sheets-stats" || command == "sheets stats") {
         printSyncInfo();
     }
+    else if (command == "wifi reset" || command == "reset wifi") {
+        Serial.println("\n🔄 Очищення WiFi налаштувань...");
+        Preferences prefs;
+        prefs.begin("wifi", false);
+        prefs.clear();
+        prefs.end();
+        Serial.println("✅ WiFi налаштування очищені");
+        Serial.println("🔄 Перезавантаження...");
+        delay(2000);
+        ESP.restart();
+    }
     else {
         Serial.println("✗ Невідома команда. Введіть 'menu' для списку команд");
     }

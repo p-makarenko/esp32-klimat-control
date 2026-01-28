@@ -523,9 +523,19 @@ void saveConfiguration() {
   preferences.putFloat("tempCritLow", config.tempCriticalLow);
   preferences.putFloat("tempEmergLow", config.tempEmergencyLow);
 
+  // Мережеві налаштування
+  preferences.putBool("useStaticIP", config.useStaticIP);
+  preferences.putString("staticIP", config.staticIP);
+  preferences.putString("gateway", config.gateway);
+  preferences.putString("subnet", config.subnet);
+  preferences.putString("dns", config.dns);
+
+  // Автентифікація
+  preferences.putBool("useAuth", config.useAuth);
+  preferences.putString("authLogin", config.authLogin);
+  preferences.putString("authPass", config.authPassword);
+
   preferences.end();
-  
-  // Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");  // RUS_REMOVED
 }
 
 // ============================================================================

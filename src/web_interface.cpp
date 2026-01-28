@@ -123,7 +123,13 @@ void initWiFi() {
                 gateway.fromString(config.gateway) &&
                 subnet.fromString(config.subnet) &&
                 dns.fromString(config.dns)) {
-                WiFi.config(ip, gateway, subnet, dns);
+                // Перевірка підмережі
+                if ((ip & subnet) == (gateway & subnet)) {
+                    WiFi.config(ip, gateway, subnet, dns);
+                    Serial.printf("📍 Статична IP: %s\n", config.staticIP.c_str());
+                } else {
+                    Serial.println("⚠️ Статична IP не в підмережі шлюза");
+                }
             }
         }
 
