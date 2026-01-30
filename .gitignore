@@ -4,3 +4,13 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/
+
+# Логи та конфіги
+logs/
+*.log
+klimat_config_*.json
+GOOGLE_SHEETS_EXAMPLES.txt
+
+# Локальні налаштування
+.claude/settings.local.json
+count_lines.py
