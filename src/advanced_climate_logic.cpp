@@ -625,6 +625,34 @@ void processExtendedCommand(String command) {
         delay(2000);
         ESP.restart();
     }
+    else if (command == "format" || command == "format spiffs") {
+        Serial.println("\n🔄 Форматування SPIFFS...");
+        if (SPIFFS.format()) {
+            Serial.println("✅ SPIFFS відформатовано");
+        } else {
+            Serial.println("❌ Помилка форматування SPIFFS");
+        }
+        Serial.println("🔄 Перезавантаження...");
+        delay(2000);
+        ESP.restart();
+    }
+    else if (command == "config reset" || command == "reset config") {
+        Serial.println("\n🔄 Очищення всієї конфігурації...");
+        Preferences prefs;
+        prefs.begin("climate", false);
+        prefs.clear();
+        prefs.end();
+        prefs.begin("wifi", false);
+        prefs.clear();
+        prefs.end();
+        prefs.begin("sheets_sync", false);
+        prefs.clear();
+        prefs.end();
+        Serial.println("✅ Конфігурація очищена");
+        Serial.println("🔄 Перезавантаження...");
+        delay(2000);
+        ESP.restart();
+    }
     else {
         Serial.println("✗ Невідома команда. Введіть 'menu' для списку команд");
     }
@@ -1209,6 +1237,18 @@ float analyzeTempTrend() {
 void monitorPowerOutage() {
     // Якщо аварія вже виявлена - не перевіряємо повторно
     if (powerOutageState.detected) {
+        return;
+    }
+
+    // У режимі охолодження НЕ детектуємо падіння температури як аварію
+    // (природне охолодження теплоносія - це нормально)
+    if (config.coolingMode) {
+        return;
+    }
+
+    // Якщо насос вимкнений (штатний режим) - не детектуємо аварію
+    // (природне охолодження теплоносія при вимкненому насосі - це нормально)
+    if (heatingState.pumpPower == 0) {
         return;
     }
 

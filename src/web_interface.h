@@ -65,4 +65,19 @@ void handleEnergyAPI();
 void handleEnergyHistory();
 void handleEnergyHistoryStats();
 
+// ============================================================================
+// OTA ТА BACKUP - forward declarations
+// ============================================================================
+void handleOTAPage();
+void handleOTAStatus();
+void handleOTAPasswordChange();
+void handleBackupCreate();
+void handleBackupRestore();
+void handleBackupStatus();
+void handleConfigExport();
+void handleConfigImport();
+void handleFactoryReset();
+void handleOTAUploadResult();
+void handleOTAUpload();
+
 #endif

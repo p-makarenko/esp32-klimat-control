@@ -20,6 +20,15 @@ extern void advancedLogicTask(void *parameter);
 Preferences preferences;
 WebServer server(80);
 
+// Глобальні TaskHandle для можливості призупинення під час OTA
+TaskHandle_t sensorTaskHandle = NULL;
+TaskHandle_t heatingTaskHandle = NULL;
+TaskHandle_t ventTaskHandle = NULL;
+TaskHandle_t webTaskHandle = NULL;
+TaskHandle_t timeTaskHandle = NULL;
+TaskHandle_t advancedLogicTaskHandle = NULL;
+TaskHandle_t dataLoggerTaskHandle = NULL;
+
 // РњКјСЋС‚РµРєСЃРё РґР»СЏ СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С—
 SemaphoreHandle_t sensorMutex;
 SemaphoreHandle_t configMutex;
@@ -444,8 +453,15 @@ void loadConfiguration() {
 }
 
 void saveConfiguration() {
+  Serial.println("\n💾 DEBUG saveConfiguration() - ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ:");
+
   preferences.begin("climate", false);
-  
+
+  Serial.print("   tempMin: ");
+  Serial.println(config.tempMin);
+  Serial.print("   tempMax: ");
+  Serial.println(config.tempMax);
+
   preferences.putFloat("tempMin", config.tempMin);
   preferences.putFloat("tempMax", config.tempMax);
   preferences.putFloat("tempVentMin", config.tempVentMin);
@@ -470,8 +486,13 @@ void saveConfiguration() {
   preferences.putInt("servoSpeed", config.servoSpeed);
   
   preferences.putBool("autoStatus", config.autoStatusEnabled);
-  
+
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
+  Serial.print("   humMin: ");
+  Serial.println(config.humidityConfig.minHumidity);
+  Serial.print("   humMax: ");
+  Serial.println(config.humidityConfig.maxHumidity);
+
   preferences.putFloat("humMin", config.humidityConfig.minHumidity);
   preferences.putFloat("humMax", config.humidityConfig.maxHumidity);
   preferences.putFloat("humCoeff", config.humidityConfig.tempCoefficient);
@@ -536,6 +557,8 @@ void saveConfiguration() {
   preferences.putString("authPass", config.authPassword);
 
   preferences.end();
+
+  Serial.println("   ✅ Налаштування успішно збережені в NVS!\n");
 }
 
 // ============================================================================
@@ -561,14 +584,7 @@ void initMutexes() {
 }
 
 void createTasks() {
-  // РЎС‚РІРѕСЂРµРЅРЅСЏ Р·Р°РґР°С‡ FreeRTOS
-  TaskHandle_t sensorTaskHandle = NULL;
-  TaskHandle_t heatingTaskHandle = NULL;
-  TaskHandle_t ventTaskHandle = NULL;
-  TaskHandle_t webTaskHandle = NULL;
-  TaskHandle_t timeTaskHandle = NULL;
-  TaskHandle_t advancedLogicTaskHandle = NULL;
-  
+  // Створення задач FreeRTOS (handles глобальні для OTA)
   xTaskCreatePinnedToCore(
     sensorTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
     "SensorTask",      // РќР°Р·РІР°
@@ -629,7 +645,6 @@ void createTasks() {
     1                         // РЇРґСЂРѕ
   );
 
-  TaskHandle_t dataLoggerTaskHandle = NULL;
   xTaskCreatePinnedToCore(
     dataLoggerTask,          // Функція задачі
     "DataLoggerTask",        // Назва
@@ -764,5 +779,81 @@ void checkEmergencyTimeout() {
     }
 }
 
+// ============================================================================
+// ФУНКЦІЇ ДЛЯ OTA - ПРИЗУПИНЕННЯ ЗАДАЧ
+// ============================================================================
 
+void suspendAllTasks() {
+    Serial.println("⏸️ Призупинення FreeRTOS задач для OTA...");
+
+    // НЕ призупиняємо webTaskHandle - він обробляє OTA!
+
+    if (sensorTaskHandle != NULL) {
+        vTaskSuspend(sensorTaskHandle);
+        Serial.println("  - SensorTask призупинено");
+    }
+
+    if (heatingTaskHandle != NULL) {
+        vTaskSuspend(heatingTaskHandle);
+        Serial.println("  - HeatingTask призупинено");
+    }
+
+    if (ventTaskHandle != NULL) {
+        vTaskSuspend(ventTaskHandle);
+        Serial.println("  - VentilationTask призупинено");
+    }
+
+    if (timeTaskHandle != NULL) {
+        vTaskSuspend(timeTaskHandle);
+        Serial.println("  - TimeTask призупинено");
+    }
+
+    if (advancedLogicTaskHandle != NULL) {
+        vTaskSuspend(advancedLogicTaskHandle);
+        Serial.println("  - AdvancedLogicTask призупинено");
+    }
+
+    if (dataLoggerTaskHandle != NULL) {
+        vTaskSuspend(dataLoggerTaskHandle);
+        Serial.println("  - DataLoggerTask призупинено");
+    }
+
+    Serial.println("✅ Всі некритичні задачі призупинено");
+}
+
+void resumeAllTasks() {
+    Serial.println("▶️ Відновлення FreeRTOS задач...");
+
+    if (sensorTaskHandle != NULL) {
+        vTaskResume(sensorTaskHandle);
+        Serial.println("  - SensorTask відновлено");
+    }
+
+    if (heatingTaskHandle != NULL) {
+        vTaskResume(heatingTaskHandle);
+        Serial.println("  - HeatingTask відновлено");
+    }
+
+    if (ventTaskHandle != NULL) {
+        vTaskResume(ventTaskHandle);
+        Serial.println("  - VentilationTask відновлено");
+    }
+
+    if (timeTaskHandle != NULL) {
+        vTaskResume(timeTaskHandle);
+        Serial.println("  - TimeTask відновлено");
+    }
+
+    if (advancedLogicTaskHandle != NULL) {
+        vTaskResume(advancedLogicTaskHandle);
+        Serial.println("  - AdvancedLogicTask відновлено");
+    }
+
+    if (dataLoggerTaskHandle != NULL) {
+        vTaskResume(dataLoggerTaskHandle);
+        Serial.println("  - DataLoggerTask відновлено");
+    }
+
+    Serial.println("✅ Всі задачі відновлено");
+}
 

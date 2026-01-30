@@ -273,11 +273,11 @@ void handleSettingsPage() {
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Мінімум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='adaptiveMin' value='" + String(config.a_adaptive_min) + "' min='50' max='100'>";
+    html += "<input type='number' name='adaptiveMin' value='" + String(config.a_adaptive_min) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Максимум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='adaptiveMax' value='" + String(config.a_adaptive_max) + "' min='50' max='100'>";
+    html += "<input type='number' name='adaptiveMax' value='" + String(config.a_adaptive_max) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Крок адаптації температури (0.1°C):</label>";
@@ -311,7 +311,7 @@ void handleSettingsPage() {
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Інтервал перевірки обігріву (секунди) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='heatingCheckInt' value='" + String(config.heating_check_interval) + "' min='30' max='600'>";
+    html += "<input type='number' name='heatingCheckInt' value='" + String(config.heating_check_interval / 1000) + "' min='30' max='600'>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Розмір історії даних <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
@@ -720,10 +720,10 @@ void handleSaveSettings() {
 
     // Розширені параметри
     if (server.hasArg("adaptiveMin")) {
-        config.a_adaptive_min = constrain(server.arg("adaptiveMin").toInt(), 50, 100);
+        config.a_adaptive_min = constrain(server.arg("adaptiveMin").toInt(), 0, 100);
     }
     if (server.hasArg("adaptiveMax")) {
-        config.a_adaptive_max = constrain(server.arg("adaptiveMax").toInt(), 50, 100);
+        config.a_adaptive_max = constrain(server.arg("adaptiveMax").toInt(), 0, 100);
     }
     if (server.hasArg("adaptiveTempStep")) {
         config.adaptive_temp_step = constrain(server.arg("adaptiveTempStep").toInt(), 1, 20);
@@ -747,7 +747,7 @@ void handleSaveSettings() {
         config.temp_drop_threshold = constrain(server.arg("tempDropThreshold").toFloat(), 0.1f, 5.0f);
     }
     if (server.hasArg("heatingCheckInt")) {
-        config.heating_check_interval = constrain(server.arg("heatingCheckInt").toInt(), 30, 600);
+        config.heating_check_interval = constrain(server.arg("heatingCheckInt").toInt(), 30, 600) * 1000UL;
     }
     if (server.hasArg("historySize")) {
         config.history_size = constrain(server.arg("historySize").toInt(), 100, 2000);

@@ -11,15 +11,15 @@
 // ============================================================================
 
 #define LOG_INTERVAL_RAM        60000     // Запис в RAM кожну хвилину (1 хв)
-#define LOG_INTERVAL_SPIFFS     60000     // Запис в SPIFFS кожну хвилину (для тестів, потім змініти на 300000)
+#define LOG_INTERVAL_SPIFFS     300000    // Запис в SPIFFS кожні 5 хвилин (агреговані дані)
 #define LOG_FILE_MAX_SIZE       500000    // Максимальний розмір файлу логів (~500 КБ)
 #define LOG_MAX_FILES           6         // Максимум файлів (6 файлів × 500 КБ = ~3 МБ)
 #define LOG_RETENTION_DAYS      30        // Зберігати дані за останні 30 днів
 
-// Імена файлів
-#define LOG_CURRENT_FILE        "/logs/current.csv"
-#define LOG_ARCHIVE_PREFIX      "/logs/archive_"
-#define LOG_CONFIG_FILE         "/logs/config.json"
+// Імена файлів (SPIFFS не підтримує підкаталоги - файли в корені)
+#define LOG_CURRENT_FILE        "/current.csv"
+#define LOG_ARCHIVE_PREFIX      "/archive_"
+#define LOG_CONFIG_FILE         "/config.json"
 
 // ============================================================================
 // СТРУКТУРИ ДАНИХ

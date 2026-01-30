@@ -18,11 +18,14 @@
 #include "data_logger.h"
 #include "google_sheets_sync.h"
 #include "energy_monitor.h"
+#include "config_manager.h"
+#include "ota_manager.h"
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
 #include <ESPmDNS.h>
 #include <NetBIOS.h>
+#include <Update.h>
 #include <vector>
 #include <algorithm>
 
@@ -288,12 +291,71 @@ void initWiFi() {
     server.on("/energy/history", HTTP_GET, handleEnergyHistory);
     server.on("/energy/stats", HTTP_GET, handleEnergyHistoryStats);
 
+    // OTA та Backup
+    server.on("/ota", HTTP_GET, handleOTAPage);
+    server.on("/api/ota/status", HTTP_GET, handleOTAStatus);
+    server.on("/api/ota/password", HTTP_POST, handleOTAPasswordChange);
+    server.on("/api/backup/create", HTTP_POST, handleBackupCreate);
+    server.on("/api/backup/restore", HTTP_POST, handleBackupRestore);
+    server.on("/api/backup/status", HTTP_GET, handleBackupStatus);
+    server.on("/api/config/export", HTTP_GET, handleConfigExport);
+    server.on("/api/config/import", HTTP_POST, handleConfigImport);
+    server.on("/api/factory-reset", HTTP_POST, handleFactoryReset);
+
+    // Проста Web OTA Upload сторінка
+    server.on("/update", HTTP_GET, []() {
+        String html = "<!DOCTYPE html><html><head>";
+        html += "<meta charset='UTF-8'>";
+        html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+        html += "<title>OTA Update</title>";
+        html += "<style>";
+        html += "body{font-family:Arial;margin:40px;background:#1a1a2e;color:#fff}";
+        html += ".container{max-width:400px;margin:0 auto;padding:20px;background:#16213e;border-radius:10px}";
+        html += "h1{color:#0f0;text-align:center}";
+        html += "input[type=file]{width:100%;padding:10px;margin:10px 0;background:#0f3460;border:none;color:#fff;border-radius:5px}";
+        html += "input[type=submit]{width:100%;padding:15px;background:#0f0;border:none;color:#000;font-size:18px;cursor:pointer;border-radius:5px}";
+        html += "input[type=submit]:hover{background:#0c0}";
+        html += "#progress{width:100%;height:30px;background:#0f3460;border-radius:5px;margin:10px 0;display:none}";
+        html += "#bar{width:0%;height:100%;background:#0f0;border-radius:5px;transition:width 0.3s}";
+        html += "#status{text-align:center;margin:10px 0}";
+        html += "</style></head><body>";
+        html += "<div class='container'>";
+        html += "<h1>🔄 OTA Update</h1>";
+        html += "<p>Версія: " + String(VERSION) + "</p>";
+        html += "<form method='POST' action='/update' enctype='multipart/form-data' id='uploadForm'>";
+        html += "<input type='file' name='update' accept='.bin' required>";
+        html += "<div id='progress'><div id='bar'></div></div>";
+        html += "<div id='status'></div>";
+        html += "<input type='submit' value='Завантажити прошивку'>";
+        html += "</form>";
+        html += "<script>";
+        html += "document.getElementById('uploadForm').addEventListener('submit',function(e){";
+        html += "e.preventDefault();";
+        html += "var form=e.target;var data=new FormData(form);";
+        html += "var xhr=new XMLHttpRequest();";
+        html += "document.getElementById('progress').style.display='block';";
+        html += "xhr.upload.addEventListener('progress',function(e){";
+        html += "if(e.lengthComputable){var p=Math.round((e.loaded/e.total)*100);";
+        html += "document.getElementById('bar').style.width=p+'%';";
+        html += "document.getElementById('status').innerHTML=p+'%';}});";
+        html += "xhr.addEventListener('load',function(){";
+        html += "if(xhr.status==200){document.getElementById('status').innerHTML='✅ Успіх! Перезавантаження...';}";
+        html += "else{document.getElementById('status').innerHTML='❌ Помилка: '+xhr.responseText;}});";
+        html += "xhr.open('POST','/update',true);xhr.send(data);});";
+        html += "</script>";
+        html += "</div></body></html>";
+        server.send(200, "text/html", html);
+    });
+
+    // Web OTA Upload handler
+    server.on("/update", HTTP_POST, handleOTAUploadResult, handleOTAUpload);
+
     server.onNotFound([]() {
         server.send(404, "text/plain", "Сторінка не знайдена");
     });
 
     server.begin();
-    Serial.println();
+    Serial.println("  Web OTA доступний на /update");
 }
 
 // ============================================================================
@@ -392,6 +454,403 @@ String getUkraineMarquee() {
     marquee += "</script>";
 
     return marquee;
+}
+
+// ============================================================================
+// OTA ТА BACKUP HANDLERS
+// ============================================================================
+
+// Сторінка OTA та Backup
+void handleOTAPage() {
+    if (!checkAuth()) return;
+
+    String html = getHtmlHead("OTA та Backup");
+    html += getNavHeader("OTA та Backup");
+
+    html += "<div class='container'>";
+
+    // Інформація про версію
+    html += "<div class='card'>";
+    html += "<h2>Інформація про систему</h2>";
+    html += "<table style='width:100%'>";
+    html += "<tr><td><strong>Версія прошивки:</strong></td><td>" + String(VERSION) + "</td></tr>";
+    html += "<tr><td><strong>Дата збірки:</strong></td><td>" + String(BUILD_DATE) + " " + String(BUILD_TIME) + "</td></tr>";
+    html += "<tr><td><strong>Розмір прошивки:</strong></td><td>" + String(FIRMWARE_SIZE_KB) + " KB</td></tr>";
+    html += "<tr><td><strong>Вільна пам'ять:</strong></td><td>" + String(ESP.getFreeHeap() / 1024) + " KB</td></tr>";
+    html += "</table>";
+    html += "</div>";
+
+    // OTA оновлення
+    html += "<div class='card'>";
+    html += "<h2>Оновлення прошивки (OTA)</h2>";
+
+    // Web Upload форма
+    html += "<h3>Завантаження файлу</h3>";
+    html += "<form id='otaForm' method='POST' action='/update' enctype='multipart/form-data'>";
+    html += "<input type='file' name='update' accept='.bin' required style='margin-bottom:10px;'><br>";
+    html += "<button type='submit' class='btn' onclick='return confirmOTA()'>Завантажити прошивку</button>";
+    html += "</form>";
+
+    // Progress bar
+    html += "<div id='progress' style='display:none; margin-top:20px;'>";
+    html += "<div style='background:#333; border-radius:10px; overflow:hidden;'>";
+    html += "<div id='progressBar' style='width:0%; height:30px; background:linear-gradient(90deg,#4CAF50,#8BC34A); transition:width 0.3s;'></div>";
+    html += "</div>";
+    html += "<p id='progressText' style='text-align:center; margin-top:10px;'>0%</p>";
+    html += "</div>";
+
+    // OTA пароль
+    html += "<h3 style='margin-top:30px;'>OTA пароль</h3>";
+    html += "<p style='font-size:14px;color:#888;'>Поточний пароль для Arduino IDE OTA: <code>" + getOTAPassword() + "</code></p>";
+    html += "<input type='password' id='newOtaPassword' placeholder='Новий пароль (мін. 4 символи)'>";
+    html += "<button class='btn' onclick='changeOtaPassword()'>Змінити пароль</button>";
+
+    html += "</div>";
+
+    // Backup конфігурації
+    html += "<div class='card'>";
+    html += "<h2>Backup конфігурації</h2>";
+
+    // Статус backup
+    BackupStatus backupStatus = getBackupStatus();
+    if (backupStatus.exists) {
+        html += "<p style='color:#4CAF50;'>Останній backup: ";
+        if (backupStatus.valid) {
+            html += String(backupStatus.size) + " bytes";
+            html += " - " + backupStatus.description;
+            html += " <span style='color:#4CAF50;'>(CRC OK)</span>";
+        } else {
+            html += "<span style='color:#ff4444;'>ПОШКОДЖЕНИЙ</span>";
+        }
+        html += "</p>";
+    } else {
+        html += "<p style='color:#888;'>Backup відсутній</p>";
+    }
+
+    html += "<div style='display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;'>";
+    html += "<button class='btn' onclick='createBackup()'>Створити Backup</button>";
+    html += "<button class='btn' onclick='restoreBackup()' style='background:#ff9800;'>Відновити Backup</button>";
+    html += "<button class='btn' onclick='exportConfig()' style='background:#2196F3;'>Export JSON</button>";
+    html += "<button class='btn' onclick='importConfig()' style='background:#9C27B0;'>Import JSON</button>";
+    html += "</div>";
+    html += "</div>";
+
+    // Factory Reset
+    html += "<div class='card' style='border:2px solid #ff4444;'>";
+    html += "<h2 style='color:#ff4444;'>Factory Reset</h2>";
+    html += "<p style='color:#888;'>Скидання ВСІХ налаштувань до заводських. Ця дія незворотня!</p>";
+    html += "<button class='btn' onclick='factoryReset()' style='background:#ff4444;'>Скинути до заводських</button>";
+    html += "</div>";
+
+    html += "</div>"; // container
+
+    // JavaScript
+    html += "<script>";
+
+    // Підтвердження OTA
+    html += "function confirmOTA() {";
+    html += "  return confirm('УВАГА!\\n\\n";
+    html += "1. Переконайтесь у стабільному живленні\\n";
+    html += "2. НЕ вимикайте ESP32 під час оновлення\\n";
+    html += "3. Backup буде створено автоматично\\n\\n";
+    html += "Продовжити?');";
+    html += "}";
+
+    // Progress bar для upload
+    html += "document.getElementById('otaForm').onsubmit = function(e) {";
+    html += "  if (!confirmOTA()) { e.preventDefault(); return false; }";
+    html += "  e.preventDefault();";
+    html += "  var formData = new FormData(e.target);";
+    html += "  var xhr = new XMLHttpRequest();";
+    html += "  xhr.upload.onprogress = function(e) {";
+    html += "    if (e.lengthComputable) {";
+    html += "      var percent = Math.round((e.loaded / e.total) * 100);";
+    html += "      document.getElementById('progressBar').style.width = percent + '%';";
+    html += "      document.getElementById('progressText').innerText = percent + '%';";
+    html += "    }";
+    html += "  };";
+    html += "  xhr.onload = function() {";
+    html += "    if (xhr.status === 200) {";
+    html += "      document.getElementById('progressText').innerText = 'Успішно! Перезавантаження...';";
+    html += "      setTimeout(function() { location.reload(); }, 15000);";
+    html += "    } else {";
+    html += "      alert('Помилка: ' + xhr.responseText);";
+    html += "      document.getElementById('progress').style.display = 'none';";
+    html += "    }";
+    html += "  };";
+    html += "  xhr.onerror = function() { alert('Помилка з\\'єднання'); };";
+    html += "  document.getElementById('progress').style.display = 'block';";
+    html += "  xhr.open('POST', '/update');";
+    html += "  xhr.send(formData);";
+    html += "};";
+
+    // Зміна OTA паролю
+    html += "function changeOtaPassword() {";
+    html += "  var newPass = document.getElementById('newOtaPassword').value;";
+    html += "  if (newPass.length < 4) { alert('Пароль повинен бути мінімум 4 символи'); return; }";
+    html += "  fetch('/api/ota/password', {";
+    html += "    method: 'POST',";
+    html += "    headers: {'Content-Type': 'application/json'},";
+    html += "    body: JSON.stringify({password: newPass})";
+    html += "  }).then(r => r.json()).then(data => {";
+    html += "    alert(data.success ? 'Пароль змінено' : 'Помилка: ' + data.error);";
+    html += "    if (data.success) location.reload();";
+    html += "  });";
+    html += "}";
+
+    // Backup функції
+    html += "function createBackup() {";
+    html += "  fetch('/api/backup/create', {method: 'POST'})";
+    html += "    .then(r => r.json())";
+    html += "    .then(data => { alert(data.success ? 'Backup створено' : 'Помилка'); location.reload(); });";
+    html += "}";
+
+    html += "function restoreBackup() {";
+    html += "  if (!confirm('Відновити конфігурацію з backup?\\nСистема перезавантажиться.')) return;";
+    html += "  fetch('/api/backup/restore', {method: 'POST'})";
+    html += "    .then(r => r.json())";
+    html += "    .then(data => { alert(data.message); });";
+    html += "}";
+
+    html += "function exportConfig() {";
+    html += "  fetch('/api/config/export')";
+    html += "    .then(r => r.text())";
+    html += "    .then(data => {";
+    html += "      var blob = new Blob([data], {type: 'application/json'});";
+    html += "      var url = URL.createObjectURL(blob);";
+    html += "      var a = document.createElement('a');";
+    html += "      a.href = url;";
+    html += "      a.download = 'klimat_config_' + Date.now() + '.json';";
+    html += "      a.click();";
+    html += "    });";
+    html += "}";
+
+    html += "function importConfig() {";
+    html += "  var input = document.createElement('input');";
+    html += "  input.type = 'file';";
+    html += "  input.accept = '.json';";
+    html += "  input.onchange = function(e) {";
+    html += "    var file = e.target.files[0];";
+    html += "    var reader = new FileReader();";
+    html += "    reader.onload = function(event) {";
+    html += "      fetch('/api/config/import', {";
+    html += "        method: 'POST',";
+    html += "        headers: {'Content-Type': 'application/json'},";
+    html += "        body: event.target.result";
+    html += "      }).then(r => r.json()).then(data => {";
+    html += "        alert(data.success ? 'Імпорт успішний' : 'Помилка');";
+    html += "        if (data.success) location.reload();";
+    html += "      });";
+    html += "    };";
+    html += "    reader.readAsText(file);";
+    html += "  };";
+    html += "  input.click();";
+    html += "}";
+
+    html += "function factoryReset() {";
+    html += "  if (!confirm('УВАГА!\\n\\nВсі налаштування будуть ВИДАЛЕНІ!\\nЦя дія НЕЗВОРОТНЯ!\\n\\nПродовжити?')) return;";
+    html += "  if (!confirm('ВИ АБСОЛЮТНО ВПЕВНЕНІ?\\n\\nСистема повернеться до заводських налаштувань.')) return;";
+    html += "  fetch('/api/factory-reset', {method: 'POST'})";
+    html += "    .then(r => r.json())";
+    html += "    .then(data => { alert(data.message); });";
+    html += "}";
+
+    html += "</script>";
+
+    html += getHtmlFooter();
+    server.send(200, "text/html", html);
+}
+
+// API: OTA статус
+void handleOTAStatus() {
+    if (!checkAuth()) return;
+
+    OTAStatus status = getOTAStatus();
+
+    JsonDocument doc;
+    doc["inProgress"] = status.inProgress;
+    doc["progress"] = status.progressPercent;
+    doc["currentVersion"] = status.currentVersion;
+    doc["error"] = status.errorMessage;
+    doc["success"] = status.success;
+
+    String json;
+    serializeJson(doc, json);
+    server.send(200, "application/json", json);
+}
+
+// API: Зміна OTA паролю
+void handleOTAPasswordChange() {
+    if (!checkAuth()) return;
+
+    String body = server.arg("plain");
+    JsonDocument doc;
+    deserializeJson(doc, body);
+
+    String newPassword = doc["password"];
+
+    if (newPassword.length() < 4) {
+        server.send(400, "application/json", "{\"success\":false,\"error\":\"Password too short\"}");
+        return;
+    }
+
+    if (changeOTAPassword(newPassword)) {
+        server.send(200, "application/json", "{\"success\":true}");
+    } else {
+        server.send(500, "application/json", "{\"success\":false,\"error\":\"Failed to save\"}");
+    }
+}
+
+// API: Створити Backup
+void handleBackupCreate() {
+    if (!checkAuth()) return;
+
+    if (createBackup("Manual backup from web")) {
+        server.send(200, "application/json", "{\"success\":true}");
+    } else {
+        server.send(500, "application/json", "{\"success\":false,\"error\":\"Backup failed\"}");
+    }
+}
+
+// API: Відновити Backup
+void handleBackupRestore() {
+    if (!checkAuth()) return;
+
+    // Відправляємо відповідь перед restart
+    server.send(200, "application/json", "{\"success\":true,\"message\":\"Відновлення... Система перезавантажиться.\"}");
+
+    delay(1000);
+    restoreBackup();  // Ця функція робить restart
+}
+
+// API: Статус Backup
+void handleBackupStatus() {
+    if (!checkAuth()) return;
+
+    BackupStatus status = getBackupStatus();
+
+    JsonDocument doc;
+    doc["exists"] = status.exists;
+    doc["timestamp"] = status.timestamp;
+    doc["size"] = status.size;
+    doc["valid"] = status.valid;
+    doc["description"] = status.description;
+
+    String json;
+    serializeJson(doc, json);
+    server.send(200, "application/json", json);
+}
+
+// API: Export Config
+void handleConfigExport() {
+    if (!checkAuth()) return;
+
+    String json = exportConfigJSON();
+    server.send(200, "application/json", json);
+}
+
+// API: Import Config
+void handleConfigImport() {
+    if (!checkAuth()) return;
+
+    String body = server.arg("plain");
+
+    if (importConfigJSON(body)) {
+        server.send(200, "application/json", "{\"success\":true}");
+    } else {
+        server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    }
+}
+
+// API: Factory Reset
+void handleFactoryReset() {
+    if (!checkAuth()) return;
+
+    server.send(200, "application/json", "{\"success\":true,\"message\":\"Factory reset... Система перезавантажиться.\"}");
+
+    delay(2000);
+    factoryResetComplete();  // Ця функція робить restart
+}
+
+// Web OTA Upload - результат
+void handleOTAUploadResult() {
+    bool success = !Update.hasError();
+    String message = success ? "OK" : Update.errorString();
+
+    server.sendHeader("Connection", "close");
+    server.send(success ? 200 : 500, "text/plain", message);
+
+    if (success) {
+        Serial.println("\n✅ Web OTA завершено успішно");
+        delay(1000);
+        ESP.restart();
+    }
+}
+
+// Web OTA Upload - обробка файлу
+void handleOTAUpload() {
+    HTTPUpload& upload = server.upload();
+
+    if (upload.status == UPLOAD_FILE_START) {
+        Serial.printf("\n📥 Web OTA Upload: %s\n", upload.filename.c_str());
+
+        // Перевірка автентифікації
+        if (!checkAuth()) {
+            return;
+        }
+
+        // Позначаємо що OTA активна
+        setOTAInProgress(true);
+
+        // Автоматичний backup ДО призупинення задач!
+        Serial.println("\n📦 Автоматичний backup поточної конфігурації...");
+        if (createBackup("Auto backup before Web OTA")) {
+            Serial.println("✅ Backup створено - конфіг збережено");
+        } else {
+            Serial.println("⚠️  Попередження: Backup не створено, але OTA продовжується");
+        }
+
+        // Зупиняємо критичні операції
+        pauseCriticalTasks();
+
+        // Затримка для стабілізації
+        delay(100);
+
+        // Початок OTA з UPDATE_SIZE_UNKNOWN - розмір буде визначено автоматично
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+            Serial.println("❌ Update.begin() failed");
+            Update.printError(Serial);
+            setOTAInProgress(false);
+            resumeCriticalTasks();
+            return;
+        }
+        Serial.println("  Update.begin() OK");
+    }
+    else if (upload.status == UPLOAD_FILE_WRITE) {
+        // Просто пишемо дані без додаткової логіки
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+            Serial.println("❌ Update.write() failed");
+            Update.printError(Serial);
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_END) {
+        // Завершення з верифікацією
+        if (Update.end(true)) {
+            Serial.printf("✅ Upload Success: %u bytes\n", upload.totalSize);
+            setOTAInProgress(false);
+        } else {
+            Serial.println("❌ Update.end() failed");
+            Update.printError(Serial);
+            setOTAInProgress(false);
+            resumeCriticalTasks();
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_ABORTED) {
+        Serial.println("❌ Upload aborted");
+        Update.end();
+        setOTAInProgress(false);
+        resumeCriticalTasks();
+    }
 }
 
 // ============================================================================

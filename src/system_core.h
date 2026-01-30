@@ -285,4 +285,17 @@ extern int learningCount;
 // Прототип задачі розширеної логіки
 void advancedLogicTask(void *parameter);
 
+// Глобальні TaskHandle для OTA (призупинення задач)
+extern TaskHandle_t sensorTaskHandle;
+extern TaskHandle_t heatingTaskHandle;
+extern TaskHandle_t ventTaskHandle;
+extern TaskHandle_t webTaskHandle;
+extern TaskHandle_t timeTaskHandle;
+extern TaskHandle_t advancedLogicTaskHandle;
+extern TaskHandle_t dataLoggerTaskHandle;
+
+// Функції призупинення/відновлення задач (для OTA)
+void suspendAllTasks();
+void resumeAllTasks();
+
 #endif

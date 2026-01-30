@@ -163,6 +163,7 @@ inline String getMainNavigation() {
     html += "<a href='/settings' class='nav-btn'>⚙️ ПАНЕЛЬ НАЛАШТУВАНЬ</a>";
     html += "<a href='/learning' class='nav-btn'>🧠 СИСТЕМА НАВЧАННЯ</a>";
     html += "<a href='/energy' class='nav-btn' style='background: #f59e0b;'>⚡ ЕНЕРГОКОНТРОЛЕР</a>";
+    html += "<a href='/ota' class='nav-btn' style='background: #00bcd4;'>🔄 OTA ОНОВЛЕННЯ</a>";
     html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
     html += "<a href='/history' class='nav-btn' style='background: #e91e63;'>📈 ГРАФІКИ</a>";
     html += "<a href='/status' class='nav-btn'>📊 JSON СТАТУС</a>";

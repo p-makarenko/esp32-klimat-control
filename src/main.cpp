@@ -14,6 +14,8 @@
 #include "web_interface.h"
 #include "google_sheets_sync.h"
 #include "energy_monitor.h"
+#include "config_manager.h"
+#include "ota_manager.h"
 #include <Arduino.h>
 
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -70,6 +72,17 @@ void setup() {
   
   initMutexes();
   loadConfiguration();
+
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ CONFIG MANAGER ===");
+  if (!initConfigManager()) {
+    Serial.println("⚠️  Попередження: Config Manager недоступний");
+  }
+
+  // Перевірка першого завантаження після OTA
+  checkFirstBootAfterOTA();
+
+  // Перевірка та міграція конфігурації
+  checkAndMigrateConfig();
   
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ WI-FI ===");
   initWiFi();
@@ -111,6 +124,11 @@ void setup() {
 
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ЕНЕРГОКОНТРОЛЕРА ===");
   initEnergyMonitor();
+
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ OTA ===");
+  if (!initOTA()) {
+    Serial.println("⚠️  Попередження: OTA недоступний");
+  }
 
   Serial.println("\n=== СТВОРЕННЯ ЗАВДАНЬ ===");
   createTasks();
@@ -193,6 +211,9 @@ void setup() {
 
 // ГОЛОВНИЙ ЦИКЛ
 void loop() {
+  // OTA handler - повинен викликатись регулярно
+  handleOTA();
+
   static unsigned long lastWiFiCheck = 0;
   const unsigned long wifiCheckInterval = 30000; // Перевірка кожні 30 секунд
   
@@ -429,20 +450,14 @@ void resetToFactoryDefaults() {
   Serial.println("\n⚠️⚠️⚠️  СКИДАННЯ НАЛАШТУВАНЬ ДО ЗАВОДСЬКИХ  ⚠️⚠️⚠️");
   Serial.println("Всі налаштування будуть втрачені!");
   Serial.println("Для відновлення перезавантажте систему протягом 5 секунд...");
-  
+
   for (int i = 5; i > 0; i--) {
     Serial.printf("Залишилось %d секунд...\n", i);
     delay(1000);
   }
-  
-  preferences.begin("climate", false);
-  preferences.clear();
-  preferences.end();
-  
-  Serial.println("✅  Налаштування скинуті до заводських");
-  Serial.println("🔄  Перезавантаження системи...");
-  delay(2000);
-  ESP.restart();
+
+  // Використовуємо повний factory reset (всі namespace)
+  factoryResetComplete();
 }
 
 void handleSerialInput() {

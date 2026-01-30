@@ -2,6 +2,7 @@
 #include "system_core.h"
 #include "sensor_manager.h"
 #include "actuator_manager.h"
+#include "config_manager.h"
 #include <time.h>
 #include <cmath>
 #include <ArduinoJson.h>
@@ -59,11 +60,8 @@ bool initDataLogger() {
                 loggerStats.spiffsTotalBytes - loggerStats.spiffsUsedBytes,
                 (loggerStats.spiffsTotalBytes - loggerStats.spiffsUsedBytes) / 1024.0 / 1024.0);
 
-  // Створюємо директорію для логів якщо не існує
-  if (!SPIFFS.exists("/logs")) {
-    SPIFFS.mkdir("/logs");
-    Serial.println("✓ Створено директорію /logs");
-  }
+  // SPIFFS не підтримує директорії - пропускаємо mkdir
+  // Шлях /logs/current.csv створюється автоматично при відкритті файлу
 
   // Перевіряємо поточний файл
   if (SPIFFS.exists(LOG_CURRENT_FILE)) {
@@ -82,16 +80,18 @@ bool initDataLogger() {
     }
   }
 
-  // Підрахунок архівних файлів
-  File root = SPIFFS.open("/logs");
-  File file = root.openNextFile();
+  // Підрахунок архівних файлів (SPIFFS: ітерація по всіх файлах)
+  File root = SPIFFS.open("/");
   loggerStats.archiveFilesCount = 0;
-  while (file) {
-    String fileName = file.name();
-    if (fileName.startsWith("/logs/archive_")) {
-      loggerStats.archiveFilesCount++;
+  if (root) {
+    File file = root.openNextFile();
+    while (file) {
+      String fileName = file.name();
+      if (fileName.indexOf("archive_") >= 0) {
+        loggerStats.archiveFilesCount++;
+      }
+      file = root.openNextFile();
     }
-    file = root.openNextFile();
   }
 
   Serial.printf("✓ Знайдено %d архівних файлів\n", loggerStats.archiveFilesCount);
@@ -249,6 +249,12 @@ void aggregateAndSave() {
 void logDataToSPIFFS() {
   if (aggregationBufferIndex == 0) return;
 
+  // НЕ записувати в SPIFFS якщо OTA активна (конфлікт з flash)
+  if (isOTAInProgress()) {
+    Serial.println("⏸️ [SPIFFS] Пропущено запис - OTA активна");
+    return;
+  }
+
   Serial.printf("💾 [SPIFFS] Writing %d aggregated records...\n", aggregationBufferIndex);
 
   // Скидаємо watchdog перед файловою операцією
@@ -257,7 +263,21 @@ void logDataToSPIFFS() {
   // Відкриваємо файл для дозапису
   File file = SPIFFS.open(LOG_CURRENT_FILE, "a");
   if (!file) {
-    Serial.println("❌ [SPIFFS] Failed to open file for writing");
+    Serial.printf("❌ [SPIFFS] Failed to open file. Used: %u / %u bytes\n",
+                  SPIFFS.usedBytes(), SPIFFS.totalBytes());
+
+    // Спроба відновлення: перемонтувати SPIFFS
+    static uint8_t failCount = 0;
+    failCount++;
+    if (failCount >= 3) {
+      Serial.println("⚠️ [SPIFFS] 3 помилки поспіль - форматую...");
+      SPIFFS.end();
+      if (SPIFFS.format()) {
+        SPIFFS.begin(true);
+        Serial.println("✅ [SPIFFS] Відформатовано та перезапущено");
+      }
+      failCount = 0;
+    }
     return;
   }
 
@@ -676,9 +696,11 @@ void dataLoggerTask(void *parameter) {
       lastRAMLog = now;
     }
 
-    // Запис в SPIFFS кожні 5 хвилин
+    // Примусовий запис в SPIFFS кожні 5 хвилин (якщо є незбережені дані)
     if (now - lastSPIFFSLog >= LOG_INTERVAL_SPIFFS) {
-      logDataToSPIFFS();
+      if (aggregationBufferIndex > 0) {
+        logDataToSPIFFS();
+      }
       lastSPIFFSLog = now;
     }
 
