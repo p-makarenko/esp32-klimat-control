@@ -7,11 +7,11 @@
 
 // Версія та інформація про збірку (автоматично оновлюється при компіляції)
 #define PROJECT_START_DATE "Dec 7 2025"
-#define VERSION "v5.0-D55"
-#define VERSION_COMMENT "v5.0 Release: OTA + Backup (День 55)"
+#define VERSION "v5.0-D56"
+#define VERSION_COMMENT "v5.0 Release: OTA + Backup (День 56)"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 13572
+#define TOTAL_CODE_LINES 13672
 #define FIRMWARE_SIZE_KB 1467
 
 // Версіонування конфігурації (для міграції)
