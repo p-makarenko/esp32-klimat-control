@@ -386,6 +386,62 @@ bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
   return true;
 }
 
+// Допоміжна функція для парсингу CSV файлу в JSON array
+static void parseCSVFileToJson(File& file, JsonArray& dataArray,
+                                unsigned long startTimestamp, unsigned long endTimestamp) {
+  char buffer[256];
+  int bufIdx = 0;
+  int lineCount = 0;
+
+  while (file.available()) {
+    // Скидаємо watchdog кожні 20 рядків
+    if (++lineCount % 20 == 0) {
+      yield();
+    }
+
+    int c = file.read();
+    if (c == -1) break;
+
+    if (c == '\n') {
+      if (bufIdx > 0) {
+        buffer[bufIdx] = '\0';
+
+        // Парсимо рядок
+        unsigned long timestamp = strtoul(buffer, NULL, 10);
+        if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+          JsonObject record = dataArray.add<JsonObject>();
+
+          // Розбиваємо CSV на поля
+          char tempBuf[256];
+          strcpy(tempBuf, buffer);
+          char* field = strtok(tempBuf, ",");
+          int fieldIdx = 0;
+
+          while (field && fieldIdx < 9) {
+            if (fieldIdx == 0) record["timestamp"] = strtoul(field, NULL, 10);
+            else if (fieldIdx == 1) record["tempCarrier"] = atof(field);
+            else if (fieldIdx == 2) record["tempRoom"] = atof(field);
+            else if (fieldIdx == 3) record["tempBME"] = atof(field);
+            else if (fieldIdx == 4) record["humidity"] = atof(field);
+            else if (fieldIdx == 5) record["pumpPower"] = atoi(field);
+            else if (fieldIdx == 6) record["fanPower"] = atoi(field);
+            else if (fieldIdx == 7) record["extractorPower"] = atoi(field);
+            else if (fieldIdx == 8) record["mode"] = atoi(field);
+
+            field = strtok(NULL, ",");
+            fieldIdx++;
+          }
+        }
+      }
+      bufIdx = 0;
+    } else if (c != '\r') {
+      if (bufIdx < sizeof(buffer) - 1) {
+        buffer[bufIdx++] = c;
+      }
+    }
+  }
+}
+
 bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData) {
   unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
   unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
@@ -393,64 +449,65 @@ bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData
   JsonDocument doc;
   JsonArray dataArray = doc["data"].to<JsonArray>();
 
+  // 1. Читаємо поточний файл
   File file = SPIFFS.open(LOG_CURRENT_FILE, "r");
   if (file) {
-    char buffer[256];
-    int bufIdx = 0;
-    int lineCount = 0;
-
-    while (file.available()) {
-      // Скидаємо watchdog кожні 20 рядків
-      if (++lineCount % 20 == 0) {
-        yield();
-      }
-
-      int c = file.read();
-      if (c == -1) break;
-
-      if (c == '\n') {
-        if (bufIdx > 0) {
-          buffer[bufIdx] = '\0';
-
-          // Парсимо рядок
-          unsigned long timestamp = strtoul(buffer, NULL, 10);
-          if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
-            JsonObject record = dataArray.add<JsonObject>();
-
-            // Розбиваємо CSV на поля
-            char tempBuf[256];
-            strcpy(tempBuf, buffer);
-            char* field = strtok(tempBuf, ",");
-            int fieldIdx = 0;
-
-            while (field && fieldIdx < 9) {
-              if (fieldIdx == 0) record["timestamp"] = strtoul(field, NULL, 10);
-              else if (fieldIdx == 1) record["tempCarrier"] = atof(field);
-              else if (fieldIdx == 2) record["tempRoom"] = atof(field);
-              else if (fieldIdx == 3) record["tempBME"] = atof(field);
-              else if (fieldIdx == 4) record["humidity"] = atof(field);
-              else if (fieldIdx == 5) record["pumpPower"] = atoi(field);
-              else if (fieldIdx == 6) record["fanPower"] = atoi(field);
-              else if (fieldIdx == 7) record["extractorPower"] = atoi(field);
-              else if (fieldIdx == 8) record["mode"] = atoi(field);
-
-              field = strtok(NULL, ",");
-              fieldIdx++;
-            }
-          }
-        }
-        bufIdx = 0;
-      } else if (c != '\r') {
-        if (bufIdx < sizeof(buffer) - 1) {
-          buffer[bufIdx++] = c;
-        }
-      }
-    }
+    parseCSVFileToJson(file, dataArray, startTimestamp, endTimestamp);
     file.close();
+  }
+
+  // 2. Читаємо архівні файли з /logs/
+  File logsDir = SPIFFS.open("/logs");
+  if (logsDir && logsDir.isDirectory()) {
+    File archiveFile = logsDir.openNextFile();
+    while (archiveFile) {
+      String fileName = archiveFile.name();
+      if (fileName.indexOf("archive_") >= 0) {
+        parseCSVFileToJson(archiveFile, dataArray, startTimestamp, endTimestamp);
+      }
+      archiveFile.close();
+      archiveFile = logsDir.openNextFile();
+    }
+    logsDir.close();
   }
 
   serializeJson(doc, jsonData);
   return true;
+}
+
+// Допоміжна функція для парсингу CSV файлу в рядок
+static void parseCSVFileToString(File& file, String& csvData,
+                                  unsigned long startTimestamp, unsigned long endTimestamp) {
+  char buffer[256];
+  int bufIdx = 0;
+  int lineCount = 0;
+
+  while (file.available()) {
+    // Скидаємо watchdog кожні 20 рядків
+    if (++lineCount % 20 == 0) {
+      yield();
+    }
+
+    int c = file.read();
+    if (c == -1) break;
+
+    if (c == '\n') {
+      if (bufIdx > 0) {
+        buffer[bufIdx] = '\0';
+        unsigned long timestamp = strtoul(buffer, NULL, 10);
+
+        if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+          csvData += buffer;
+          csvData += "\n";
+        }
+      }
+      bufIdx = 0;
+    } else if (c != '\r') {
+      if (bufIdx < sizeof(buffer) - 1) {
+        buffer[bufIdx++] = c;
+      }
+    }
+  }
 }
 
 bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvData) {
@@ -459,39 +516,26 @@ bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvDa
 
   csvData = "timestamp,tempCarrier,tempRoom,tempBME,humidity,pumpPower,fanPower,extractorPower,mode\n";
 
+  // 1. Читаємо поточний файл
   File file = SPIFFS.open(LOG_CURRENT_FILE, "r");
   if (file) {
-    char buffer[256];
-    int bufIdx = 0;
-    int lineCount = 0;
-
-    while (file.available()) {
-      // Скидаємо watchdog кожні 20 рядків
-      if (++lineCount % 20 == 0) {
-        yield();
-      }
-
-      int c = file.read();
-      if (c == -1) break;
-
-      if (c == '\n') {
-        if (bufIdx > 0) {
-          buffer[bufIdx] = '\0';
-          unsigned long timestamp = strtoul(buffer, NULL, 10);
-
-          if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
-            csvData += buffer;
-            csvData += "\n";
-          }
-        }
-        bufIdx = 0;
-      } else if (c != '\r') {
-        if (bufIdx < sizeof(buffer) - 1) {
-          buffer[bufIdx++] = c;
-        }
-      }
-    }
+    parseCSVFileToString(file, csvData, startTimestamp, endTimestamp);
     file.close();
+  }
+
+  // 2. Читаємо архівні файли з /logs/
+  File logsDir = SPIFFS.open("/logs");
+  if (logsDir && logsDir.isDirectory()) {
+    File archiveFile = logsDir.openNextFile();
+    while (archiveFile) {
+      String fileName = archiveFile.name();
+      if (fileName.indexOf("archive_") >= 0) {
+        parseCSVFileToString(archiveFile, csvData, startTimestamp, endTimestamp);
+      }
+      archiveFile.close();
+      archiveFile = logsDir.openNextFile();
+    }
+    logsDir.close();
   }
 
   return true;
