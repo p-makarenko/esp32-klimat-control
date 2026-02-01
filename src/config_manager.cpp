@@ -281,25 +281,62 @@ bool createBackup(const char* description) {
 
     prefs.end();
 
-    // Серіалізуємо JSON (без checksum)
+    // Обчислюємо CRC32 БЕЗ checksum поля
     String jsonString;
     serializeJson(doc, jsonString);
-
-    // Обчислюємо CRC32
     uint32_t crc = calculateCRC32(jsonString);
+
+    Serial.printf("[createBackup] JSON без checksum: %d chars, CRC=0x%08X\n", jsonString.length(), crc);
+
+    // Додаємо checksum
     doc["checksum"] = crc;
 
     // Серіалізуємо з checksum
     String finalJson;
     serializeJson(doc, finalJson);
+    Serial.printf("[createBackup] JSON з checksum: %d chars\n", finalJson.length());
 
     // Записуємо у SPIFFS ТІЛЬКИ якщо це не OTA
     // (під час OTA запис в SPIFFS конфліктує з flash писанням)
     bool spiffsFailed = false;
     File file = SPIFFS.open(BACKUP_JSON_PATH, FILE_WRITE);
     if (!file) {
-        Serial.println("  ⚠️  Помилка відкриття SPIFFS для backup (можуть бути конфлікти з OTA)");
-        spiffsFailed = true;
+        Serial.println("  ⚠️  Помилка відкриття SPIFFS для backup - спроба очистити старі логи...");
+        // Видаляємо все з /logs/ щоб звільнити місце
+        File root = SPIFFS.open("/logs");
+        if (root) {
+            File f = root.openNextFile();
+            int deleted = 0;
+            while (f) {
+                String fname = f.name();
+                f.close();
+                if (SPIFFS.remove(fname)) {
+                    deleted++;
+                    Serial.printf("    Видалено: %s\n", fname.c_str());
+                }
+                f = root.openNextFile();
+            }
+            root.close();
+            Serial.printf("    Всього видалено: %d файлів\n", deleted);
+        }
+
+        // Спробуємо ще раз
+        file = SPIFFS.open(BACKUP_JSON_PATH, FILE_WRITE);
+        if (!file) {
+            Serial.println("  ⚠️  Все одно неможливо - використовуємо тільки NVS");
+            spiffsFailed = true;
+        } else {
+            size_t written = file.print(finalJson);
+            file.close();
+            if (written != finalJson.length()) {
+                Serial.println("  ⚠️  Помилка запису SPIFFS backup");
+                SPIFFS.remove(BACKUP_JSON_PATH);
+                spiffsFailed = true;
+            } else {
+                Serial.println("  ✅ SPIFFS запис успішний після очистки");
+                spiffsFailed = false;
+            }
+        }
     } else {
         size_t written = file.print(finalJson);
         file.close();
@@ -311,13 +348,21 @@ bool createBackup(const char* description) {
         }
     }
 
+    // Збережуємо бекап також в NVS як резервний
+    Preferences backupPrefs;
+    backupPrefs.begin("backup", false);
+    backupPrefs.putString("json", finalJson);
+    backupPrefs.putULong("crc", crc);
+    backupPrefs.putULong("timestamp", millis());
+    backupPrefs.end();
+
     resumeCriticalTasks();
     xSemaphoreGive(configMutex);
 
-    // Backup вважається успішним навіть якщо SPIFFS неудачно (дані в NVS збережені)
-    Serial.printf("  Backup в NVS успішно (%d bytes, CRC: 0x%08X)\n", finalJson.length(), crc);
+    Serial.printf("  ✅ Backup успішно (SPIFFS: %s, NVS: OK, %d bytes, CRC: 0x%08X)\n",
+                  spiffsFailed ? "FAIL" : "OK", finalJson.length(), crc);
     if (spiffsFailed) {
-        Serial.println("  💡 SPIFFS запис пропущено (можливо OTA активна)");
+        Serial.println("  💡 SPIFFS запис пропущено (можливо OTA активна) - використовується NVS");
     }
     return true;
 }
@@ -363,12 +408,14 @@ bool restoreBackup() {
         return false;
     }
 
-    // Перевіряємо CRC
+    // Перевіряємо CRC - копіюємо doc без checksum
     uint32_t storedCRC = doc["checksum"];
-    doc.remove("checksum");
+
+    JsonDocument docForCRC = doc;
+    docForCRC.remove("checksum");
 
     String jsonWithoutCRC;
-    serializeJson(doc, jsonWithoutCRC);
+    serializeJson(docForCRC, jsonWithoutCRC);
     uint32_t calculatedCRC = calculateCRC32(jsonWithoutCRC);
 
     if (calculatedCRC != storedCRC) {
@@ -513,21 +560,36 @@ bool restoreBackup() {
 
 BackupStatus getBackupStatus() {
     BackupStatus status = {false, 0, 0, false, ""};
+    String jsonString;
 
-    if (!SPIFFS.exists(BACKUP_JSON_PATH)) {
-        return status;
+    // Спробуємо прочитати з SPIFFS
+    if (SPIFFS.exists(BACKUP_JSON_PATH)) {
+        File file = SPIFFS.open(BACKUP_JSON_PATH, FILE_READ);
+        if (file) {
+            jsonString = file.readString();
+            status.size = file.size();
+            file.close();
+            Serial.println("[getBackupStatus] Прочитано з SPIFFS");
+        }
     }
 
-    File file = SPIFFS.open(BACKUP_JSON_PATH, FILE_READ);
-    if (!file) {
+    // Якщо SPIFFS не вдався або пустий, читаємо з NVS
+    if (jsonString.isEmpty()) {
+        Preferences backupPrefs;
+        backupPrefs.begin("backup", true);
+        jsonString = backupPrefs.getString("json", "");
+        backupPrefs.end();
+        if (!jsonString.isEmpty()) {
+            status.size = jsonString.length();
+            Serial.println("[getBackupStatus] Прочитано з NVS");
+        }
+    }
+
+    if (jsonString.isEmpty()) {
         return status;
     }
 
     status.exists = true;
-    status.size = file.size();
-
-    String jsonString = file.readString();
-    file.close();
 
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, jsonString);
@@ -537,13 +599,18 @@ BackupStatus getBackupStatus() {
         status.description = doc["description"].as<String>();
 
         // Перевіряємо CRC
-        uint32_t storedCRC = doc["checksum"];
-        doc.remove("checksum");
+        uint32_t storedCRC = doc["checksum"].as<uint32_t>();
+
+        // Створюємо копію без checksum для порівняння
+        JsonDocument docCopy = doc;
+        docCopy.remove("checksum");
 
         String jsonWithoutCRC;
-        serializeJson(doc, jsonWithoutCRC);
+        serializeJson(docCopy, jsonWithoutCRC);
         uint32_t calculatedCRC = calculateCRC32(jsonWithoutCRC);
 
+        Serial.printf("[getBackupStatus] storedCRC=0x%08X calculated=0x%08X match=%s\n",
+                      storedCRC, calculatedCRC, (calculatedCRC == storedCRC) ? "YES" : "NO");
         status.valid = (calculatedCRC == storedCRC);
     }
 

@@ -12,9 +12,9 @@
 
 #define LOG_INTERVAL_RAM        60000     // Запис в RAM кожну хвилину (1 хв)
 #define LOG_INTERVAL_SPIFFS     300000    // Запис в SPIFFS кожні 5 хвилин (агреговані дані)
-#define LOG_FILE_MAX_SIZE       500000    // Максимальний розмір файлу логів (~500 КБ)
-#define LOG_MAX_FILES           6         // Максимум файлів (6 файлів × 500 КБ = ~3 МБ)
-#define LOG_RETENTION_DAYS      30        // Зберігати дані за останні 30 днів
+#define LOG_FILE_MAX_SIZE       100000    // Максимальний розмір файлу логів (~100 КБ)
+#define LOG_MAX_FILES           3         // Максимум файлів (3 файли × 100 КБ = ~300 KB)
+#define LOG_RETENTION_DAYS      7         // Зберігати дані за останні 7 днів (оптимізовано для SPIFFS 512KB)
 
 // Імена файлів (SPIFFS не підтримує підкаталоги - файли в корені)
 #define LOG_CURRENT_FILE        "/current.csv"
@@ -100,7 +100,7 @@ bool readSPIFFSDataCSV(const char* startDate, const char* endDate,
 // Управління файлами
 void rotateLogFiles();                            // Ротація файлів (архівування старих)
 void cleanOldLogs();                              // Видалення старих логів
-bool formatSPIFFS();                              // Форматування SPIFFS (видалити всі дані)
+bool formatSPIFFS();                              // ВИМКНЕНО: конфліктує з web server. Використовуйте Factory Reset
 
 // Експорт даних
 String exportToCSV(const char* startDate, const char* endDate);   // Експорт даних у CSV

@@ -266,16 +266,31 @@ void logDataToSPIFFS() {
     Serial.printf("❌ [SPIFFS] Failed to open file. Used: %u / %u bytes\n",
                   SPIFFS.usedBytes(), SPIFFS.totalBytes());
 
-    // Спроба відновлення: перемонтувати SPIFFS
+    // Спроба відновлення: очистити старі логи
     static uint8_t failCount = 0;
     failCount++;
     if (failCount >= 3) {
-      Serial.println("⚠️ [SPIFFS] 3 помилки поспіль - форматую...");
-      SPIFFS.end();
-      if (SPIFFS.format()) {
-        SPIFFS.begin(true);
-        Serial.println("✅ [SPIFFS] Відформатовано та перезапущено");
+      Serial.println("⚠️ [SPIFFS] 3 помилки поспіль - видаляю ВСІ архіви...");
+
+      // Агресивне очищення: видаляємо ВСІ архівні файли
+      File root = SPIFFS.open("/logs");
+      if (root) {
+        File f = root.openNextFile();
+        uint8_t deleted = 0;
+        while (f) {
+          String fname = f.name();
+          f.close();
+          if (fname.startsWith("/logs/archive_")) {
+            SPIFFS.remove(fname);
+            deleted++;
+          }
+          f = root.openNextFile();
+        }
+        root.close();
+        Serial.printf("✅ [SPIFFS] Видалено %d архівів. Вільно: %u bytes\n",
+                      deleted, SPIFFS.totalBytes() - SPIFFS.usedBytes());
       }
+
       failCount = 0;
     }
     return;
@@ -539,6 +554,33 @@ void rotateLogFiles() {
 void cleanOldLogs() {
   Serial.println("🧹 Очищення старих логів...");
 
+  // Перевірка критичного заповнення SPIFFS (>90%)
+  size_t totalBytes = SPIFFS.totalBytes();
+  size_t usedBytes = SPIFFS.usedBytes();
+  float usagePercent = (float)usedBytes / totalBytes * 100;
+
+  if (usagePercent > 90.0) {
+    Serial.printf("⚠️  SPIFFS критично заповнений: %.1f%% - видаляю ВСІ архіви!\n", usagePercent);
+
+    File root = SPIFFS.open("/logs");
+    File file = root.openNextFile();
+    uint8_t deletedCount = 0;
+    while (file) {
+      String fileName = file.name();
+      if (fileName.startsWith("/logs/archive_")) {
+        file.close();
+        SPIFFS.remove(fileName);
+        Serial.printf("  Видалено: %s\n", fileName.c_str());
+        deletedCount++;
+      }
+      file = root.openNextFile();
+    }
+    Serial.printf("✓ Видалено %d архівів (критичне очищення)\n", deletedCount);
+    loggerStats.archiveFilesCount = 0;
+    return;
+  }
+
+  // Звичайне очищення: видаляємо тільки старі файли
   unsigned long cutoffTime = getCurrentTimestamp() - (LOG_RETENTION_DAYS * 24 * 60 * 60);
   uint8_t deletedCount = 0;
 
@@ -568,14 +610,10 @@ void cleanOldLogs() {
 }
 
 bool formatSPIFFS() {
-  Serial.println("⚠️  ФОРМАТУВАННЯ SPIFFS...");
-
-  if (SPIFFS.format()) {
-    Serial.println("✓ SPIFFS відформатовано");
-    return initDataLogger();  // Переініціалізуємо
-  }
-
-  Serial.println("❌ Помилка форматування SPIFFS");
+  // ВИМКНЕНО: форматування SPIFFS конфліктує з web server та призводить до краху
+  // Замість цього використовуйте deleteOldArchives() або перезавантажте ESP32
+  Serial.println("⚠️  formatSPIFFS() ВИМКНЕНО - використовуйте Factory Reset або перезавантаження");
+  Serial.println("💡 Спочатку спробуйте: deleteOldArchives() для очищення місця");
   return false;
 }
 
