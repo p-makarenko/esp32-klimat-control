@@ -14,6 +14,8 @@ extern WebServer server;
 extern SystemConfig config;
 extern HeatingState heatingState;
 extern PowerOutageState powerOutageState;
+extern SensorData sensorData;
+extern SemaphoreHandle_t getSensorMutex();
 
 // Forward declarations
 extern bool checkAuth();
@@ -77,6 +79,66 @@ void handleControlPage() {
     html += "}";
     html += "</style>";
 
+    // ДАТЧИКИ - показники
+    float tempRoom = 0, tempCarrier = 0, tempBME = 0, humidity = 0, pressure = 0;
+    bool roomValid = false, carrierValid = false, bmeValid = false;
+
+    if (xSemaphoreTake(getSensorMutex(), pdMS_TO_TICKS(100))) {
+        tempRoom = sensorData.tempRoom;
+        tempCarrier = sensorData.tempCarrier;
+        tempBME = sensorData.tempBME;
+        humidity = sensorData.humidity;
+        pressure = sensorData.pressure;
+        roomValid = sensorData.roomValid;
+        carrierValid = sensorData.carrierValid;
+        bmeValid = sensorData.bmeValid;
+        xSemaphoreGive(getSensorMutex());
+    }
+
+    float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
+
+    html += "<div class='control-section' style='border-left-color: #2196F3;'>";
+    html += "<h3>📊 ПОКАЗНИКИ ДАТЧИКІВ</h3>";
+    html += "<div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;'>";
+
+    // Температура кімнати
+    html += "<div style='padding: 12px; background: " + String(roomValid ? "#e3f2fd" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
+    html += "<div style='font-size: 12px; color: #666;'>🏠 Кімната</div>";
+    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(roomValid ? "#1976D2" : "#c62828") + ";'>";
+    html += roomValid ? String(tempRoom, 1) + "°C" : "---";
+    html += "</div></div>";
+
+    // Температура теплоносія
+    html += "<div style='padding: 12px; background: " + String(carrierValid ? "#fff3e0" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
+    html += "<div style='font-size: 12px; color: #666;'>🔥 Теплоносій</div>";
+    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(carrierValid ? "#ef6c00" : "#c62828") + ";'>";
+    html += carrierValid ? String(tempCarrier, 1) + "°C" : "---";
+    html += "</div></div>";
+
+    // Вологість
+    html += "<div style='padding: 12px; background: " + String(bmeValid ? "#e8f5e9" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
+    html += "<div style='font-size: 12px; color: #666;'>💧 Вологість</div>";
+    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(bmeValid ? "#388E3C" : "#c62828") + ";'>";
+    html += bmeValid ? String(humidity, 0) + "%" : "---";
+    html += "</div></div>";
+
+    // Тиск
+    html += "<div style='padding: 12px; background: " + String(bmeValid ? "#f3e5f5" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
+    html += "<div style='font-size: 12px; color: #666;'>🌡️ Тиск</div>";
+    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(bmeValid ? "#7B1FA2" : "#c62828") + ";'>";
+    html += bmeValid ? String(pressure, 0) + " hPa" : "---";
+    html += "</div></div>";
+
+    html += "</div>";
+
+    // Цільова температура
+    html += "<div style='margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 5px; text-align: center;'>";
+    html += "<span style='color: #555;'>🎯 Ціль: </span>";
+    html += "<strong style='color: #2e7d32;'>" + String(targetTemp, 1) + "°C</strong>";
+    html += "<span style='color: #888; margin-left: 10px;'>(діапазон " + String(config.tempMin, 1) + " - " + String(config.tempMax, 1) + "°C)</span>";
+    html += "</div>";
+    html += "</div>";
+
     // НАСОС
     html += "<div class='control-section'>";
     html += "<h3>🔵 НАСОС (A)</h3>";
@@ -127,6 +189,17 @@ void handleControlPage() {
     html += "<button class='mode-btn" + String(heatingState.manualMode ? " active" : "") + "' onclick=\"sendCmd('manual')\" data-mode='manual'>✋ РУЧНИЙ</button>";
     html += "</div>";
 
+    // Опція блокування ручного режиму
+    html += "<div style='margin-top: 20px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 5px;'>";
+    html += "<label style='display: flex; align-items: center; cursor: pointer; font-size: 16px; font-weight: 500;'>";
+    html += "<input type='checkbox' id='lockManualMode' " + String(heatingState.manualModeLocked ? "checked" : "") + " onchange=\"toggleLockManual()\" style='width: 20px; height: 20px; margin-right: 10px; cursor: pointer;'>";
+    html += "<span>🔒 Блокувати ручний режим (без автоповернення)</span>";
+    html += "</label>";
+    html += "<div style='margin-top: 8px; font-size: 13px; color: #555;'>";
+    html += "Коли увімкнено: ручний режим не скасується автоматично через 15 хвилин";
+    html += "</div>";
+    html += "</div>";
+
     // Кнопка скидання аварійного режиму
     if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
         html += "<div style='margin-top: 15px;'>";
@@ -137,7 +210,8 @@ void handleControlPage() {
     html += "<div style='margin-top: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px;'>";
     html += "<strong>ℹ️ Автоматичні режими:</strong><br>";
     html += "⚡ <strong>ФОРСАЖ</strong> - вмикається при температурі < 20°C (80% потужність)<br>";
-    html += "🚨 <strong>АВАРІЯ</strong> - вмикається при температурі < 18°C (100% потужність)";
+    html += "🚨 <strong>АВАРІЯ</strong> - вмикається при температурі < 18°C (100% потужність)<br>";
+    html += "<span style='color: #d9534f;'><strong>⚠️ Коли блокування ручного режиму УВІМКНЕНО:</strong> форсаж та аварія НЕ активуються</span>";
     html += "</div>";
     html += "</div>";
 
@@ -184,6 +258,14 @@ void handleControlPage() {
     html += "  if (confirm('Скинути аварійний режим та повернутися до штатної роботи?')) {";
     html += "    sendCmd('reset_emergency');";
     html += "    setTimeout(function() { location.reload(); }, 1000);";
+    html += "  }";
+    html += "}";
+    html += "function toggleLockManual() {";
+    html += "  const checkbox = document.getElementById('lockManualMode');";
+    html += "  if (checkbox.checked) {";
+    html += "    sendCmd('lock_manual_on');";
+    html += "  } else {";
+    html += "    sendCmd('lock_manual_off');";
     html += "  }";
     html += "}";
     html += "</script>";

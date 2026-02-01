@@ -436,6 +436,16 @@ void processExtendedCommand(String command) {
         Serial.printf("🔒 Блокування ручного режиму: %s\n",
                       heatingState.manualModeLocked ? "УВІМКНЕНО" : "ВИМКНЕНО");
     }
+    else if (command == "lock_manual_on") {
+        heatingState.manualModeLocked = true;
+        prefs.putBool("manualModeLocked", true);
+        Serial.println("🔒 Блокування ручного режиму: УВІМКНЕНО");
+    }
+    else if (command == "lock_manual_off") {
+        heatingState.manualModeLocked = false;
+        prefs.putBool("manualModeLocked", false);
+        Serial.println("🔒 Блокування ручного режиму: ВИМКНЕНО");
+    }
     else if (command == "force") {
         heatingState.forceMode = true;
         heatingState.manualMode = false;
@@ -800,8 +810,8 @@ void smartHeatingControl() {
         return;
     }
 
-    // Перевіряємо аварійні режими (тільки в автоматичному режимі)
-    if (!heatingState.manualMode) {
+    // Перевіряємо аварійні режими (тільки в автоматичному режимі та без блокування)
+    if (!heatingState.manualMode && !heatingState.manualModeLocked) {
         if (tempRoom <= config.tempEmergencyLow) {
             if (!heatingState.emergencyMode) {
                 setEmergencyStartTime(millis());
@@ -825,7 +835,7 @@ void smartHeatingControl() {
             Serial.println("‼ ФОРСОВАНИЙ РЕЖИМ: НИЗЬКА ТЕМПЕРАТУРА!");
             return;
         }
-        
+
         // Якщо температура нормальна - скидаємо спеціальні режими
         if (heatingState.forceMode || heatingState.emergencyMode) {
             heatingState.forceMode = false;
@@ -835,36 +845,57 @@ void smartHeatingControl() {
     }
     
     // ШТАТНИЙ РЕЖИМ: Насос завжди вимкнений (0%), працює лише вентилятор
-    // Ціль - середнє значення між tempMin і tempMax
-    float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
-    float tempDiff = targetTemp - tempRoom;
+    // Ціль - плавно підтримувати температуру навколо середнього значення діапазону [tempMin; tempMax]
 
     // Насос ЗАВЖДИ 0% в штатному режимі (працює лише при аваріях)
     setPumpPercent(0);
 
-    // Вентилятор керує обігрівом через теплоносій
+    // Розрахунок цільової температури (середина діапазону)
+    float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
+    float tempDiff = targetTemp - tempRoom;  // Позитивне = потрібен обігрів
+    float halfRange = (config.tempMax - config.tempMin) / 2.0f;
+
+    // Вентилятор керує обігрівом через теплоносій - ПЛАВНА регуляція
     int fanPower;
 
-    if (tempDiff > 1.0f) {
-        // Температура суттєво нижче цілі - максимальний обігрів
+    if (tempRoom < config.tempMin) {
+        // Температура нижче мінімуму - максимальний обігрів
         fanPower = config.fanMaxPercent;
-    } else if (tempDiff > 0.5f) {
-        // Температура нижче цілі - помірний обігрів
-        fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100, config.fanMinPercent + 20, config.fanMaxPercent);
-    } else if (tempDiff > -0.5f) {
-        // Температура близька до цілі - мінімальна підтримка
+    } else if (tempRoom > config.tempMax) {
+        // Температура вище максимуму - мінімальна циркуляція
         fanPower = config.fanMinPercent;
     } else {
-        // Температура вище цілі - мінімальна циркуляція
-        fanPower = config.fanMinPercent;
+        // Температура в межах діапазону - плавна регуляція до середнього значення
+        // Чим далі від середини вниз - тим більше потужність
+        // Чим далі від середини вгору - тим менше потужність
+
+        if (halfRange > 0.1f) {
+            // Нормалізуємо відхилення від середини до діапазону [-1; +1]
+            // tempDiff > 0 означає tempRoom < targetTemp (потрібен обігрів)
+            // tempDiff < 0 означає tempRoom > targetTemp (не потрібен обігрів)
+            float normalizedDiff = tempDiff / halfRange;  // від -1 до +1
+            normalizedDiff = constrain(normalizedDiff, -1.0f, 1.0f);
+
+            // Перетворюємо в потужність вентилятора:
+            // normalizedDiff = +1 (tempRoom = tempMin) -> fanMaxPercent
+            // normalizedDiff =  0 (tempRoom = targetTemp) -> середня потужність
+            // normalizedDiff = -1 (tempRoom = tempMax) -> fanMinPercent
+            int midFan = (config.fanMinPercent + config.fanMaxPercent) / 2;
+            int fanRange = (config.fanMaxPercent - config.fanMinPercent) / 2;
+
+            fanPower = midFan + (int)(normalizedDiff * fanRange);
+        } else {
+            // Занадто вузький діапазон - використовуємо середню потужність
+            fanPower = (config.fanMinPercent + config.fanMaxPercent) / 2;
+        }
     }
 
     fanPower = constrain(fanPower, config.fanMinPercent, config.fanMaxPercent);
     setFanPercent(fanPower);
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C (ціль %.1f°C), T_тепл=%.1f°C, Насос=0%%, Вентилятор=%d%%\n",
-                     getFormattedTime().c_str(), tempRoom, targetTemp, tempCarrier, fanPower);
+        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C (ціль %.1f°C, діапазон %.1f-%.1f°C), T_тепл=%.1f°C, Вентилятор=%d%%\n",
+                     getFormattedTime().c_str(), tempRoom, targetTemp, config.tempMin, config.tempMax, tempCarrier, fanPower);
         lastPowerUpdate = now;
     }
 }
@@ -930,19 +961,16 @@ void smartCoolingControl() {
     if (tempDiff > 2.0f) {
         // Дуже жарко - максимальне охолодження
         fanPower = config.fanMaxPercent;
-    } else if (tempDiff > 1.0f) {
+    } else if (tempRoom < config.tempMin) {
         // Жарко - активне охолодження
         fanPower = map(constrain(tempDiff * 100, 100, 200), 100, 200,
                       (config.fanMinPercent + config.fanMaxPercent) / 2, config.fanMaxPercent);
-    } else if (tempDiff > 0.5f) {
+    } else if (tempRoom > config.tempMax) {
         // Злегка тепло - помірне охолодження
         fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100,
                       config.fanMinPercent + 10, (config.fanMinPercent + config.fanMaxPercent) / 2);
-    } else if (tempDiff > -0.5f) {
-        // Температура в нормі - мінімальна циркуляція
-        fanPower = config.fanMinPercent;
     } else {
-        // Холодно - зовсім мінімум (не переохолоджуємо)
+        // Температура в нормі - мінімальна циркуляція
         fanPower = config.fanMinPercent;
     }
 
@@ -950,7 +978,7 @@ void smartCoolingControl() {
     setFanPercent(fanPower);
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-        Serial.printf("❄️ Режим охолодження: T=%.1f°C (ціль %.1f°C), Насос=0%%, Вентилятор=%d%%\n",
+        Serial.printf("❄️ Режим охолодження: T=%.1f°C (діапазон %.1f-%.1f°C), Насос=0%%, Вентилятор=%d%%\n",
                      tempRoom, targetTemp, fanPower);
         lastPowerUpdate = now;
     }
@@ -1502,19 +1530,16 @@ void cascadeEmergencyHeating() {
                 if (tempRoom >= config.tempMax) {
                     // Кімната досягла максимуму - ВИМИКАЄМО вентилятор повністю
                     fanPower = 0;
-                } else if (tempDiff > 1.0f) {
+                } else if (tempRoom < config.tempMin) {
                     // Температура нижче цілі - обігрів
                     fanPower = config.fanMaxPercent;
-                } else if (tempDiff > 0.5f) {
+                } else if (tempRoom > config.tempMax) {
                     // Температура близька до цілі - помірний обігрив
                     fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100,
                                   (config.fanMinPercent + config.fanMaxPercent) / 2, config.fanMaxPercent);
-                } else if (tempDiff > -0.5f) {
+                } else {
                     // Температура в нормі - мінімальна циркуляція
                     fanPower = config.fanMinPercent;
-                } else {
-                    // Температура вище цілі - вимикаємо (не перегріваємо!)
-                    fanPower = 0;
                 }
 
                 fanPower = constrain(fanPower, 0, config.fanMaxPercent);
@@ -1559,8 +1584,8 @@ void cascadeEmergencyHeating() {
                 static unsigned long lastStatusPrint = 0;
                 if (now - lastStatusPrint > 10000) {
                     lastStatusPrint = now;
-                    Serial.printf("♻️ [%s] Режим підтримки: T_кімн=%.1f°C (ціль %.1f°C), T_тепл=%.1f°C, Насос=%d%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, targetTemp, tempCarrier, config.pumpMaxPercent, fanPower);
+                    Serial.printf("♻️ [%s] Режим підтримки: T_кімн=%.1f°C (діапазон %.1f-%.1f°C), T_тепл=%.1f°C, Насос=%d%%, Вентилятор=%d%%\n",
+                                 getFormattedTime().c_str(), tempRoom, config.tempMin, config.tempMax, tempCarrier, config.pumpMaxPercent, fanPower);
                 }
             }
             break;

@@ -141,9 +141,15 @@ void setup() {
   heatingState.forceMode = false;
   heatingState.emergencyMode = false;
   heatingState.manualMode = false;
-  heatingState.manualModeLocked = false;
+  heatingState.manualModeLocked = false;  // Буде завантажено з Preferences нижче
   heatingState.manualModeStartTime = 0;
   heatingState.adaptive_heating_active = false;
+
+  // Завантаження сохраненого стану блокування ручного режиму
+  Preferences prefs;
+  prefs.begin("climate", false);
+  heatingState.manualModeLocked = prefs.getBool("manualModeLocked", false);
+  prefs.end();
   
   humidifierState.active = false;
   humidifierState.startTime = 0;
