@@ -1077,13 +1077,20 @@ void advancedUpdateExtractorTimer() {
     if (shouldBeOn != config.extractorTimer.state) {
         config.extractorTimer.state = shouldBeOn;
         config.extractorTimer.lastChange = now;
-        
+
         if (shouldBeOn) {
             setExtractorPercent(config.extractorTimer.powerPercent);
             Serial.println("🔧 Таймер витяжки: Витяжка увімкнена");
         } else {
             setExtractorPercent(0);
             Serial.println("🔧 Таймер витяжки: Витяжка вимкнена");
+        }
+    } else if (shouldBeOn) {
+        // Оновлюємо потужність якщо вона змінилася у налаштуваннях
+        static uint8_t lastPowerPercent = 0;
+        if (lastPowerPercent != config.extractorTimer.powerPercent) {
+            setExtractorPercent(config.extractorTimer.powerPercent);
+            lastPowerPercent = config.extractorTimer.powerPercent;
         }
     }
 }

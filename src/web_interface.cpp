@@ -816,31 +816,29 @@ void handleOTAUpload() {
         // Затримка для стабілізації
         delay(100);
 
-        // Початок OTA з UPDATE_SIZE_UNKNOWN - розмір буде визначено автоматично
-        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
             Serial.println("❌ Update.begin() failed");
             Update.printError(Serial);
             setOTAInProgress(false);
             resumeCriticalTasks();
             return;
         }
-        Serial.println("  Update.begin() OK");
+        Serial.printf("📥 OTA Started: %s\n", upload.filename.c_str());
     }
     else if (upload.status == UPLOAD_FILE_WRITE) {
-        // Просто пишемо дані без додаткової логіки
         if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
             Serial.println("❌ Update.write() failed");
             Update.printError(Serial);
         }
     }
     else if (upload.status == UPLOAD_FILE_END) {
-        // Завершення з верифікацією
+        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", upload.totalSize, Update.progress());
+
         if (Update.end(true)) {
-            Serial.printf("✅ Upload Success: %u bytes\n", upload.totalSize);
+            Serial.println("✅ OTA Success!");
             setOTAInProgress(false);
         } else {
-            Serial.println("❌ Update.end() failed");
-            Update.printError(Serial);
+            Serial.printf("❌ OTA Error: %s\n", Update.errorString());
             setOTAInProgress(false);
             resumeCriticalTasks();
         }
