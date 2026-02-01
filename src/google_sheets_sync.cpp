@@ -196,6 +196,7 @@ bool syncToGoogleSheets() {
 
     // Yield для запобігання Watchdog timeout при великих об'ємах
     delay(50);
+    yield();  // Додаткова поступка для web server
   }
 
   // 8. Очищення
@@ -241,8 +242,10 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       Serial.println("🔄 Reconnect...");
       client->stop();
       delay(100);
+      yield();  // Дозволяємо іншим задачам працювати
       if (!client->connect("script.google.com", 443)) {
           Serial.println("❌ Reconnect fail");
+          Serial.printf("💾 Free heap: %u bytes\n", ESP.getFreeHeap());
           return false;
       }
   }
@@ -271,12 +274,14 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
   Serial.println("📤 Request sent, waiting response...");
 
   unsigned long timeout = millis();
-  while (!client->available() && millis() - timeout < 20000) {
+  while (!client->available() && millis() - timeout < 15000) {
       delay(10);
+      yield();  // Дозволяємо іншим задачам працювати
   }
 
   if (!client->available()) {
-      Serial.println("❌ Timeout");
+      Serial.println("❌ Timeout waiting for response");
+      client->stop();
       return false;
   }
 
@@ -309,7 +314,9 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       delay(200);
 
       if (!client->connect(newHost.c_str(), 443)) {
-          Serial.println("❌ Redirect failed");
+          Serial.println("❌ Redirect failed - connection to " + newHost + " failed");
+          Serial.printf("💾 Free heap: %u bytes\n", ESP.getFreeHeap());
+          client->stop();  // ВАЖЛИВО: закриваємо клієнт при помилці
           return false;
       }
 
@@ -325,12 +332,22 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       client->flush();
 
       timeout = millis();
-      while (!client->available() && millis() - timeout < 20000) delay(10);
+      while (!client->available() && millis() - timeout < 15000) {
+          delay(10);
+          yield();  // Дозволяємо іншим задачам працювати
+      }
+
+      if (!client->available()) {
+          Serial.println("❌ Redirect timeout");
+          client->stop();
+          return false;
+      }
 
       response = "";
       while (client->available()) {
           response += (char)client->read();
       }
+      client->stop();  // Завжди закриваємо після читання
 
       Serial.printf("📥 Final response (%d bytes):\n", response.length());
   }
