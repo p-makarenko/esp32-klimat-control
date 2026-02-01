@@ -80,21 +80,36 @@ bool initDataLogger() {
     }
   }
 
-  // Підрахунок архівних файлів (SPIFFS: ітерація по всіх файлах)
+  // Підрахунок архівних файлів та підрахунок записів в current.csv
   File root = SPIFFS.open("/");
   loggerStats.archiveFilesCount = 0;
+  loggerStats.totalRecordsSPIFFS = 0;
+
   if (root) {
     File file = root.openNextFile();
     while (file) {
       String fileName = file.name();
+      size_t fileSize = file.size();
+
       if (fileName.indexOf("archive_") >= 0) {
         loggerStats.archiveFilesCount++;
+        // Приблизний підрахунок записів (~80 байт на запис)
+        loggerStats.totalRecordsSPIFFS += fileSize / 80;
+        Serial.printf("  📁 %s (%u bytes)\n", fileName.c_str(), fileSize);
+      } else if (fileName == LOG_CURRENT_FILE || fileName.indexOf("current") >= 0) {
+        loggerStats.totalRecordsSPIFFS += fileSize / 80;
+        loggerStats.currentFileSize = fileSize;
+        Serial.printf("  📄 %s (%u bytes)\n", fileName.c_str(), fileSize);
       }
+
+      file.close();
       file = root.openNextFile();
     }
+    root.close();
   }
 
-  Serial.printf("✓ Знайдено %d архівних файлів\n", loggerStats.archiveFilesCount);
+  Serial.printf("✓ Знайдено %d архівів, ~%u записів в SPIFFS\n",
+                loggerStats.archiveFilesCount, loggerStats.totalRecordsSPIFFS);
 
   // Ініціалізація лічильників
   loggerStats.totalRecordsRAM = 0;
@@ -273,14 +288,14 @@ void logDataToSPIFFS() {
       Serial.println("⚠️ [SPIFFS] 3 помилки поспіль - видаляю ВСІ архіви...");
 
       // Агресивне очищення: видаляємо ВСІ архівні файли
-      File root = SPIFFS.open("/logs");
+      File root = SPIFFS.open("/");
       if (root) {
         File f = root.openNextFile();
         uint8_t deleted = 0;
         while (f) {
           String fname = f.name();
           f.close();
-          if (fname.startsWith("/logs/archive_")) {
+          if (fname.indexOf("archive_") >= 0) {
             SPIFFS.remove(fname);
             deleted++;
           }
@@ -456,19 +471,21 @@ bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData
     file.close();
   }
 
-  // 2. Читаємо архівні файли з /logs/
-  File logsDir = SPIFFS.open("/logs");
-  if (logsDir && logsDir.isDirectory()) {
-    File archiveFile = logsDir.openNextFile();
+  // 2. Читаємо архівні файли з кореня SPIFFS (archive_*.csv)
+  File root = SPIFFS.open("/");
+  if (root) {
+    File archiveFile = root.openNextFile();
     while (archiveFile) {
       String fileName = archiveFile.name();
+      // Архіви мають імена /archive_TIMESTAMP.csv
       if (fileName.indexOf("archive_") >= 0) {
+        Serial.printf("📖 Читаю архів: %s\n", fileName.c_str());
         parseCSVFileToJson(archiveFile, dataArray, startTimestamp, endTimestamp);
       }
       archiveFile.close();
-      archiveFile = logsDir.openNextFile();
+      archiveFile = root.openNextFile();
     }
-    logsDir.close();
+    root.close();
   }
 
   serializeJson(doc, jsonData);
@@ -523,19 +540,19 @@ bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvDa
     file.close();
   }
 
-  // 2. Читаємо архівні файли з /logs/
-  File logsDir = SPIFFS.open("/logs");
-  if (logsDir && logsDir.isDirectory()) {
-    File archiveFile = logsDir.openNextFile();
+  // 2. Читаємо архівні файли з кореня SPIFFS (archive_*.csv)
+  File root = SPIFFS.open("/");
+  if (root) {
+    File archiveFile = root.openNextFile();
     while (archiveFile) {
       String fileName = archiveFile.name();
       if (fileName.indexOf("archive_") >= 0) {
         parseCSVFileToString(archiveFile, csvData, startTimestamp, endTimestamp);
       }
       archiveFile.close();
-      archiveFile = logsDir.openNextFile();
+      archiveFile = root.openNextFile();
     }
-    logsDir.close();
+    root.close();
   }
 
   return true;
@@ -554,11 +571,11 @@ void rotateLogFiles() {
     String oldestFile = "";
     unsigned long oldestTime = ULONG_MAX;
 
-    File root = SPIFFS.open("/logs");
+    File root = SPIFFS.open("/");
     File file = root.openNextFile();
     while (file) {
       String fileName = file.name();
-      if (fileName.startsWith("/logs/archive_")) {
+      if (fileName.indexOf("archive_") >= 0) {
         time_t fileTime = file.getLastWrite();
         if (fileTime < oldestTime) {
           oldestTime = fileTime;
@@ -606,12 +623,12 @@ void cleanOldLogs() {
   if (usagePercent > 90.0) {
     Serial.printf("⚠️  SPIFFS критично заповнений: %.1f%% - видаляю ВСІ архіви!\n", usagePercent);
 
-    File root = SPIFFS.open("/logs");
+    File root = SPIFFS.open("/");
     File file = root.openNextFile();
     uint8_t deletedCount = 0;
     while (file) {
       String fileName = file.name();
-      if (fileName.startsWith("/logs/archive_")) {
+      if (fileName.indexOf("archive_") >= 0) {
         file.close();
         SPIFFS.remove(fileName);
         Serial.printf("  Видалено: %s\n", fileName.c_str());
@@ -628,13 +645,13 @@ void cleanOldLogs() {
   unsigned long cutoffTime = getCurrentTimestamp() - (LOG_RETENTION_DAYS * 24 * 60 * 60);
   uint8_t deletedCount = 0;
 
-  File root = SPIFFS.open("/logs");
+  File root = SPIFFS.open("/");
   File file = root.openNextFile();
   while (file) {
     String fileName = file.name();
-    if (fileName.startsWith("/logs/archive_")) {
-      // Витягуємо timestamp з імені файлу
-      int startIdx = String(LOG_ARCHIVE_PREFIX).length();
+    if (fileName.indexOf("archive_") >= 0) {
+      // Витягуємо timestamp з імені файлу (формат: /archive_TIMESTAMP.csv)
+      int startIdx = fileName.indexOf("archive_") + 8;  // після "archive_"
       int endIdx = fileName.indexOf(".csv");
       String timestampStr = fileName.substring(startIdx, endIdx);
       unsigned long fileTimestamp = timestampStr.toInt();
