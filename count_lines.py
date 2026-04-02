@@ -40,6 +40,7 @@ header_content = f"""// global_declarations.h
 #define GLOBAL_DECLARATIONS_H
 
 #include <Preferences.h>
+#include "system_core.h"
 
 // Версія та інформація про збірку (автоматично оновлюється при компіляції)
 #define PROJECT_START_DATE "Dec 7 2025"
