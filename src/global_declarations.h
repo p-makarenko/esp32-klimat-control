@@ -11,7 +11,7 @@
 #define VERSION_COMMENT "v5.0 Release: OTA + Backup (День 116)"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 13060
+#define TOTAL_CODE_LINES 13052
 #define FIRMWARE_SIZE_KB 0
 
 // Версіонування конфігурації (для міграції)
@@ -19,6 +19,5 @@
 #define CONFIG_VERSION_MINOR 0
 
 // Оголошення всіх глобальних змінних
-extern Preferences prefs;
 
 #endif

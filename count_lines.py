@@ -56,7 +56,6 @@ header_content = f"""// global_declarations.h
 #define CONFIG_VERSION_MINOR {minor_version}
 
 // Оголошення всіх глобальних змінних
-extern Preferences prefs;
 
 #endif
 """
