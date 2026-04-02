@@ -1,6 +1,7 @@
 ﻿#include <Arduino.h>
 #include <ESPmDNS.h>
 #include <NetBIOS.h>
+#include <esp_system.h>
 
 #include "config.h"
 #include "system_core.h"
@@ -38,12 +39,8 @@ HumidifierState humidifierState;
 PowerOutageState powerOutageState = {
   .detected = false,
   .detectionTime = 0,
-  .tempAtDetection = 0,
-  .recoveryStage = 0,
-  .stageStartTime = 0,
-  .tempBeforeDrop = 0,
-  .lastTempSave = 0,
-  .emergencyHeatingActive = false
+  .emergencyHeatingActive = false,
+  .lastVoltage = 0
 };
 
 extern int historyIndex;
@@ -59,8 +56,21 @@ void handleSerialInput();
 void setup() {
   Serial.begin(115200);
   delay(500);  // Даємо час Serial ініціалізуватись
-  
-  Serial.println("\n\n╔════════════════════════════════════════════════════════╗");
+
+  // Логування причини перезавантаження
+  esp_reset_reason_t resetReason = esp_reset_reason();
+  Serial.println("\n");
+  if (resetReason == ESP_RST_TASK_WDT) {
+    Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ WATCHDOG (Task WDT) ⚠️⚠️⚠️");
+  } else if (resetReason == ESP_RST_WDT) {
+    Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ WATCHDOG ⚠️⚠️⚠️");
+  } else if (resetReason == ESP_RST_PANIC) {
+    Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ PANIC ⚠️⚠️⚠️");
+  } else if (resetReason == ESP_RST_BROWNOUT) {
+    Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ ПРОСАДКУ НАПРУГИ ⚠️⚠️⚠️");
+  }
+
+  Serial.println("╔════════════════════════════════════════════════════════╗");
   Serial.println("║      🏠 КЛІМАТ-КОНТРОЛЬ СИСТЕМИ ВЕНТИЛЯЦІЇ            ║");
   Serial.println("╠════════════════════════════════════════════════════════╣");
   Serial.printf("║  📦 Версія:       %-33s║\n", VERSION);
@@ -71,6 +81,7 @@ void setup() {
   Serial.println("╚════════════════════════════════════════════════════════╝");
   
   initMutexes();
+  resetNetworkSettings();  // Очистити неправильні мережеві налаштування
   loadConfiguration();
 
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ CONFIG MANAGER ===");
@@ -156,17 +167,11 @@ void setup() {
   humidifierState.lastCycle = 0;
   humidifierState.cyclesToday = 0;
 
-  // Ініціалізація моніторингу відключення живлення
+  // Ініціалізація моніторингу живлення 220В
   powerOutageState.detected = false;
   powerOutageState.detectionTime = 0;
-  powerOutageState.tempAtDetection = 0.0f;
-  powerOutageState.recoveryStage = 0;
-  powerOutageState.stageStartTime = 0;
-  powerOutageState.tempBeforeDrop = 0.0f;
-  powerOutageState.lastTempSave = millis();
   powerOutageState.emergencyHeatingActive = false;
-  powerOutageState.autoExitCheckStart = 0;
-  powerOutageState.tempAtAutoExitStart = 0.0f;
+  powerOutageState.lastVoltage = 0;
 
   if (config.pumpMinPercent == 0) config.pumpMinPercent = PUMP_MIN_DEFAULT;
   if (config.pumpMaxPercent == 0) config.pumpMaxPercent = PUMP_MAX_DEFAULT;

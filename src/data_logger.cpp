@@ -111,9 +111,9 @@ bool initDataLogger() {
   Serial.printf("✓ Знайдено %d архівів, ~%u записів в SPIFFS\n",
                 loggerStats.archiveFilesCount, loggerStats.totalRecordsSPIFFS);
 
-  // Ініціалізація лічильників
+  // Ініціалізація лічильників (НЕ обнуляємо totalRecordsSPIFFS - вже підраховано!)
   loggerStats.totalRecordsRAM = 0;
-  loggerStats.totalRecordsSPIFFS = 0;
+  // loggerStats.totalRecordsSPIFFS зберігає підраховане значення
   loggerStats.lastLogTimeRAM = 0;
   loggerStats.lastLogTimeSPIFFS = 0;
 
@@ -421,8 +421,8 @@ static void parseCSVFileToJson(File& file, JsonArray& dataArray,
       if (bufIdx > 0) {
         buffer[bufIdx] = '\0';
 
-        // Парсимо рядок
         unsigned long timestamp = strtoul(buffer, NULL, 10);
+
         if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
           JsonObject record = dataArray.add<JsonObject>();
 
@@ -461,6 +461,11 @@ bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData
   unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
   unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
 
+  if (startTimestamp == 0 || endTimestamp == 0) {
+    jsonData = "{\"data\":[]}";
+    return true;
+  }
+
   JsonDocument doc;
   JsonArray dataArray = doc["data"].to<JsonArray>();
 
@@ -477,9 +482,7 @@ bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData
     File archiveFile = root.openNextFile();
     while (archiveFile) {
       String fileName = archiveFile.name();
-      // Архіви мають імена /archive_TIMESTAMP.csv
       if (fileName.indexOf("archive_") >= 0) {
-        Serial.printf("📖 Читаю архів: %s\n", fileName.c_str());
         parseCSVFileToJson(archiveFile, dataArray, startTimestamp, endTimestamp);
       }
       archiveFile.close();
@@ -760,6 +763,7 @@ unsigned long stringToTimestamp(const char* dateStr, bool endOfDay) {
   if (parsed >= 3) {
     timeinfo.tm_year -= 1900;  // tm_year = роки з 1900
     timeinfo.tm_mon -= 1;       // tm_mon = 0-11
+    timeinfo.tm_isdst = -1;     // Автовизначення DST
 
     // Якщо тільки дата без часу і потрібен кінець дня
     if (parsed == 3 && endOfDay) {

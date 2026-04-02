@@ -1,5 +1,7 @@
 #include "energy_monitor.h"
 #include "system_core.h"
+#include "config.h"
+#include "web_common.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <time.h>
@@ -13,20 +15,57 @@ bool checkAuth();
 
 EnergyMeasurements energyData;
 unsigned long lastEnergyUpdate = 0;
+unsigned long lastPowerRecord = 0;
 int currentEnergyHour = -1;
 
-// Умовна флаг для активації цього модуля
-// Встановіть ENABLE_ENERGY_MONITOR = 1 у platformio.ini або config.h якщо у вас є PZEM004Tv30
+// RAM буфер для потужності (зберігається на ESP32)
+PowerRecord powerBuffer[ENERGY_POWER_BUFFER_SIZE];
+uint16_t powerBufferIndex = 0;
+uint16_t powerBufferCount = 0;
+
 #ifndef ENABLE_ENERGY_MONITOR
 #define ENABLE_ENERGY_MONITOR 0
 #endif
 
 #if ENABLE_ENERGY_MONITOR
-#include <PZEM004Tv30.h>
-// Налаштування пінів для PZEM004Tv30
-#define PZEM_RX_PIN 16
-#define PZEM_TX_PIN 17
-PZEM004Tv30 pzem(&Serial2, PZEM_RX_PIN, PZEM_TX_PIN);
+// Raw Modbus RTU — без бібліотеки, бо PZEM004Tv30 не працює на цій платі
+HardwareSerial& PZEMSerial = Serial2;
+
+uint16_t crc16(uint8_t *data, uint8_t len) {
+    uint16_t crc = 0xFFFF;
+    for (uint8_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (uint8_t j = 0; j < 8; j++) {
+            if (crc & 0x0001) { crc >>= 1; crc ^= 0xA001; }
+            else { crc >>= 1; }
+        }
+    }
+    return crc;
+}
+
+bool pzemReadRegisters(uint8_t addr, uint8_t *resp, uint8_t respLen) {
+    uint8_t cmd[8];
+    cmd[0] = addr;
+    cmd[1] = 0x04;  // Read Input Registers
+    cmd[2] = 0x00; cmd[3] = 0x00;  // Register addr
+    cmd[4] = 0x00; cmd[5] = 0x0A;  // 10 registers
+    uint16_t crc = crc16(cmd, 6);
+    cmd[6] = crc & 0xFF;
+    cmd[7] = (crc >> 8) & 0xFF;
+
+    while (PZEMSerial.available()) PZEMSerial.read();
+    PZEMSerial.write(cmd, 8);
+    PZEMSerial.flush();
+
+    unsigned long start = millis();
+    uint8_t idx = 0;
+    while (idx < respLen && millis() - start < 500) {
+        if (PZEMSerial.available()) {
+            resp[idx++] = PZEMSerial.read();
+        }
+    }
+    return (idx == respLen);
+}
 #endif
 
 // ============================================================================
@@ -36,23 +75,8 @@ PZEM004Tv30 pzem(&Serial2, PZEM_RX_PIN, PZEM_TX_PIN);
 void initEnergyMonitor() {
 #if ENABLE_ENERGY_MONITOR
     Serial.println("⚙️  Ініціалізація енергоконтролера...");
-
-    // Ініціалізуємо LittleFS для історії
-    if (!LittleFS.begin(true)) {
-        Serial.println("❌ Помилка: не вдалося ініціалізувати LittleFS");
-        return;
-    }
-
-    // Перевіряємо чи існує файл історії
-    if (!LittleFS.exists("/energy_history.csv")) {
-        File f = LittleFS.open("/energy_history.csv", "w");
-        if (f) {
-            f.println("timestamp,energy");
-            f.close();
-            Serial.println("✅ Файл історії енергії створено");
-        }
-    }
-
+    PZEMSerial.begin(9600, SERIAL_8N1, PZEM_RX_PIN, PZEM_TX_PIN);
+    Serial.printf("📌 PZEM піни: RX=%d, TX=%d\n", PZEM_RX_PIN, PZEM_TX_PIN);
     Serial.println("✅ Енергоконтролер готовий");
 #else
     Serial.println("ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)");
@@ -67,37 +91,58 @@ void updateEnergyData() {
 #if ENABLE_ENERGY_MONITOR
     unsigned long now = millis();
 
-    // Оновлюємо кожні 2 секунди
-    if (now - lastEnergyUpdate < 2000) {
-        return;
-    }
+    if (now - lastEnergyUpdate < 2000) return;
     lastEnergyUpdate = now;
 
-    // Читаємо дані з PZEM004Tv30
-    float v = pzem.voltage();
-
-    if (!isnan(v)) {
-        energyData.voltage = v;
-        energyData.current = pzem.current();
-        energyData.power = pzem.power();
-        energyData.energy = pzem.energy();
-        energyData.frequency = pzem.frequency();
-        energyData.powerFactor = pzem.pf();
-        energyData.error = false;
-
-        // Логіка запису історії - щогодини
-        struct tm timeinfo;
-        if (getLocalTime(&timeinfo)) {
-            if (currentEnergyHour != timeinfo.tm_hour) {
-                if (currentEnergyHour != -1) {
-                    appendEnergyHistory(energyData.energy);
-                }
-                currentEnergyHour = timeinfo.tm_hour;
-            }
+    uint8_t resp[25];
+    if (pzemReadRegisters(0x01, resp, 25)) {
+        uint16_t recvCrc = resp[23] | (resp[24] << 8);
+        uint16_t calcCrc = crc16(resp, 23);
+        if (recvCrc == calcCrc && resp[1] == 0x04 && resp[2] == 20) {
+            energyData.voltage   = (resp[3] << 8 | resp[4]) * 0.1f;
+            uint32_t rawCurrent  = (resp[5] << 8 | resp[6]) | ((uint32_t)(resp[7] << 8 | resp[8]) << 16);
+            energyData.current   = rawCurrent * 0.001f;
+            uint32_t rawPower    = (resp[9] << 8 | resp[10]) | ((uint32_t)(resp[11] << 8 | resp[12]) << 16);
+            energyData.power     = rawPower * 0.1f;
+            uint32_t rawEnergy   = (resp[13] << 8 | resp[14]) | ((uint32_t)(resp[15] << 8 | resp[16]) << 16);
+            energyData.energy    = rawEnergy * 0.001f;
+            energyData.frequency = (resp[17] << 8 | resp[18]) * 0.1f;
+            energyData.powerFactor = (resp[19] << 8 | resp[20]) * 0.01f;
+            energyData.error = false;
+        } else {
+            energyData.error = true;
         }
     } else {
         energyData.error = true;
-        Serial.println("⚠️  Помилка читання енергоконтролера");
+    }
+
+    // Запис в RAM буфер кожні 2 хвилини
+    if (!energyData.error && (now - lastPowerRecord >= 120000 || lastPowerRecord == 0)) {
+        lastPowerRecord = now;
+        time_t t;
+        time(&t);
+        if (t > 1000000) {  // Час синхронізовано
+            powerBuffer[powerBufferIndex].timestamp = (uint32_t)t;
+            powerBuffer[powerBufferIndex].power = energyData.power;
+            powerBuffer[powerBufferIndex].voltage = energyData.voltage;
+            powerBuffer[powerBufferIndex].current = energyData.current;
+            powerBufferIndex = (powerBufferIndex + 1) % ENERGY_POWER_BUFFER_SIZE;
+            if (powerBufferCount < ENERGY_POWER_BUFFER_SIZE) powerBufferCount++;
+        }
+    }
+
+    // Запис історії kWh щогодини
+    time_t t;
+    time(&t);
+    struct tm* tm_info = localtime(&t);
+    if (tm_info && t > 1000000) {  // Час синхронізовано
+        if (tm_info->tm_hour != currentEnergyHour) {
+            currentEnergyHour = tm_info->tm_hour;
+            if (!energyData.error && energyData.energy > 0) {
+                appendEnergyHistory(energyData.energy);
+                Serial.printf("📊 Записана енергія щогодини: %.3f kWh\n", energyData.energy);
+            }
+        }
     }
 #endif
 }
@@ -108,7 +153,7 @@ void updateEnergyData() {
 
 void appendEnergyHistory(float energy) {
 #if ENABLE_ENERGY_MONITOR
-    if (isnan(energy) || energy <= 0) return;
+    if (isnan(energy) || energy < 0) return;
 
     File f = LittleFS.open("/energy_history.csv", "a");
     if (f) {
@@ -116,9 +161,6 @@ void appendEnergyHistory(float energy) {
         time(&now);
         f.printf("%lu,%.3f\n", now, energy);
         f.close();
-        Serial.printf("📊 Енергія записана: %.3f kWh\n", energy);
-    } else {
-        Serial.println("❌ Помилка запису історії енергії");
     }
 #endif
 }
@@ -154,23 +196,57 @@ void handleEnergyAPI() {
     server.send(200, "application/json", json);
 }
 
+// API: дані потужності з RAM буфера
+void handleEnergyPowerData() {
+    if (!checkAuth()) return;
+
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "application/json", "");
+    server.sendContent("{\"data\":[");
+
+    bool first = true;
+    uint16_t count = powerBufferCount;
+    uint16_t startIdx = (count >= ENERGY_POWER_BUFFER_SIZE)
+        ? powerBufferIndex
+        : 0;
+
+    for (uint16_t i = 0; i < count; i++) {
+        uint16_t idx = (startIdx + i) % ENERGY_POWER_BUFFER_SIZE;
+        if (powerBuffer[idx].timestamp == 0) continue;
+        if (!first) server.sendContent(",");
+        String rec = "{\"t\":" + String(powerBuffer[idx].timestamp) +
+                     ",\"p\":" + String(powerBuffer[idx].power, 1) +
+                     ",\"v\":" + String(powerBuffer[idx].voltage, 1) +
+                     ",\"c\":" + String(powerBuffer[idx].current, 3) + "}";
+        server.sendContent(rec);
+        first = false;
+        if (i % 50 == 49) yield();
+    }
+
+    server.sendContent("]}");
+    server.sendContent("");
+}
+
 void handleEnergyHistory() {
 #if ENABLE_ENERGY_MONITOR
     if (!checkAuth()) return;
 
     File f = LittleFS.open("/energy_history.csv", "r");
     if (f) {
-        String content = "";
+        server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+        server.send(200, "text/plain", "");
         while (f.available()) {
-            content += (char)f.read();
+            char buf[256];
+            int len = f.readBytes(buf, sizeof(buf));
+            server.sendContent(buf, len);
         }
         f.close();
-        server.send(200, "text/plain", content);
+        server.sendContent("");
     } else {
-        server.send(404, "text/plain", "Файл не знайдено");
+        server.send(404, "text/plain", "No data");
     }
 #else
-    server.send(503, "text/plain", "Енергоконтролер вимкнено");
+    server.send(503, "text/plain", "Disabled");
 #endif
 }
 
@@ -187,23 +263,19 @@ void handleEnergyHistoryStats() {
     JsonDocument doc;
     float totalEnergy = 0;
     int recordCount = 0;
-
     String line;
-    bool firstLine = true;
 
     while (f.available()) {
         int b = f.read();
         if (b == '\n' || !f.available()) {
-            if (!firstLine && line.length() > 0) {
+            if (line.length() > 0) {
                 int commaPos = line.indexOf(',');
                 if (commaPos > 0) {
-                    String valStr = line.substring(commaPos + 1);
-                    float energy = valStr.toFloat();
+                    float energy = line.substring(commaPos + 1).toFloat();
                     totalEnergy += energy;
                     recordCount++;
                 }
             }
-            firstLine = false;
             line = "";
         } else {
             line += (char)b;
@@ -223,131 +295,298 @@ void handleEnergyHistoryStats() {
 #endif
 }
 
+void resetEnergyCounter() {
+#if ENABLE_ENERGY_MONITOR
+    uint8_t cmd[4];
+    cmd[0] = 0x01; cmd[1] = 0x42;
+    uint16_t crc = crc16(cmd, 2);
+    cmd[2] = crc & 0xFF; cmd[3] = (crc >> 8) & 0xFF;
+    PZEMSerial.write(cmd, 4);
+    Serial.println("🔄 Лічильник енергії скинуто");
+#endif
+}
+
+void handleEnergyReset() {
+    if (!checkAuth()) return;
+    resetEnergyCounter();
+    server.send(200, "application/json", "{\"ok\":true}");
+}
+
 void handleEnergyPage() {
     if (!checkAuth()) return;
 
-    String html = R"rawliteral(
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Енергоконтролер</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f1f5f9; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .status { font-size: 0.8rem; padding: 5px 12px; border-radius: 20px; background: #ef4444; }
-        .online { background: #22c55e; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid #334155; text-align: center; }
-        .card i { color: var(--accent); font-size: 1.2rem; margin-bottom: 10px; }
-        .val { font-size: 1.6rem; font-weight: 700; display: block; margin: 5px 0; }
-        .unit { font-size: 0.75rem; color: #94a3b8; }
-        .chart-container { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #334155; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-        .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; border: none; background: transparent; color: #94a3b8; }
-        .tab.active { background: var(--accent); color: var(--bg); }
-        canvas { max-height: 350px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div><h2 style="margin:0">Energy<span style="color:var(--accent)">Pro</span></h2></div>
-            <div id="statusBtn" class="status">OFFLINE</div>
-        </header>
+    String html = getHtmlHead("⚡ Енергоконтролер", true);
+    html += "<div class='container'>";
+    html += getNavHeader("⚡ ЕНЕРГОКОНТРОЛЕР");
 
-        <div class="grid">
-            <div class="card"><i class="fas fa-bolt"></i><span class="val" id="v">0</span><span class="unit">Напруга (V)</span></div>
-            <div class="card"><i class="fas fa-microchip"></i><span class="val" id="c">0</span><span class="unit">Струм (A)</span></div>
-            <div class="card"><i class="fas fa-fire"></i><span class="val" id="p">0</span><span class="unit">Потужність (W)</span></div>
-            <div class="card"><i class="fas fa-chart-line"></i><span class="val" id="e">0</span><span class="unit">Всього (kWh)</span></div>
-        </div>
+    // Статус
+    html += "<div style='text-align:center;margin-bottom:15px'><span id='st' style='display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.8rem;color:#fff;background:#f44336'>OFFLINE</span></div>";
 
-        <div class="chart-container">
-            <div class="tabs">
-                <button class="tab active" onclick="changeMode('live', this)">LIVE</button>
-                <button class="tab" onclick="changeMode('day', this)">ДЕНЬ</button>
-                <button class="tab" onclick="changeMode('month', this)">МІСЯЦЬ</button>
-            </div>
-            <canvas id="energyChart"></canvas>
-        </div>
-    </div>
+    // Картки з даними
+    html += "<style>.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}";
+    html += ".ek{background:#f9f9f9;padding:15px;border-radius:8px;text-align:center;border-left:4px solid #f59e0b}";
+    html += ".ev{font-size:1.8rem;font-weight:700;color:#333;display:block;margin:5px 0}";
+    html += ".eu{font-size:0.8rem;color:#888}";
+    html += "@media(max-width:480px){.eg{grid-template-columns:repeat(2,1fr)}}</style>";
 
-    <script>
-        let chart;
-        let mode = 'live';
-        let livePoints = [];
+    html += "<div class='eg'>";
+    html += "<div class='ek'><span class='ev' id='v'>--</span><span class='eu'>Напруга (V)</span></div>";
+    html += "<div class='ek'><span class='ev' id='c'>--</span><span class='eu'>Струм (A)</span></div>";
+    html += "<div class='ek'><span class='ev' id='p'>--</span><span class='eu'>Потужність (W)</span></div>";
+    html += "<div class='ek'><span class='ev' id='e'>--</span><span class='eu'>Всього (kWh)</span></div>";
+    html += "<div class='ek'><span class='ev' id='f'>--</span><span class='eu'>Частота (Hz)</span></div>";
+    html += "<div class='ek'><span class='ev' id='pf'>--</span><span class='eu'>Cos &#966;</span></div>";
+    html += "</div>";
 
-        function initChart() {
-            const ctx = document.getElementById('energyChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: { datasets: [] },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: { type: 'time', grid: { display: false } },
-                        y: { grid: { color: '#334155' } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
+    // Кнопка скидання — окрема
+    html += "<div style='margin:15px 0;text-align:center'><button class='btn' id='rstBtn' style='background:#f44336;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer' onclick='resetKwh()'>🔄 Скинути лічильник kWh</button></div>";
 
-        async function updateLive() {
-            if(mode !== 'live') return;
-            try {
-                const r = await fetch('/energy/api');
-                const d = await r.json();
-                if(d.err) return;
+    // Вкладки для графіка потужності
+    html += "<div class='chart-wrapper'>";
+    html += "<div class='chart-header'>";
+    html += "<h2>⚡ Потужність та Напруга</h2>";
+    html += "<button onclick='powerChart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
+    html += "</div>";
 
-                document.getElementById('v').innerText = d.v.toFixed(1);
-                document.getElementById('c').innerText = d.c.toFixed(2);
-                document.getElementById('p').innerText = d.p.toFixed(0);
-                document.getElementById('e').innerText = d.e.toFixed(2);
-                document.getElementById('statusBtn').className = "status online";
-                document.getElementById('statusBtn').innerText = "ONLINE";
+    // Вкладки день / тиждень / місяць / рік
+    html += "<div style='display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap'>";
+    html += "<button class='tab-btn active' id='tabDay' onclick='switchTab(\"day\")'>День</button>";
+    html += "<button class='tab-btn' id='tabWeek' onclick='switchTab(\"week\")'>Тиждень</button>";
+    html += "<button class='tab-btn' id='tabMonth' onclick='switchTab(\"month\")'>Місяць</button>";
+    html += "<button class='tab-btn' id='tabYear' onclick='switchTab(\"year\")'>Рік</button>";
+    html += "<div style='margin-left:auto;display:flex;gap:10px;align-items:center'>";
+    html += "<label style='font-size:0.9rem'><input type='checkbox' id='chkPower' checked onchange='updateDatasets()'>Потужність (W)</label>";
+    html += "<label style='font-size:0.9rem'><input type='checkbox' id='chkVoltage' checked onchange='updateDatasets()'>Напруга (V)</label>";
+    html += "</div></div>";
 
-                const now = Date.now();
-                livePoints.push({x: now, y: d.p});
-                if(livePoints.length > 40) livePoints.shift();
+    html += "<style>.tab-btn{padding:8px 16px;border:1px solid #ddd;background:#f5f5f5;border-radius:5px;cursor:pointer;font-size:0.9rem}";
+    html += ".tab-btn.active{background:#f59e0b;color:#fff;border-color:#f59e0b}</style>";
 
-                chart.data.datasets = [{
-                    label: 'W',
-                    data: livePoints,
-                    borderColor: '#38bdf8',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                    pointRadius: 0
-                }];
-                chart.update('none');
-            } catch(e) {
-                document.getElementById('statusBtn').className = "status";
-                document.getElementById('statusBtn').innerText = "ERROR";
-            }
-        }
+    html += "<div class='chart-container' style='height:300px'><canvas id='powerCanvas'></canvas></div>";
+    html += "</div>";
 
-        function changeMode(m, el) {
-            mode = m;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-        }
+    // Графік енергії kWh
+    html += "<div class='chart-wrapper'>";
+    html += "<div class='chart-header'>";
+    html += "<h2>📊 Енергія (kWh)</h2>";
+    html += "<button onclick='energyChart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
+    html += "</div>";
+    html += "<div class='chart-container' style='height:300px'><canvas id='energyCanvas'></canvas></div>";
+    html += "</div>";
 
-        initChart();
-        setInterval(updateLive, 2000);
-    </script>
-</body>
-</html>
-)rawliteral";
+    html += "</div>"; // container
 
+    html += R"rawliteral(<script>
+var powerChart, energyChart;
+var allPowerData = [];
+var currentTab = 'day';
+
+var zoomCfg = {
+  zoom: {
+    wheel:{enabled:true,speed:0.1},
+    pinch:{enabled:true},
+    drag:{enabled:true,backgroundColor:'rgba(245,158,11,0.2)',borderColor:'rgba(245,158,11,0.8)',borderWidth:1,threshold:10},
+    mode:'x'
+  },
+  pan:{enabled:true,mode:'x',threshold:5}
+};
+
+function fmtTime(ts){
+  var d=new Date(ts*1000);
+  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
+function fmtDate(ts){
+  var d=new Date(ts*1000);
+  return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
+function fmtDateYear(ts){
+  var d=new Date(ts*1000);
+  return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear();
+}
+
+function initCharts(){
+  powerChart = new Chart(document.getElementById('powerCanvas'),{
+    type:'line',
+    data:{labels:[],datasets:[
+      {
+        label:'Потужність (W)',data:[],
+        borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',
+        borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y',hidden:false
+      },
+      {
+        label:'Напруга (V)',data:[],
+        borderColor:'#3498db',backgroundColor:'rgba(52,152,219,0.1)',
+        borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y1',hidden:false
+      }
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:0},
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ticks:{maxTicksLimit:10,font:{size:11}},grid:{display:false}},
+        y:{position:'left',beginAtZero:true,title:{display:true,text:'W'},ticks:{font:{size:11}},grid:{color:'#eee'}},
+        y1:{position:'right',beginAtZero:true,title:{display:true,text:'V'},ticks:{font:{size:11}},grid:{display:false}}
+      },
+      plugins:{
+        legend:{display:true,position:'top'},
+        tooltip:{callbacks:{
+          title:function(c){return c[0].label;},
+          label:function(c){
+            var ds=c.dataset.label;
+            return ds+': '+c.parsed.y.toFixed(c.datasetIndex===0?1:1);
+          }
+        }},
+        zoom:zoomCfg
+      }
+    }
+  });
+
+  energyChart = new Chart(document.getElementById('energyCanvas'),{
+    type:'bar',
+    data:{labels:[],datasets:[{
+      label:'Енергія (kWh)',data:[],
+      backgroundColor:'rgba(33,150,243,0.6)',borderColor:'#2196F3',borderWidth:1
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      scales:{
+        x:{ticks:{font:{size:11}},grid:{display:false}},
+        y:{beginAtZero:true,title:{display:true,text:'kWh'},ticks:{font:{size:11}},grid:{color:'#eee'}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:function(c){return c.parsed.y.toFixed(3)+' kWh';}
+        }},
+        zoom:zoomCfg
+      }
+    }
+  });
+
+  document.getElementById('powerCanvas').ondblclick=function(){powerChart.resetZoom();};
+  document.getElementById('energyCanvas').ondblclick=function(){energyChart.resetZoom();};
+
+  loadPowerData();
+  loadEnergyHistory();
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  var tabId='tab'+tab.charAt(0).toUpperCase()+tab.slice(1);
+  if(document.getElementById(tabId)) document.getElementById(tabId).classList.add('active');
+  filterPowerData(tab);
+}
+
+function updateDatasets(){
+  var showPower=document.getElementById('chkPower').checked;
+  var showVoltage=document.getElementById('chkVoltage').checked;
+  powerChart.data.datasets[0].hidden=!showPower;
+  powerChart.data.datasets[1].hidden=!showVoltage;
+  powerChart.update('none');
+}
+
+function filterPowerData(period){
+  var now=Math.floor(Date.now()/1000);
+  var cutoff=now;
+  if(period=='day') cutoff=now-86400;
+  else if(period=='week') cutoff=now-604800;
+  else if(period=='month') cutoff=now-2592000;
+  else if(period=='year') cutoff=now-31536000;
+
+  var labels=[],power=[],voltage=[];
+  for(var i=0;i<allPowerData.length;i++){
+    if(allPowerData[i].t>=cutoff){
+      if(period=='day') labels.push(fmtTime(allPowerData[i].t));
+      else if(period=='year') labels.push(fmtDateYear(allPowerData[i].t));
+      else labels.push(fmtDate(allPowerData[i].t));
+      power.push(allPowerData[i].p);
+      voltage.push(allPowerData[i].v);
+    }
+  }
+  powerChart.data.labels=labels;
+  powerChart.data.datasets[0].data=power;
+  powerChart.data.datasets[1].data=voltage;
+  powerChart.resetZoom();
+  powerChart.update('none');
+}
+
+async function loadPowerData(){
+  try{
+    var r=await fetch('/energy/power');
+    var j=await r.json();
+    allPowerData=j.data||[];
+    filterPowerData('day');
+  }catch(e){}
+}
+
+async function loadEnergyHistory(){
+  try{
+    var r=await fetch('/energy/history');
+    var txt=await r.text();
+    var lines=txt.trim().split('\n');
+    var hourly={};
+    for(var i=0;i<lines.length;i++){
+      var parts=lines[i].split(',');
+      if(parts.length<2) continue;
+      var ts=parseInt(parts[0]),val=parseFloat(parts[1]);
+      if(isNaN(ts)||isNaN(val)) continue;
+      var d=new Date(ts*1000);
+      var key=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':00';
+      hourly[key]=val;
+    }
+    var labels=Object.keys(hourly);
+    var data=labels.map(function(k){return hourly[k];});
+    // Показуємо дату і час
+    var fmtLabels=labels.map(function(k){
+      var p=k.split(' ');
+      var dp=p[0].split('-');
+      return dp[2]+'.'+dp[1]+' '+p[1];
+    });
+    energyChart.data.labels=fmtLabels;
+    energyChart.data.datasets[0].data=data;
+    energyChart.update();
+  }catch(e){}
+}
+
+async function upd(){
+  try{
+    var r=await fetch('/energy/api');var d=await r.json();
+    if(!d.err){
+      document.getElementById('v').innerText=d.v.toFixed(1);
+      document.getElementById('c').innerText=d.c.toFixed(2);
+      document.getElementById('p').innerText=d.p.toFixed(0);
+      document.getElementById('e').innerText=d.e.toFixed(2);
+      document.getElementById('f').innerText=d.f.toFixed(1);
+      document.getElementById('pf').innerText=d.pf.toFixed(2);
+      document.getElementById('st').style.background='#4CAF50';
+      document.getElementById('st').innerText='ONLINE';
+    } else {
+      document.getElementById('st').style.background='#f44336';
+      document.getElementById('st').innerText='ПОМИЛКА';
+    }
+  }catch(e){
+    document.getElementById('st').style.background='#f44336';
+    document.getElementById('st').innerText='OFFLINE';
+  }
+}
+
+async function resetKwh(){
+  if(!confirm('Скинути лічильник kWh на 0?')) return;
+  if(!confirm('Ви впевнені? Дані буде втрачено!')) return;
+  var r=await fetch('/energy/reset',{method:'POST'});
+  if(r.ok){
+    document.getElementById('rstBtn').innerText='Скинуто!';
+    setTimeout(function(){document.getElementById('rstBtn').innerText='🔄 Скинути лічильник kWh';},2000);
+  }
+}
+
+initCharts();
+setInterval(upd,2000); upd();
+// Оновлюємо графік потужності з RAM кожні 2 хв
+setInterval(loadPowerData,120000);
+</script>)rawliteral";
+
+    html += getHtmlFooter();
     server.send(200, "text/html", html);
 }

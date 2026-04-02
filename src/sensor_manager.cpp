@@ -118,18 +118,6 @@ void readTemperatureSensors() {
     sensorData.roomValid = (roomErrorCount < MAX_ERRORS);
     sensorData.timestamp = millis();
     
-    // Оновлення буфера тренду
-    if (sensorData.carrierValid) {
-      float* trendBuffer = getTempTrendBufferPtr();
-      int currentTrendIndex = getTrendIndexValue();
-      
-      trendBuffer[currentTrendIndex] = carrier;
-      setTrendIndex((currentTrendIndex + 1) % TREND_WINDOW_SIZE);
-      if (currentTrendIndex == TREND_WINDOW_SIZE - 1) {
-        setTrendBufferFilled(true);
-      }
-    }
-    
     xSemaphoreGive(getSensorMutex());
   }
 }

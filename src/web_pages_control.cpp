@@ -2,7 +2,7 @@
 // WEB_PAGES_CONTROL.CPP - Сторінки керування та часу
 // ============================================================================
 // Рефакторинг за методом "Скептичного Архітектора"
-// Модуль: Керування системою (handleControlPage, handleTimePage)
+// Модуль: Керування системою (handleControlPage)
 // ============================================================================
 
 #include <WebServer.h>
@@ -20,10 +20,6 @@ extern SemaphoreHandle_t getSensorMutex();
 // Forward declarations
 extern bool checkAuth();
 extern String getUkraineMarquee();
-extern String getTimeString();
-extern String getDateString();
-extern String getFormattedTime();
-extern bool isTimeSynced();
 
 // ============================================================================
 // СТОРІНКА КЕРУВАННЯ
@@ -277,61 +273,3 @@ void handleControlPage() {
     server.send(200, "text/html", html);
 }
 
-// ============================================================================
-// СТОРІНКА ЧАСУ
-// ============================================================================
-
-void handleTimePage() {
-    if (!checkAuth()) return;
-
-    String html = getHtmlHead("Час системи");
-    html += "<div class='container'>";
-
-    // Навігація зверху
-    html += getNavHeader("🕒 ЧАС СИСТЕМИ");
-
-    html += "<div class='card' style='margin: 20px 0;'>";
-    html += "<div style='display: grid; gap: 15px;'>";
-
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Поточний час:</strong>";
-    html += "<span style='color: #2196F3; font-weight: 600;'>" + getTimeString() + "</span>";
-    html += "</div>";
-
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Дата:</strong>";
-    html += "<span style='color: #2196F3; font-weight: 600;'>" + getDateString() + "</span>";
-    html += "</div>";
-
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Формат часу:</strong>";
-    html += "<span style='color: #2196F3; font-weight: 600;'>" + getFormattedTime() + "</span>";
-    html += "</div>";
-
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: " + String(isTimeSynced() ? "#e8f5e9" : "#fff3cd") + "; border-radius: 5px;'>";
-    html += "<strong>Синхронізація:</strong>";
-    html += "<span style='color: " + String(isTimeSynced() ? "#4CAF50" : "#ff9800") + "; font-weight: 600;'>" + String(isTimeSynced() ? "✅ Синхронізовано" : "⚠️ Немає синхронізації") + "</span>";
-    html += "</div>";
-
-    html += "</div>";
-    html += "</div>";
-
-    // Інформація про NTP
-    html += "<div class='card' style='border-left-color: #2196F3;'>";
-    html += "<h3 style='margin-top: 0;'>ℹ️ Про синхронізацію часу</h3>";
-    html += "<p>Система використовує NTP (Network Time Protocol) для автоматичної синхронізації часу через інтернет.</p>";
-    html += "<ul style='margin: 10px 0; padding-left: 20px;'>";
-    html += "<li>Часовий пояс: Europe/Kyiv (UTC+2 / UTC+3)</li>";
-    html += "<li>NTP сервер: pool.ntp.org</li>";
-    html += "<li>Синхронізація відбувається при підключенні до WiFi</li>";
-    html += "</ul>";
-    html += "</div>";
-
-    html += "</div>"; // container
-
-    html += getNavFooter();
-    html += getUkraineMarquee();
-    html += getHtmlFooter();
-
-    server.send(200, "text/html", html);
-}

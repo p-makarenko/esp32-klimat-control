@@ -78,9 +78,9 @@ bool syncToGoogleSheets() {
   }
 
   // 2. Перевірка вільної пам'яті ДО початку
-  // Нам потрібно ~50KB для буфера + ~25KB для SSL. Разом ~75KB.
+  // Нам потрібно ~23KB для буфера + ~55KB для SSL handshake. Разом ~80KB.
   uint32_t freeHeap = ESP.getFreeHeap();
-  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 25000;
+  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 55000;
 
   if (freeHeap < requiredHeap) {
     Serial.printf("❌ [Sync] Критично мало RAM! Free: %u, Req: %u\n", freeHeap, requiredHeap);
@@ -140,8 +140,18 @@ bool syncToGoogleSheets() {
   Serial.printf("📊 [Sync] Готуємо до відправки %u записів (Seq %lu -> %lu)\n",
                 recordsToSend, buffer[0].sequenceNumber, buffer[recordsToSend-1].sequenceNumber);
 
+  // 5.5 Якщо записів багато і мало пам'яті - обмежуємо кількість
+  uint32_t heapBeforeSSL = ESP.getFreeHeap();
+  const uint16_t MAX_RECORDS_LOW_MEM = 100;  // Максимум при низькій пам'яті
+
+  if (heapBeforeSSL < 60000 && recordsToSend > MAX_RECORDS_LOW_MEM) {
+    Serial.printf("⚠️ [Sync] Низька пам'ять (%u), обмежуємо до %u записів\n",
+                  heapBeforeSSL, MAX_RECORDS_LOW_MEM);
+    recordsToSend = MAX_RECORDS_LOW_MEM;
+  }
+
   // 6. Підготовка SSL
-  Serial.printf("💾 [Sync] Heap перед SSL: %u bytes\n", ESP.getFreeHeap());
+  Serial.printf("💾 [Sync] Heap перед SSL: %u bytes\n", heapBeforeSSL);
 
   WiFiClientSecure sslClient;
   sslClient.setInsecure(); // Для тестів ок, для проду краще certs
@@ -149,9 +159,19 @@ bool syncToGoogleSheets() {
 
   Serial.println("🔐 [Sync] Підключення до script.google.com:443...");
   if (!sslClient.connect("script.google.com", 443)) {
+    char sslErrorBuf[128];
+    int sslError = sslClient.lastError(sslErrorBuf, sizeof(sslErrorBuf));
     Serial.println("❌ [Sync] Google connection failed");
+    Serial.printf("🔒 [Sync] SSL error: %d - %s\n", sslError, sslErrorBuf);
     Serial.printf("📶 [Sync] WiFi RSSI: %d dBm\n", WiFi.RSSI());
     Serial.printf("💾 [Sync] Free heap: %u bytes\n", ESP.getFreeHeap());
+    Serial.printf("📊 [Sync] Min free heap: %u bytes\n", ESP.getMinFreeHeap());
+
+    // Діагностика типових помилок
+    if (ESP.getFreeHeap() < 45000) {
+      Serial.println("💡 [Sync] Причина: недостатньо RAM для SSL handshake");
+    }
+
     free(buffer);
     syncStats.syncInProgress = false;
     syncStats.failedSyncs++;
@@ -223,14 +243,27 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
     time_t ts = records[i].timestamp;
     struct tm* tm = localtime(&ts);
 
-    char line[100];
+    char line[130];
+#if ENABLE_ENERGY_MONITOR
+    EnergyMeasurements em = getEnergyMeasurements();
     snprintf(line, sizeof(line),
-             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d\n",
+             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d,%.1f,%.1f\n",
+             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+             tm->tm_hour, tm->tm_min, tm->tm_sec,
+             records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
+             records[i].humidity, records[i].pumpPower, records[i].fanPower,
+             records[i].extractorPower, records[i].mode,
+             em.error ? 0.0f : em.voltage,
+             em.error ? 0.0f : em.power);
+#else
+    snprintf(line, sizeof(line),
+             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d,0,0\n",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
              tm->tm_hour, tm->tm_min, tm->tm_sec,
              records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
              records[i].humidity, records[i].pumpPower, records[i].fanPower,
              records[i].extractorPower, records[i].mode);
+#endif
     csvData += line;
   }
 

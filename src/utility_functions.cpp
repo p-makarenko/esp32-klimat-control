@@ -46,7 +46,7 @@ void autoPrintStatus() {
         xSemaphoreGive(getHeatingMutex());
     }
     
-    // Виводимо статус
+    // Виводимо статус в Serial
     Serial.println("\n══════════════════════════════════════════════════════════");
     Serial.println("           📊 СТАТУС СИСТЕМИ");
     Serial.println("══════════════════════════════════════════════════════════");
@@ -70,6 +70,7 @@ void autoPrintStatus() {
     Serial.printf("  Пам'ять: %lu KB\n", ESP.getFreeHeap() / 1024);
     Serial.printf("  Записів в історії: %d\n", historyIndex);
     Serial.println("══════════════════════════════════════════════════════════\n");
+
 }
 
 // ============================================================================

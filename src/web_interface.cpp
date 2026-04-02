@@ -10,7 +10,6 @@
 #include "system_core.h"
 #include "sensor_manager.h"
 #include "actuator_manager.h"
-#include "learning_system.h"
 #include "global_declarations.h"
 #include <ArduinoJson.h>
 #include "advanced_climate_logic.h"
@@ -26,6 +25,7 @@
 #include <ESPmDNS.h>
 #include <NetBIOS.h>
 #include <Update.h>
+#include <esp_task_wdt.h>
 #include <vector>
 #include <algorithm>
 
@@ -234,6 +234,8 @@ void initWiFi() {
         if (WiFi.localIP() != IPAddress(0,0,0,0)) {
             Serial.println("✅ Локальна мережа доступна");
             configTime(0, 0, "pool.ntp.org");
+            setenv("TZ", TZ_INFO, 1);
+            tzset();
             struct tm timeinfo;
             if (getLocalTime(&timeinfo, 5000)) {
                 Serial.println("✅ Інтернет доступний (NTP синхронізований)");
@@ -266,12 +268,7 @@ void initWiFi() {
     server.on("/wifi", HTTP_GET, handleWiFiPage);
     server.on("/saveNetwork", HTTP_POST, handleSaveNetworkSettings);
 
-    // Навчання
-    server.on("/learning", HTTP_GET, handleLearningPage);
-    server.on("/learning/api", HTTP_POST, handleLearningAPI);
-
-    // Час та допомога
-    server.on("/time", HTTP_GET, handleTimePage);
+    // Допомога
     server.on("/help", HTTP_GET, handleHelpPage);
     server.on("/debug", HTTP_GET, handleDebugPage);
 
@@ -290,6 +287,8 @@ void initWiFi() {
     server.on("/energy/api", HTTP_GET, handleEnergyAPI);
     server.on("/energy/history", HTTP_GET, handleEnergyHistory);
     server.on("/energy/stats", HTTP_GET, handleEnergyHistoryStats);
+    server.on("/energy/reset", HTTP_POST, handleEnergyReset);
+    server.on("/energy/power", HTTP_GET, handleEnergyPowerData);
 
     // OTA та Backup
     server.on("/ota", HTTP_GET, handleOTAPage);
@@ -350,12 +349,24 @@ void initWiFi() {
     // Web OTA Upload handler
     server.on("/update", HTTP_POST, handleOTAUploadResult, handleOTAUpload);
 
+    // Проста форма без JavaScript для діагностики
+    server.on("/update-simple", HTTP_GET, []() {
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Simple OTA</title></head><body>";
+        html += "<h1>Simple OTA Upload</h1>";
+        html += "<form method='POST' action='/update' enctype='multipart/form-data'>";
+        html += "<input type='file' name='update' accept='.bin'><br><br>";
+        html += "<input type='submit' value='Upload'>";
+        html += "</form></body></html>";
+        server.send(200, "text/html", html);
+    });
+
     server.onNotFound([]() {
         server.send(404, "text/plain", "Сторінка не знайдена");
     });
 
     server.begin();
     Serial.println("  Web OTA доступний на /update");
+
 }
 
 // ============================================================================
@@ -802,6 +813,9 @@ void handleOTAUpload() {
         // Позначаємо що OTA активна
         setOTAInProgress(true);
 
+        // Вимикаємо Task WDT для поточної задачі
+        esp_task_wdt_delete(NULL);
+
         // Автоматичний backup ДО призупинення задач!
         Serial.println("\n📦 Автоматичний backup поточної конфігурації...");
         if (createBackup("Auto backup before Web OTA")) {
@@ -814,10 +828,14 @@ void handleOTAUpload() {
         pauseCriticalTasks();
 
         // Затримка для стабілізації
-        delay(100);
+        delay(200);
+        yield();
 
-        if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
-            Serial.println("❌ Update.begin() failed");
+        // UPDATE_SIZE_UNKNOWN дозволяє Update.end() самому визначити кінець
+        Serial.printf("📊 Free sketch space: %u bytes\n", ESP.getFreeSketchSpace());
+
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+            Serial.printf("❌ Update.begin() failed: %s\n", Update.errorString());
             Update.printError(Serial);
             setOTAInProgress(false);
             resumeCriticalTasks();
@@ -826,19 +844,64 @@ void handleOTAUpload() {
         Serial.printf("📥 OTA Started: %s\n", upload.filename.c_str());
     }
     else if (upload.status == UPLOAD_FILE_WRITE) {
-        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-            Serial.println("❌ Update.write() failed");
+        // Записуємо чанк з повторними спробами
+        size_t written = 0;
+        int retries = 3;
+
+        while (written < upload.currentSize && retries > 0) {
+            size_t toWrite = upload.currentSize - written;
+            size_t result = Update.write(upload.buf + written, toWrite);
+
+            if (result > 0) {
+                written += result;
+            } else {
+                retries--;
+                Serial.printf("⚠️ Write retry, remaining: %d\n", retries);
+                delay(10);
+            }
+        }
+
+        if (written != upload.currentSize) {
+            Serial.printf("❌ Update.write() failed: wrote %u of %u\n", written, upload.currentSize);
             Update.printError(Serial);
+        }
+
+        // Даємо час системі кожні 64KB
+        static size_t lastYield = 0;
+        if (upload.totalSize - lastYield > 65536) {
+            lastYield = upload.totalSize;
+            yield();
         }
     }
     else if (upload.status == UPLOAD_FILE_END) {
-        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", upload.totalSize, Update.progress());
+        size_t totalSize = upload.totalSize;
+        size_t writtenSize = Update.progress();
+        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", totalSize, writtenSize);
 
+        // Перевірка чи весь файл записано
+        if (writtenSize < totalSize) {
+            Serial.printf("⚠️ Incomplete write: expected %u, got %u\n", totalSize, writtenSize);
+        }
+
+        // Невелика затримка перед фіналізацією
+        delay(100);
+
+        // Якщо не все записано - дозаписуємо що залишилось
+        if (writtenSize < totalSize) {
+            Serial.println("⚠️ Спроба дозаписати останні байти...");
+            // Update вже має всі дані, просто фіналізуємо
+        }
+
+        // evenIfRemaining=true - завершити навіть якщо розмір не співпав
         if (Update.end(true)) {
             Serial.println("✅ OTA Success!");
             setOTAInProgress(false);
         } else {
-            Serial.printf("❌ OTA Error: %s\n", Update.errorString());
+            int errCode = Update.getError();
+            Serial.printf("❌ OTA Error [%d]: %s\n", errCode, Update.errorString());
+            Serial.printf("   Written: %u / %u bytes\n", writtenSize, totalSize);
+            Serial.printf("   Remaining: %u bytes\n", Update.remaining());
+            Serial.printf("   isFinished: %d\n", Update.isFinished());
             setOTAInProgress(false);
             resumeCriticalTasks();
         }
@@ -852,13 +915,27 @@ void handleOTAUpload() {
 }
 
 // ============================================================================
-// ЗАВДАННЯ ВЕБ-СЕРВЕРА
+// ЗАВДАННЯ ВЕБ-СЕРВЕРА З WATCHDOG
 // ============================================================================
+
+#include <esp_task_wdt.h>
+
+// Watchdog timeout: 60 секунд
+#define WEB_WATCHDOG_TIMEOUT_S  60
 
 void webTask(void *parameter) {
     Serial.println("✅ Веб-завдання запущено");
 
+    // Ініціалізація Task Watchdog для цього таску
+    esp_task_wdt_init(WEB_WATCHDOG_TIMEOUT_S, true);  // true = reboot on timeout
+    esp_task_wdt_add(NULL);  // Додати поточний таск до watchdog
+
+    Serial.printf("🐕 Watchdog активовано: %d сек timeout\n", WEB_WATCHDOG_TIMEOUT_S);
+
     while (1) {
+        // Скидаємо watchdog - показуємо що таск живий
+        esp_task_wdt_reset();
+
         server.handleClient();
         vTaskDelay(pdMS_TO_TICKS(10));
     }

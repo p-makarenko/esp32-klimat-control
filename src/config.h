@@ -6,7 +6,7 @@
 // ============================================================================
 // КОНФІГУРАЦІЯ ПІНІВ
 // ============================================================================
-#define ONE_WIRE_PIN      15    // DS18B20 датчики температури
+#define ONE_WIRE_PIN      16    // DS18B20 датчики температури
 #define I2C_SDA           1     // BME280 SDA
 #define I2C_SCL           2     // BME280 SCL
 #define PUMP_PWM_PIN      21    // Насос (PWM)
@@ -15,6 +15,8 @@
 #define SERVO_PIN         14    // Сервопривод вентиляції
 #define VENT_SWITCH_PIN   13    // Механічний вимикач вентиляції (HIGH = відкрити)
 #define HUMIDIFIER_PIN    6     // Зволожувач (цифровий)
+#define PZEM_RX_PIN       18    // PZEM004T RX = U1RXD (TX PZEM → GPIO 18)
+#define PZEM_TX_PIN       17    // PZEM004T TX = U1TXD (RX PZEM → GPIO 17)
 
 // ============================================================================
 // PWM НАЛАШТУВКИ
@@ -36,13 +38,10 @@
 #define TEMP_VENT_MIN          25.0f   // Мінімальна температура для вентиляції
 #define TEMP_VENT_MAX          28.0f   // Максимальна температура для вентиляції
 
-// Константи для виявлення відключення живлення
-#define POWER_OUTAGE_TEMP_DROP_THRESHOLD  3.0f   // Падіння температури теплоносія на 3°C за 5 хв = аварія
-#define POWER_OUTAGE_CHECK_INTERVAL       300000  // Перевірка кожні 5 хвилин (300000 мс)
-#define POWER_OUTAGE_RECOVERY_STAGE1_TIME 120000  // Перша спроба: 2 хвилини (120000 мс)
-#define POWER_OUTAGE_RECOVERY_PAUSE_TIME  300000  // Пауза між спробами: 5 хвилин (300000 мс)
-#define POWER_OUTAGE_RECOVERY_STAGE2_TIME 120000  // Друга спроба: 2 хвилини (120000 мс)
-#define POWER_OUTAGE_TEMP_RISE_THRESHOLD  1.0f    // Мінімальне зростання температури для успіху (1°C)
+// Константи для виявлення відключення живлення (по напрузі PZEM)
+#define POWER_OUTAGE_VOLTAGE_MIN  175.0f  // Мінімальна допустима напруга (В)
+#define POWER_OUTAGE_VOLTAGE_MAX  255.0f  // Максимальна допустима напруга (В)
+#define POWER_OUTAGE_CHECK_INTERVAL 2000  // Інтервал перевірки напруги (мс)
 
 // ============================================================================
 // ВОЛОГІСТЬ КОНСТАНТИ
@@ -78,7 +77,6 @@
 // ============================================================================
 #define SENSOR_READ_INTERVAL   2000    // Інтервал читання датчиків (мс)
 #define STATUS_PRINT_INTERVAL  30000   // Період автовиведення статусу (мс)
-#define TREND_WINDOW_SIZE      60      // Розмір вікна для тренду (60*5с=5хв)
 #define TEMP_HISTORY_SIZE      300     // Історія температури (5 хв при 1с)
 #define HEATING_CHECK_INTERVAL 300000  // Перевірка ефективності (5 хв)
 #define HISTORY_BUFFER_SIZE    720     // Зберігаємо 12 годин даних (720 хвилин, оптимізовано для RAM)
@@ -90,7 +88,9 @@
 // ============================================================================
 #define NTP_SERVER      "pool.ntp.org"
 #define UTC_OFFSET_SEC  7200           // GMT+2 (Київ)
-#define UTC_OFFSET_DST  10800          // Літній час GMT+3
+#define UTC_OFFSET_DST  3600           // Літній час +1 година
+// POSIX timezone: EET-2EEST,M3.5.0/3,M10.5.0/4 (автоматичне переключення літній/зимовий)
+#define TZ_INFO         "EET-2EEST,M3.5.0/3,M10.5.0/4"
 
 // ============================================================================
 // WI-FI НАЛАШТУВКИ

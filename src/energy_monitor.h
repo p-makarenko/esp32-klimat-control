@@ -6,7 +6,6 @@
 // ============================================================================
 // ЕНЕРГОКОНТРОЛЕР - МОНІТОРИНГ ЕНЕРГІЇ
 // ============================================================================
-// На основі indacator2.txt - для подальшої інтеграції лічильника PZEM004Tv30
 
 struct EnergyMeasurements {
     float voltage = 0.0;      // V
@@ -17,6 +16,19 @@ struct EnergyMeasurements {
     float powerFactor = 0.0;  // PF
     bool error = true;
 };
+
+// RAM буфер для графіка потужності (зберігається на ESP32, не в браузері)
+#define ENERGY_POWER_BUFFER_SIZE 720   // 720 точок = 24 години при інтервалі 2 хв
+struct PowerRecord {
+    uint32_t timestamp;  // Unix time
+    float power;         // W
+    float voltage;       // V
+    float current;       // A
+};
+
+extern PowerRecord powerBuffer[];
+extern uint16_t powerBufferIndex;
+extern uint16_t powerBufferCount;
 
 // Ініціалізація енергоконтролера
 void initEnergyMonitor();
@@ -30,10 +42,15 @@ EnergyMeasurements getEnergyMeasurements();
 // Запис історії енергозатрат
 void appendEnergyHistory(float energy);
 
-// Веб-обробники для энергоконтролера
+// Скидання лічильника енергії
+void resetEnergyCounter();
+
+// Веб-обробники для енергоконтролера
 void handleEnergyPage();
 void handleEnergyAPI();
 void handleEnergyHistory();
 void handleEnergyHistoryStats();
+void handleEnergyReset();
+void handleEnergyPowerData();
 
 #endif

@@ -98,14 +98,6 @@ struct SystemConfig {
   uint8_t adaptive_temp_step;
   uint8_t adaptive_hum_step;
 
-  // Параметри моніторингу аварій
-  float powerOutageTempDropThreshold;   // Поріг падіння температури для виявлення аварії (°C)
-  float powerOutageTempRiseThreshold;   // Поріг зростання температури для підтвердження відновлення (°C)
-  uint16_t powerOutageCheckInterval;    // Інтервал перевірки тренду (секунди)
-  uint16_t powerOutageStage1Time;       // Тривалість етапу 1 діагностики (секунди)
-  uint16_t powerOutagePauseTime;        // Тривалість паузи між спробами (секунди)
-  uint16_t powerOutageStage2Time;       // Тривалість етапу 2/3 спроб (секунди)
-  uint16_t powerOutageAutoExitTime;     // Час оцінювання стабільного зростання для автовиходу (секунди)
 
   ExtractorTimer extractorTimer;
   uint16_t history_size;
@@ -176,18 +168,12 @@ struct HumidifierState {
   uint8_t cyclesToday;
 };
 
-// Структура для моніторингу відключення зовнішнього живлення (аварія теплоносія)
+// Структура для моніторингу відключення зовнішнього живлення (по напрузі PZEM)
 struct PowerOutageState {
-  bool detected;                    // Чи виявлено аварію
-  unsigned long detectionTime;      // Час виявлення аварії
-  float tempAtDetection;            // Температура теплоносія при виявленні
-  uint8_t recoveryStage;            // Етап відновлення (0=немає, 1=перша спроба, 2=друга спроба, 3=відключення)
-  unsigned long stageStartTime;     // Час початку поточного етапу
-  float tempBeforeDrop;             // Температура до падіння (5 хв тому)
-  unsigned long lastTempSave;       // Час останнього збереження температури
+  bool detected;                    // Чи виявлено відсутність 220В
+  unsigned long detectionTime;      // Час виявлення відключення
   bool emergencyHeatingActive;      // Чи активний аварійний обігрів
-  unsigned long autoExitCheckStart; // Час початку перевірки автовиходу
-  float tempAtAutoExitStart;        // Температура при початку перевірки автовиходу
+  float lastVoltage;                // Остання зчитана напруга (В)
 };
 
 struct HistoryData {
@@ -223,6 +209,7 @@ void loadConfiguration();
 void saveConfiguration();
 void initMutexes();
 void createTasks();
+void resetNetworkSettings();
 void initTime();
 void printMenu();
 void syncTime();
@@ -230,12 +217,6 @@ String getTimeString();
 String getFormattedTime();
 String getDateString();
 
-// Функції для доступу до тренду температури
-float* getTempTrendBufferPtr();
-int getTrendIndexValue();
-void setTrendIndex(int index);
-bool isTrendBufferFilled();
-void setTrendBufferFilled(bool filled);
 
 // Геттери та сеттери для часових змінних
 unsigned long getLastStatusPrint();
@@ -279,9 +260,6 @@ void setCurrentTime(time_t t);
 
 // Прототипи задач FreeRTOS
 void timeTask(void *parameter);
-extern bool learningEnabled;
-extern int learningCount;
-
 // Прототип задачі розширеної логіки
 void advancedLogicTask(void *parameter);
 

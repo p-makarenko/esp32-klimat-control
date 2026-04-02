@@ -51,10 +51,6 @@ struct tm timeInfo;
 static bool timeSynced = false;
 static unsigned long _lastTimeSync = 0;
 
-// Р‘СѓС„РµСЂРё РґР»СЏ С‚СЂРµРЅРґСѓ
-float tempTrendBuffer[TREND_WINDOW_SIZE];  // Р—РјС–РЅРµРЅРѕ Р· static РЅР° РіР»РѕР±Р°Р»СЊРЅСѓ
-int trendIndex = 0;  // Р—РјС–РЅРµРЅРѕ Р· static РЅР° РіР»РѕР±Р°Р»СЊРЅСѓ
-static bool trendBufferFilled = false;
 
 // Р”РѕРґР°РЅРѕ: Р·РјС–РЅРЅС– РґР»СЏ Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
 static unsigned long _emergencyStartTime = 0;
@@ -141,6 +137,18 @@ void setEmergencyStartTempRoom(float temp) {
 // Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р РћР‘РћРўР Р— Р§РђРЎРћРњ
 // ============================================================================
 
+// Очистити неправильні мережеві налаштування
+void resetNetworkSettings() {
+  preferences.begin("wifi", false);
+  preferences.putBool("useStaticIP", false);
+  preferences.putString("staticIP", "192.168.1.100");
+  preferences.putString("gateway", "192.168.1.1");
+  preferences.putString("subnet", "255.255.255.0");
+  preferences.putString("dns", "8.8.8.8");
+  preferences.end();
+  Serial.println("✅ Мережеві налаштування скинуті на DHCP");
+}
+
 void initTime() {
   // Serial.println("РЎРїСЂРѕР±СѓС”РјРѕ СЃРёРЅС…СЂРѕРЅС–Р·СѓРІР°С‚Рё С‡Р°СЃ...");  // RUS_REMOVED
   
@@ -156,10 +164,10 @@ void initTime() {
     "3.ua.pool.ntp.org"       // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 4
   };
   
-  // GMT+2 РґР»СЏ РЈРєСЂР°РёРЅС‹, Р±РµР· Р»РµС‚РЅРµРіРѕ РІСЂРµРјРµРЅРё (Р·РёРјР°)
-  // Р•СЃР»Рё СЃРµР№С‡Р°СЃ Р»РµС‚РЅРµРµ РІСЂРµРјСЏ - РёР·РјРµРЅРё РЅР° 3*3600
-  configTime(2 * 3600, 0, 
-    ntpServers[0], ntpServers[1], ntpServers[2]);
+  // POSIX timezone для Києва — автоматичне переключення літній/зимовий час
+  configTime(0, 0, ntpServers[0], ntpServers[1], ntpServers[2]);
+  setenv("TZ", TZ_INFO, 1);
+  tzset();
   
   // Serial.print("РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р· NTP СЃРµСЂРІРµСЂР°РјРё...");  // RUS_REMOVED
   
@@ -189,9 +197,9 @@ void initTime() {
         
         // РџСЂРѕР±СѓРµРј СЃР»РµРґСѓСЋС‰РёР№ СЃРµСЂРІРµСЂ
         static int serverIndex = 1;
-        configTime(2 * 3600, 0, 
-          ntpServers[serverIndex % 8], 
-          ntpServers[(serverIndex + 1) % 8], 
+        configTime(0, 0,
+          ntpServers[serverIndex % 8],
+          ntpServers[(serverIndex + 1) % 8],
           ntpServers[(serverIndex + 2) % 8]);
         serverIndex++;
       }
@@ -346,27 +354,11 @@ void loadConfiguration() {
   config.autoStatusEnabled = preferences.getBool("autoStatus", false);
   
   // Мережеві налаштування
-  config.useStaticIP = preferences.getBool("useStaticIP", false);
-  if (preferences.isKey("staticIP")) {
-    config.staticIP = preferences.getString("staticIP", "192.168.1.100");
-  } else {
-    config.staticIP = "192.168.1.100";
-  }
-  if (preferences.isKey("gateway")) {
-    config.gateway = preferences.getString("gateway", "192.168.1.1");
-  } else {
-    config.gateway = "192.168.1.1";
-  }
-  if (preferences.isKey("subnet")) {
-    config.subnet = preferences.getString("subnet", "255.255.255.0");
-  } else {
-    config.subnet = "255.255.255.0";
-  }
-  if (preferences.isKey("dns")) {
-    config.dns = preferences.getString("dns", "8.8.8.8");
-  } else {
-    config.dns = "8.8.8.8";
-  }
+  config.useStaticIP = false;  // Вернено на DHCP
+  config.staticIP = "192.168.1.100";
+  config.gateway = "192.168.1.1";
+  config.subnet = "255.255.255.0";
+  config.dns = "8.8.8.8";
   
   // Безпека
   config.useAuth = preferences.getBool("useAuth", false);
@@ -428,21 +420,8 @@ void loadConfiguration() {
   config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
   config.coolingMode = preferences.getBool("coolingMode", false);
 
-  // Параметри моніторингу аварій
-  config.powerOutageTempDropThreshold = preferences.getFloat("poTempDrop", 2.0f);
-  config.powerOutageTempRiseThreshold = preferences.getFloat("poTempRise", 1.0f);
-  config.powerOutageCheckInterval = preferences.getUShort("poCheckInt", 30);
-  config.powerOutageStage1Time = preferences.getUShort("poStage1", 120);
-  config.powerOutagePauseTime = preferences.getUShort("poPause", 300);
-  config.powerOutageStage2Time = preferences.getUShort("poStage2", 120);
-  config.powerOutageAutoExitTime = preferences.getUShort("poAutoExit", 600);
 
   preferences.end();
-  
-  // Р†РЅС–С†С–Р°Р»С–Р·Р°С†С–СЏ Р±СѓС„РµСЂС–РІ
-  for (int i = 0; i < TREND_WINDOW_SIZE; i++) {
-    tempTrendBuffer[i] = 0.0f;
-  }
   
   // РЎРєРёРґР°РЅРЅСЏ Р°РІР°СЂС–Р№РЅРёС… Р·РјС–РЅРЅРёС…
   _emergencyStartTime = 0;
@@ -528,14 +507,6 @@ void saveConfiguration() {
   preferences.putBool("seasonalDisable", config.seasonalHeatingDisable);
   preferences.putBool("coolingMode", config.coolingMode);
 
-  // Параметри моніторингу аварій
-  preferences.putFloat("poTempDrop", config.powerOutageTempDropThreshold);
-  preferences.putFloat("poTempRise", config.powerOutageTempRiseThreshold);
-  preferences.putUShort("poCheckInt", config.powerOutageCheckInterval);
-  preferences.putUShort("poStage1", config.powerOutageStage1Time);
-  preferences.putUShort("poPause", config.powerOutagePauseTime);
-  preferences.putUShort("poStage2", config.powerOutageStage2Time);
-  preferences.putUShort("poAutoExit", config.powerOutageAutoExitTime);
 
   // Поріг логування даних
   preferences.putFloat("logTempThresh", config.logTempThreshold);
@@ -686,25 +657,6 @@ void updateTimeInfo() {
 // Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ РўР Р•РќР”РЈ РўР•РњРџР•Р РђРўРЈР Р
 // ============================================================================
 
-float* getTempTrendBufferPtr() {
-    return tempTrendBuffer;
-}
-
-int getTrendIndexValue() {
-    return trendIndex;
-}
-
-void setTrendIndex(int index) {
-    trendIndex = index;
-}
-
-bool isTrendBufferFilled() {
-    return trendBufferFilled;
-}
-
-void setTrendBufferFilled(bool filled) {
-    trendBufferFilled = filled;
-}
 
 // ============================================================================
 // Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р”РћРЎРўРЈРџРЈ Р”Рћ Рњ'Р®РўР•РљРЎР†Р’

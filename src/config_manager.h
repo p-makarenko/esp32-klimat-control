@@ -26,7 +26,6 @@
 #define NS_WIFI         "wifi"
 #define NS_DATA_LOGGER  "data_logger"
 #define NS_SHEETS_SYNC  "sheets_sync"
-#define NS_LEARNING     "learning"
 
 // ============================================================================
 // OTA НАЛАШТУВАННЯ

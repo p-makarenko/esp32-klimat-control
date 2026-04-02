@@ -2,7 +2,7 @@
 // WEB_PAGES_MISC.CPP - Допоміжні сторінки
 // ============================================================================
 // Рефакторинг за методом "Скептичного Архітектора"
-// Модуль: Допомога, відладка, система навчання
+// Модуль: Допомога, відладка
 // ============================================================================
 
 #include <WebServer.h>
@@ -12,14 +12,9 @@
 
 extern WebServer server;
 extern SystemConfig config;
-extern int learningCount;
-extern bool learningEnabled;
-extern bool isLearningActive;
-
 // Forward declarations
 extern bool checkAuth();
 extern String getUkraineMarquee();
-extern void processLearningCommand(const String& cmd);
 
 // ============================================================================
 // СТОРІНКА ДОПОМОГИ
@@ -304,76 +299,3 @@ void handleDebugPage() {
     server.send(200, "text/html", html);
 }
 
-// ============================================================================
-// СТОРІНКА СИСТЕМИ НАВЧАННЯ
-// ============================================================================
-
-void handleLearningPage() {
-    if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
-
-    String html = getHtmlHead("🧠 Система навчання");
-    html += "<div class='container'>";
-
-    // Навігація зверху
-    html += getNavHeader("🧠 СИСТЕМА НАВЧАННЯ");
-
-    // Статус
-    html += "<div class='card'>";
-    html += "<h3 style='margin-top: 0;'>📊 Статус</h3>";
-    html += "<div style='display: grid; gap: 10px;'>";
-
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Записів:</strong>";
-    html += "<span style='color: #2196F3; font-weight: 600;'>" + String(learningCount) + "</span>";
-    html += "</div>";
-
-    String enabledColor = learningEnabled ? "#4CAF50" : "#f44336";
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Статус:</strong>";
-    html += "<span style='color: " + enabledColor + "; font-weight: 600;'>" + String(learningEnabled ? "✅ Включено" : "❌ Вимкнено") + "</span>";
-    html += "</div>";
-
-    String activeColor = isLearningActive ? "#4CAF50" : "#ff9800";
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
-    html += "<strong>Активно:</strong>";
-    html += "<span style='color: " + activeColor + "; font-weight: 600;'>" + String(isLearningActive ? "⚡ Так" : "💤 Ні") + "</span>";
-    html += "</div>";
-
-    html += "</div>";
-    html += "</div>";
-
-    // Опис
-    html += "<div class='card' style='border-left-color: #2196F3;'>";
-    html += "<h3 style='margin-top: 0;'>ℹ️ Про систему навчання</h3>";
-    html += "<p>Система навчання аналізує поведінку кліматичної системи та оптимізує параметри керування на основі зібраних даних.</p>";
-    html += "<ul>";
-    html += "<li>Збирає дані про температуру, вологість та керуючі впливи</li>";
-    html += "<li>Аналізує ефективність різних режимів роботи</li>";
-    html += "<li>Адаптує параметри для оптимальної роботи</li>";
-    html += "</ul>";
-    html += "</div>";
-
-    html += "</div>"; // container
-
-    html += getNavFooter();
-    html += getUkraineMarquee();
-    html += getHtmlFooter();
-
-    server.send(200, "text/html", html);
-}
-
-// ============================================================================
-// API СИСТЕМИ НАВЧАННЯ
-// ============================================================================
-
-void handleLearningAPI() {
-    if (!server.hasArg("cmd")) {
-        server.send(400, "text/plain", "No command");
-        return;
-    }
-
-    String cmd = server.arg("cmd");
-    processLearningCommand(cmd);
-    server.send(200, "text/plain", "OK");
-}

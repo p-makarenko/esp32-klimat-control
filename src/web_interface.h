@@ -3,7 +3,6 @@
 
 #include "system_core.h"
 #include "advanced_climate_logic.h"
-#include "learning_system.h"
 #include "utility_functions.h"
 #include "global_declarations.h"
 #include "data_logger.h"
@@ -21,7 +20,6 @@ void handleStatus();
 void handleControlPage();
 void handleSettingsPage();
 void handleSaveSettings();
-void handleTimePage();
 void handleWiFiPage();
 void handleHistoryPage();
 void handleHistoryData();
@@ -29,8 +27,6 @@ void handleHistoryStats();
 void handleHistoryExport();
 void handleHelpPage();
 void handleDebugPage();
-void handleLearningPage();
-void handleLearningAPI();
 
 // Servo calibration
 void handleServoPage();

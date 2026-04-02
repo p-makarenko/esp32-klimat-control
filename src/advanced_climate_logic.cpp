@@ -5,6 +5,7 @@
 #include "data_storage.h"
 #include "global_declarations.h"
 #include "google_sheets_sync.h"
+#include "energy_monitor.h"
 #include <Arduino.h>
 #include "utility_functions.h"
 
@@ -285,9 +286,6 @@ void processCompactCommand(String command) {
         // Скидання аварійного режиму
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
-        powerOutageState.recoveryStage = 0;
-        powerOutageState.autoExitCheckStart = 0;
-        powerOutageState.tempAtAutoExitStart = 0;
         heatingState.emergencyMode = false;
         heatingState.forceMode = false;
         Serial.println("✓ Аварійний режим скинуто. Повернення до AUTO режиму");
@@ -398,6 +396,34 @@ void processExtendedCommand(String command) {
         Serial.println("🔄 Перезавантаження системи...");
         delay(1000);
         ESP.restart();
+    }
+    // Компактні команди: a100, b50, c30 (насос/вентилятор/витяжка)
+    else if (command.length() >= 2 && command.length() <= 4 &&
+             (command[0] == 'a' || command[0] == 'b' || command[0] == 'c')) {
+        char device = command[0];
+        int value = command.substring(1).toInt();
+        if (value >= 0 && value <= 100) {
+            heatingState.manualMode = true;
+            heatingState.manualModeStartTime = millis();
+            heatingState.forceMode = false;
+            heatingState.emergencyMode = false;
+            switch(device) {
+                case 'a':
+                    setPumpPercent(value);
+                    Serial.printf("✓ Насос (A): %d%% [РУЧНИЙ]\n", value);
+                    break;
+                case 'b':
+                    setFanPercent(value);
+                    Serial.printf("✓ Вентилятор (B): %d%% [РУЧНИЙ]\n", value);
+                    break;
+                case 'c':
+                    setExtractorPercent(value);
+                    Serial.printf("✓ Витяжка (C): %d%% [РУЧНИЙ]\n", value);
+                    break;
+            }
+        } else {
+            Serial.println("❌ Значення має бути 0-100");
+        }
     }
     else if (command.startsWith("pump ")) {
         int percent = command.substring(5).toInt();
@@ -600,9 +626,6 @@ void processExtendedCommand(String command) {
         // Скидання аварійного режиму
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
-        powerOutageState.recoveryStage = 0;
-        powerOutageState.autoExitCheckStart = 0;
-        powerOutageState.tempAtAutoExitStart = 0;
         heatingState.emergencyMode = false;
         heatingState.forceMode = false;
 
@@ -1150,7 +1173,7 @@ void monitorSystemHealth() {
     // Режим роботи
     String mode;
     if (powerOutageState.emergencyHeatingActive) {
-        mode = "🚨 АВАРІЯ (етап " + String(powerOutageState.recoveryStage) + ")";
+        mode = "🚨 НЕМАЄ 220В (" + String(powerOutageState.lastVoltage, 0) + "В)";
     } else if (heatingState.emergencyMode) {
         mode = "🚨 АВАРІЯ";
     } else if (heatingState.forceMode) {
@@ -1232,431 +1255,60 @@ void initAdvancedLogic() {
 }
 
 // ============================================================================
-// МОНІТОРИНГ ВІДКЛЮЧЕННЯ ЖИВЛЕННЯ (АВАРІЯ ТЕПЛОНОСІЯ)
+// МОНІТОРИНГ ВІДКЛЮЧЕННЯ ЖИВЛЕННЯ (ПО НАПРУЗІ PZEM)
 // ============================================================================
 
-/**
- * Аналіз тренду температури теплоносія
- * Обчислює швидкість зміни температури за останні 5 хвилин
- * @return Швидкість зміни температури в °C/хвилину (негативне значення = падіння)
- */
-float analyzeTempTrend() {
-    // Перевіряємо чи буфер заповнений
-    if (!isTrendBufferFilled()) {
-        return 0.0f; // Недостатньо даних для аналізу
-    }
-
-    float* trendBuffer = getTempTrendBufferPtr();
-    int currentIndex = getTrendIndexValue();
-
-    // Буфер циклічний, тому найстаріше значення - це наступне після поточного
-    int oldestIndex = currentIndex;
-    // Найновіше значення - це попереднє перед поточним
-    int newestIndex = (currentIndex - 1 + TREND_WINDOW_SIZE) % TREND_WINDOW_SIZE;
-
-    float oldestTemp = trendBuffer[oldestIndex];
-    float newestTemp = trendBuffer[newestIndex];
-
-    // Буфер наповнюється кожні SENSOR_READ_INTERVAL мс (5000 мс = 5 сек)
-    // Розмір буфера TREND_WINDOW_SIZE = 60 точок
-    // Отже, весь буфер охоплює 60 * 5 сек = 300 сек = 5 хвилин
-    float timeIntervalMinutes = (TREND_WINDOW_SIZE * SENSOR_READ_INTERVAL) / 60000.0f;
-
-    // Швидкість зміни температури (°C/хв)
-    float tempChange = newestTemp - oldestTemp;
-    float tempRate = tempChange / timeIntervalMinutes;
-
-    return tempRate;
-}
-
 void monitorPowerOutage() {
-    // Якщо аварія вже виявлена - не перевіряємо повторно
-    if (powerOutageState.detected) {
-        return;
-    }
-
-    // У режимі охолодження НЕ детектуємо падіння температури як аварію
-    // (природне охолодження теплоносія - це нормально)
-    if (config.coolingMode) {
-        return;
-    }
-
-    // Якщо насос вимкнений (штатний режим) - не детектуємо аварію
-    // (природне охолодження теплоносія при вимкненому насосі - це нормально)
-    if (heatingState.pumpPower == 0) {
-        return;
-    }
-
-    // Якщо датчик не валідний - пропускаємо
-    if (!sensorData.carrierValid) {
-        return;
-    }
-
     unsigned long now = millis();
-    float tempCarrier = 0;
 
-    if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
-        tempCarrier = sensorData.tempCarrier;
-        xSemaphoreGive(getSensorMutex());
-    }
-
-    // Перевіряємо тренд згідно налаштованого інтервалу
-    static unsigned long lastTrendCheck = 0;
-    unsigned long checkInterval = config.powerOutageCheckInterval * 1000; // Конвертуємо секунди в мс
-    if (now - lastTrendCheck < checkInterval) {
+    // Перевіряємо з інтервалом
+    static unsigned long lastCheck = 0;
+    if (now - lastCheck < POWER_OUTAGE_CHECK_INTERVAL) {
         return;
     }
-    lastTrendCheck = now;
+    lastCheck = now;
 
-    // Отримуємо швидкість зміни температури (°C/хв)
-    float tempRate = analyzeTempTrend();
+    // Читаємо напругу з PZEM
+    EnergyMeasurements energy = getEnergyMeasurements();
+    float voltage = energy.voltage;
+    powerOutageState.lastVoltage = voltage;
 
-    // Якщо tempRate == 0, то буфер ще не заповнений
-    if (tempRate == 0.0f) {
-        return;
-    }
+    // Визначаємо наявність живлення: 175-255В = норма
+    bool powerOk = !energy.error && (voltage >= POWER_OUTAGE_VOLTAGE_MIN) && (voltage <= POWER_OUTAGE_VOLTAGE_MAX);
 
-    // Обчислюємо еквівалентне падіння за 5 хвилин
-    float tempDrop5min = -tempRate * 5.0f;
+    if (!powerOk && !powerOutageState.detected) {
+        // Живлення зникло — входимо в аварійний режим
+        if (heatingState.manualModeLocked) {
+            Serial.println("🔒 Відключення 220В виявлено, але блокування ручного режиму АКТИВНО");
+            return;
+        }
 
-    // Якщо падіння більше налаштованого порогу - виявлено аварію!
-    if (tempDrop5min >= config.powerOutageTempDropThreshold) {
         powerOutageState.detected = true;
         powerOutageState.detectionTime = now;
-        powerOutageState.tempAtDetection = tempCarrier;
-        powerOutageState.recoveryStage = 1;
-        powerOutageState.stageStartTime = now;
         powerOutageState.emergencyHeatingActive = true;
 
         Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-        Serial.println("║  🚨 АВАРІЯ: ВІДКЛЮЧЕННЯ ЗОВНІШНЬОГО ЖИВЛЕННЯ!        ║");
+        Serial.println("║  🚨 АВАРІЯ: ВІДСУТНІСТЬ 220В!                        ║");
         Serial.println("╠═══════════════════════════════════════════════════════╣");
-        Serial.printf("║  📉 Швидкість падіння: %.2f°C/хв                     ║\n", -tempRate);
-        Serial.printf("║  📉 Прогноз падіння за 5 хв: %.1f°C                 ║\n", tempDrop5min);
-        Serial.printf("║  🌡️  Поточна температура: %.1f°C                    ║\n", tempCarrier);
-        Serial.println("║  ⚡ Запуск каскадного аварійного обігріву...         ║");
+        Serial.printf("║  ⚡ Напруга: %.1f В (норма: %.0f-%.0f В)             ║\n",
+                       voltage, POWER_OUTAGE_VOLTAGE_MIN, POWER_OUTAGE_VOLTAGE_MAX);
+        Serial.println("║  🔥 Аварійний режим обігріву активовано              ║");
+        Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+
+    } else if (powerOk && powerOutageState.detected) {
+        // Живлення повернулось — виходимо з аварії
+        powerOutageState.detected = false;
+        powerOutageState.emergencyHeatingActive = false;
+
+        Serial.println("\n╔═══════════════════════════════════════════════════════╗");
+        Serial.println("║  ✅ ЖИВЛЕННЯ 220В ВІДНОВЛЕНО!                        ║");
+        Serial.println("╠═══════════════════════════════════════════════════════╣");
+        Serial.printf("║  ⚡ Напруга: %.1f В                                  ║\n", voltage);
+        Serial.println("║  🔄 Повернення до штатного режиму                   ║");
         Serial.println("╚═══════════════════════════════════════════════════════╝\n");
     }
 }
 
-// ============================================================================
-// КАСКАДНА ЛОГІКА АВАРІЙНОГО РОЗІГРІВУ
-// ============================================================================
-
-void cascadeEmergencyHeating() {
-    if (!powerOutageState.emergencyHeatingActive) {
-        return;
-    }
-
-    unsigned long now = millis();
-    float tempCarrier = 0, tempRoom = 0;
-
-    if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
-        tempCarrier = sensorData.tempCarrier;
-        tempRoom = sensorData.tempRoom;
-        xSemaphoreGive(getSensorMutex());
-    }
-
-    unsigned long stageTime = now - powerOutageState.stageStartTime;
-    float tempRise = tempCarrier - powerOutageState.tempAtDetection;
-
-    switch (powerOutageState.recoveryStage) {
-        case 1: // ЕТАП 1: Діагностика - насос на дозволеній потужності, вентилятор виключений
-            if (stageTime == 0) {
-                Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                Serial.println("║  🔍 ЕТАП 1: ДІАГНОСТИКА (2 хвилини)                  ║");
-                Serial.println("╠═══════════════════════════════════════════════════════╣");
-                Serial.printf("║  Насос: %d%% (дозволена потужність)                  ║\n", config.pumpMaxPercent);
-                Serial.println("║  Вентилятор: 0% (виключений)                         ║");
-                Serial.println("║  Перевірка: чи зростає температура теплоносія?       ║");
-                Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                setPumpPercent(config.pumpMaxPercent);
-                setFanPercent(0);
-            }
-
-            // Статус кожні 10 секунд
-            {
-                static unsigned long lastStatusPrint1 = 0;
-                if (now - lastStatusPrint1 > 10000) {
-                    lastStatusPrint1 = now;
-                    Serial.printf("🔍 [%s] ЕТАП 1 ДІАГНОСТИКА: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=%d%%, Вентилятор=0%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, config.pumpMaxPercent);
-                }
-            }
-
-            if (stageTime >= (config.powerOutageStage1Time * 1000)) {
-                // ✅ КОТЕЛ ПРАЦЮЄ якщо:
-                // 1) Температура теплоносія >= 35°C (котел гарячий, точно працює)
-                // 2) АБО температура зросла >= порогу (котел розігрівається)
-                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= config.powerOutageTempRiseThreshold);
-
-                if (boilerWorking) {
-                    // ✅ Температура ЗРОСЛА АБО котел гарячий = відключення світла, газовий котел працює!
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ✅ ДІАГНОЗ: ВІДКЛЮЧЕННЯ СВІТЛА!                     ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    if (tempCarrier >= 35.0f) {
-                        Serial.printf("║  Температура теплоносія: %.1f°C (котел гарячий)     ║\n", tempCarrier);
-                    } else {
-                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
-                    }
-                    Serial.println("║  Зовнішній котел працює, проблема лише в електриці   ║");
-                    Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції + регульований обігрів ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    // Переходимо в режим підтримки циркуляції (stage 4)
-                    powerOutageState.recoveryStage = 4;
-                    powerOutageState.stageStartTime = now;
-
-                    // Насос продовжує на дозволеній потужності
-                    setPumpPercent(config.pumpMaxPercent);
-                    // Вентилятор буде регулюватися в stage 4 залежно від температури кімнати
-
-                } else {
-                    // ❌ КОТЕЛ НЕ ПРАЦЮЄ якщо:
-                    // Температура < 35°C І приріст < порогу
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ⚠️ ДІАГНОЗ: ВІДМОВА ЗОВНІШНЬОГО ОБІГРІВАЧА!         ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура: %.1f°C (< 35°C), зміна: %.1f°C         ║\n", tempCarrier, tempRise);
-                    Serial.println("║  Насос працює, але котел не гріє!                    ║");
-                    Serial.println("║  📋 ЕТАП 2: Спроба підняти насос до 100%%             ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    // Переходимо до етапу 2 - підйом насоса до 100%
-                    powerOutageState.recoveryStage = 2;
-                    powerOutageState.stageStartTime = now;
-                    powerOutageState.tempAtDetection = tempCarrier;
-
-                    setPumpPercent(100);
-                    setFanPercent(config.fanMinPercent); // Мінімальна циркуляція, не 0%
-                }
-            }
-            break;
-
-        case 2: // ЕТАП 2: Спроба 100% насосом (відмова котла)
-            // Статус кожні 5 секунд
-            {
-                static unsigned long lastStatusPrint2 = 0;
-                if (now - lastStatusPrint2 > 5000) {
-                    lastStatusPrint2 = now;
-                    uint8_t pumpPercent = map(heatingState.pumpPower, 0, 255, 0, 100);
-                    uint8_t fanPercent = map(heatingState.fanPower, 0, 255, 0, 100);
-                    Serial.printf("⚡ [%s] ЕТАП 2 СПРОБА 100%%: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=%d%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, pumpPercent, fanPercent);
-                }
-            }
-
-            if (stageTime >= POWER_OUTAGE_RECOVERY_STAGE1_TIME) {
-                tempRise = tempCarrier - powerOutageState.tempAtDetection;
-                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= POWER_OUTAGE_TEMP_RISE_THRESHOLD);
-
-                if (boilerWorking) {
-                    // Температура зросла при 100% АБО котел гарячий - значить котел запрацював
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ✅ КОТЕЛ ЗАПРАЦЮВАВ ПРИ 100%% НАСОСА!                ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    if (tempCarrier >= 35.0f) {
-                        Serial.printf("║  Температура: %.1f°C (котел гарячий)                 ║\n", tempCarrier);
-                    } else {
-                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
-                    }
-                    Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції на 100%%              ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    // Переходимо в режим підтримки на 100%
-                    powerOutageState.recoveryStage = 4;
-                    powerOutageState.stageStartTime = now;
-                    setPumpPercent(100);
-                    // Вентилятор буде регулюватися в stage 4
-
-                } else {
-                    // Переходимо на паузу перед останньою спробою
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ⏸️ ПАУЗА 5 ХВИЛИН                                    ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура: %.1f°C, зростання: %.1f°C              ║\n", tempCarrier, tempRise);
-                    Serial.println("║  Даємо системі час на стабілізацію...               ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    powerOutageState.recoveryStage = 3;
-                    powerOutageState.stageStartTime = now;
-                    powerOutageState.tempAtDetection = tempCarrier;
-
-                    // Під час паузи - мінімальна підтримка
-                    setPumpPercent(0);
-                    setFanPercent(config.fanMinPercent);
-                }
-            }
-            break;
-
-        case 3: // ЕТАП 3: Пауза 5 хвилин
-            {
-                // Під час паузи - мінімальна підтримка, але не перегріваємо!
-                int pauseFanPower = (tempRoom >= config.tempMax) ? 0 : config.fanMinPercent;
-                setFanPercent(pauseFanPower);
-
-                // Статус кожні 10 секунд
-                static unsigned long lastStatusPrint3 = 0;
-                if (now - lastStatusPrint3 > 10000) {
-                    lastStatusPrint3 = now;
-                    Serial.printf("⏸️ [%s] ЕТАП 3 ПАУЗА: T_кімн=%.1f°C, T_тепл=%.1f°C, Насос=0%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, pauseFanPower);
-                }
-            }
-
-            if (stageTime >= (config.powerOutagePauseTime * 1000)) {
-                Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                Serial.println("║  🔥 ЕТАП 3: ОСТАННЯ СПРОБА (2 хвилини)                ║");
-                Serial.println("╠═══════════════════════════════════════════════════════╣");
-                Serial.println("║  Насос: 100% (максимум)                              ║");
-                Serial.println("║  Вентилятор: 0%                                      ║");
-                Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                powerOutageState.recoveryStage = 5; // Перевірка останньої спроби
-                powerOutageState.stageStartTime = now;
-                powerOutageState.tempAtDetection = tempCarrier;
-
-                setPumpPercent(100);
-                setFanPercent(0);
-            }
-            break;
-
-        case 4: // РЕЖИМ ПІДТРИМКИ: Світло відключено, котел працює
-            {
-                // Насос підтримує циркуляцію на максимумі
-                setPumpPercent(config.pumpMaxPercent);
-
-                // Вентилятор регулюється залежно від температури кімнати
-                float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
-                float tempDiff = targetTemp - tempRoom;
-
-                int fanPower;
-                // ВАЖЛИВО: Якщо кімната перегріта - зупиняємо вентилятор!
-                if (tempRoom >= config.tempMax) {
-                    // Кімната досягла максимуму - ВИМИКАЄМО вентилятор повністю
-                    fanPower = 0;
-                } else if (tempRoom < config.tempMin) {
-                    // Температура нижче цілі - обігрів
-                    fanPower = config.fanMaxPercent;
-                } else if (tempRoom > config.tempMax) {
-                    // Температура близька до цілі - помірний обігрив
-                    fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100,
-                                  (config.fanMinPercent + config.fanMaxPercent) / 2, config.fanMaxPercent);
-                } else {
-                    // Температура в нормі - мінімальна циркуляція
-                    fanPower = config.fanMinPercent;
-                }
-
-                fanPower = constrain(fanPower, 0, config.fanMaxPercent);
-                setFanPercent(fanPower);
-
-                // Перевірка автоматичного виходу з аварії при стабільному зростанні температури
-                if (powerOutageState.autoExitCheckStart == 0) {
-                    // Початок перевірки
-                    powerOutageState.autoExitCheckStart = now;
-                    powerOutageState.tempAtAutoExitStart = tempCarrier;
-                } else {
-                    unsigned long autoExitTime = now - powerOutageState.autoExitCheckStart;
-                    if (autoExitTime >= (config.powerOutageAutoExitTime * 1000)) {
-                        // Час вийшов - перевіряємо тренд
-                        float tempRiseOverTime = tempCarrier - powerOutageState.tempAtAutoExitStart;
-
-                        if (tempRiseOverTime >= config.powerOutageTempRiseThreshold) {
-                            // Температура стабільно зростає - виходимо з аварії
-                            Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                            Serial.println("║  ✅ АВТОВИХІД З АВАРІЇ                                ║");
-                            Serial.println("╠═══════════════════════════════════════════════════════╣");
-                            Serial.printf("║  Температура стабільно зростає: +%.1f°C за %d сек   ║\n",
-                                         tempRiseOverTime, config.powerOutageAutoExitTime);
-                            Serial.println("║  Система повертається в штатний режим                ║");
-                            Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                            // Скидаємо аварію
-                            powerOutageState.detected = false;
-                            powerOutageState.emergencyHeatingActive = false;
-                            powerOutageState.recoveryStage = 0;
-                            powerOutageState.autoExitCheckStart = 0;
-                            powerOutageState.tempAtAutoExitStart = 0;
-                        } else {
-                            // Температура не зростає достатньо - продовжуємо моніторинг
-                            powerOutageState.autoExitCheckStart = now;
-                            powerOutageState.tempAtAutoExitStart = tempCarrier;
-                        }
-                    }
-                }
-
-                // Статус кожні 10 секунд
-                static unsigned long lastStatusPrint = 0;
-                if (now - lastStatusPrint > 10000) {
-                    lastStatusPrint = now;
-                    Serial.printf("♻️ [%s] Режим підтримки: T_кімн=%.1f°C (діапазон %.1f-%.1f°C), T_тепл=%.1f°C, Насос=%d%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, config.tempMin, config.tempMax, tempCarrier, config.pumpMaxPercent, fanPower);
-                }
-            }
-            break;
-
-        case 5: // Перевірка останньої спроби
-            {
-                // Якщо кімната перегріта - вимикаємо вентилятор
-                if (tempRoom >= config.tempMax) {
-                    setFanPercent(0);
-                }
-
-                // Статус кожні 5 секунд
-                static unsigned long lastStatusPrint5 = 0;
-                if (now - lastStatusPrint5 > 5000) {
-                    lastStatusPrint5 = now;
-                    uint8_t pumpPercent = map(heatingState.pumpPower, 0, 255, 0, 100);
-                    uint8_t fanPercent = map(heatingState.fanPower, 0, 255, 0, 100);
-                    Serial.printf("🔥 [%s] ЕТАП 5 ОСТАННЯ СПРОБА: T_кімн=%.1f°C, T_тепл=%.1f°C (зміна +%.1f°C), Насос=%d%%, Вентилятор=%d%%\n",
-                                 getFormattedTime().c_str(), tempRoom, tempCarrier, tempRise, pumpPercent, fanPercent);
-                }
-            }
-
-            if (stageTime >= (config.powerOutageStage2Time * 1000)) {
-                tempRise = tempCarrier - powerOutageState.tempAtDetection;
-                bool boilerWorking = (tempCarrier >= 35.0f) || (tempRise >= config.powerOutageTempRiseThreshold);
-
-                if (boilerWorking) {
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ✅ КОТЕЛ ЗАПРАЦЮВАВ!                                 ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    if (tempCarrier >= 35.0f) {
-                        Serial.printf("║  Температура: %.1f°C (котел гарячий)                 ║\n", tempCarrier);
-                    } else {
-                        Serial.printf("║  Температура зросла на %.1f°C                        ║\n", tempRise);
-                    }
-                    Serial.println("║  📋 РЕЖИМ: Підтримка циркуляції на 100%%              ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    powerOutageState.recoveryStage = 4;
-                    setPumpPercent(100);
-                    // Вентилятор буде регулюватися в stage 4
-
-                } else {
-                    // КРИТИЧНА АВАРІЯ - нічого не допомогло
-                    Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-                    Serial.println("║  ⛔ КРИТИЧНА АВАРІЯ: КОТЕЛ НЕ ЗАПУСКАЄТЬСЯ!          ║");
-                    Serial.println("╠═══════════════════════════════════════════════════════╣");
-                    Serial.printf("║  Температура: %.1f°C (< 35°C), зростання: %.1f°C     ║\n", tempCarrier, tempRise);
-                    Serial.println("║  Всі спроби вичерпано                                ║");
-                    Serial.println("║  🔌 ПОВНЕ ВІДКЛЮЧЕННЯ СИСТЕМИ                        ║");
-                    Serial.println("║  ⚠️ ПОТРІБЕН РЕМОНТ КОТЛА!                           ║");
-                    Serial.println("╚═══════════════════════════════════════════════════════╝\n");
-
-                    setPumpPercent(0);
-                    setFanPercent(0);
-                    setExtractorPercent(0);
-
-                    powerOutageState.recoveryStage = 0;
-                    powerOutageState.emergencyHeatingActive = false;
-                }
-            }
-            break;
-    }
-}
 
 // ============================================================================
 // АДАПТИВНЕ ЗНИЖЕННЯ ПОРОГІВ ТЕМПЕРАТУРИ/ВОЛОГОСТІ
@@ -1944,14 +1596,17 @@ void advancedLogicTask(void *parameter) {
             }
         }
 
-        // ПРІОРИТЕТ 1: Моніторинг відключення живлення (перевірка кожні 5 хв)
+        // ЗАБЕЗПЕЧЕННЯ: Коли блокування ручного режиму активне - скидаємо аварію
+        if (heatingState.manualModeLocked && powerOutageState.emergencyHeatingActive) {
+            powerOutageState.emergencyHeatingActive = false;
+            powerOutageState.detected = false;
+            Serial.println("🔒 Блокування ручного режиму активне - зупинена аварійна логіка живлення");
+        }
+
+        // ПРІОРИТЕТ 1: Моніторинг живлення 220В (через PZEM)
         monitorPowerOutage();
 
-        // ПРІОРИТЕТ 2: Каскадна логіка аварійного обігріву (якщо активна)
-        cascadeEmergencyHeating();
-
-        // ПРІОРИТЕТ 3: Автоматичне керування (АВТО режим включає підрежими ФОРСАЖ і АВАРІЯ)
-        // Якщо активний аварійний обігрів - пропускаємо штатний режим
+        // ПРІОРИТЕТ 2: Автоматичне керування (АВТО режим включає підрежими ФОРСАЖ і АВАРІЯ)
         if (!heatingState.manualMode && !powerOutageState.emergencyHeatingActive) {
             smartHeatingControl();
         }

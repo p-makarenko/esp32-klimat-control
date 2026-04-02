@@ -23,10 +23,8 @@ void advancedHumidityControl(float humidity, float tempRoom);
 void advancedUpdateExtractorTimer();  // Перейменували, щоб уникнути конфлікту
 void monitorSystemHealth();
 
-// Аварійний моніторинг та управління
-float analyzeTempTrend();  // Аналіз тренду температури теплоносія (°C/хв)
+// Моніторинг живлення 220В (через PZEM)
 void monitorPowerOutage();
-void cascadeEmergencyHeating();
 
 // Адаптивне зниження порогів
 void checkAdaptiveThresholds();

@@ -61,13 +61,9 @@ bool initConfigManager() {
                   SPIFFS.usedBytes(), SPIFFS.totalBytes(),
                   100.0 - (SPIFFS.usedBytes() * 100.0 / SPIFFS.totalBytes()));
 
-    // Якщо SPIFFS total менше 100KB - щось не так з partition, форматуємо
+    // Перевірка розміру SPIFFS (тільки попередження, без форматування)
     if (SPIFFS.totalBytes() < 100000) {
-        Serial.println("  ⚠️  SPIFFS занадто малий - можливо стара partition table");
-        Serial.println("  Спроба форматування...");
-        SPIFFS.format();
-        SPIFFS.begin(true);
-        Serial.printf("  Після форматування: %u bytes total\n", SPIFFS.totalBytes());
+        Serial.println("  ⚠️  SPIFFS занадто малий - перевірте partition table");
     }
 
     // Перевірка цілісності backup файлу
@@ -269,15 +265,6 @@ bool createBackup(const char* description) {
     sheetsSync["scriptUrl"] = prefs.getString("scriptUrl", "");
     sheetsSync["syncInterval"] = prefs.getULong("syncInterval", 300000);
     sheetsSync["batchSize"] = prefs.getInt("batchSize", 30);
-
-    prefs.end();
-
-    // === LEARNING NAMESPACE ===
-    prefs.begin(NS_LEARNING, true);
-
-    JsonObject learning = doc["learning"].to<JsonObject>();
-    learning["enabled"] = prefs.getBool("enabled", false);
-    learning["count"] = prefs.getInt("count", 0);
 
     prefs.end();
 
@@ -536,16 +523,6 @@ bool restoreBackup() {
 
     prefs.end();
 
-    // === ВІДНОВЛЕННЯ LEARNING NAMESPACE ===
-    prefs.begin(NS_LEARNING, false);
-    prefs.clear();
-
-    JsonObject learning = doc["learning"];
-    prefs.putBool("enabled", learning["enabled"] | false);
-    prefs.putInt("count", learning["count"] | 0);
-
-    prefs.end();
-
     resumeCriticalTasks();
     xSemaphoreGive(configMutex);
 
@@ -735,7 +712,7 @@ void factoryResetComplete() {
 
     // Очищуємо всі namespace
     const char* namespaces[] = {
-        NS_CLIMATE, NS_WIFI, NS_DATA_LOGGER, NS_SHEETS_SYNC, NS_LEARNING
+        NS_CLIMATE, NS_WIFI, NS_DATA_LOGGER, NS_SHEETS_SYNC
     };
 
     Preferences prefs;

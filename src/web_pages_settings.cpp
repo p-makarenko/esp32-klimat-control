@@ -21,6 +21,10 @@ extern bool checkAuth();
 extern bool checkCSRF();
 extern void saveConfiguration();
 extern String getUkraineMarquee();
+extern String getTimeString();
+extern String getDateString();
+extern String getFormattedTime();
+extern bool isTimeSynced();
 
 // ============================================================================
 // СТОРІНКА НАЛАШТУВАНЬ (з вкладками)
@@ -76,6 +80,7 @@ void handleSettingsPage() {
     html += "<button type='button' class='tab' onclick='switchTab(6)'>🎯 Серво</button>";
     html += "<button type='button' class='tab' onclick='switchTab(7)'>📶 WiFi</button>";
     html += "<button type='button' class='tab' onclick='switchTab(8)'>📊 Sync</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(9)'>🕒 Час</button>";
     html += "</div>";
 
     html += "<form method='POST' action='/settings'>";
@@ -209,44 +214,6 @@ void handleSettingsPage() {
     html += "</div>";
     html += "</div>";
 
-    html += "<div class='section'>";
-    html += "<h3>🚨 МОНІТОРИНГ АВАРІЙ (відключення живлення)</h3>";
-    html += "<div class='form-group'>";
-    html += "<label>Поріг падіння температури (°C):</label>";
-    html += "<input type='number' step='0.1' name='poTempDrop' value='" + String(config.powerOutageTempDropThreshold, 1) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне падіння температури теплоносія для виявлення аварії</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Поріг зростання температури (°C):</label>";
-    html += "<input type='number' step='0.1' name='poTempRise' value='" + String(config.powerOutageTempRiseThreshold, 1) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальне зростання температури теплоносія для підтвердження відновлення</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Інтервал перевірки тренду (секунди):</label>";
-    html += "<input type='number' name='poCheckInt' value='" + String(config.powerOutageCheckInterval) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто перевіряти тренд температури</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Тривалість етапу 1 діагностики (секунди):</label>";
-    html += "<input type='number' name='poStage1' value='" + String(config.powerOutageStage1Time) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для першої спроби аварійного обігріву</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Тривалість паузи між спробами (секунди):</label>";
-    html += "<input type='number' name='poPause' value='" + String(config.powerOutagePauseTime) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час очікування перед наступною спробою</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Тривалість етапів 2/3 (секунди):</label>";
-    html += "<input type='number' name='poStage2' value='" + String(config.powerOutageStage2Time) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час для другої та третьої спроби аварійного обігріву</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Час автовиходу з аварії (секунди):</label>";
-    html += "<input type='number' name='poAutoExit' value='" + String(config.powerOutageAutoExitTime) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Час оцінювання стабільного зростання температури теплоносія для автоматичного виходу з режиму підтримки</small>";
-    html += "</div>";
-    html += "</div>";
     html += "</div>"; // tab4
 
     // TAB 5: СИСТЕМА
@@ -507,6 +474,47 @@ void handleSettingsPage() {
     html += "</div>";
 
     html += "</div>"; // tab8
+
+    // TAB 9: ЧАС
+    html += "<div class='tab-content' id='tab9'>";
+    html += "<div class='section' style='border-left-color: #2196F3;'>";
+    html += "<h3>🕒 ЧАС СИСТЕМИ</h3>";
+    html += "<div style='display: grid; gap: 15px;'>";
+
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<strong>Поточний час:</strong>";
+    html += "<span style='color: #2196F3; font-weight: 600;'>" + getTimeString() + "</span>";
+    html += "</div>";
+
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<strong>Дата:</strong>";
+    html += "<span style='color: #2196F3; font-weight: 600;'>" + getDateString() + "</span>";
+    html += "</div>";
+
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<strong>Формат часу:</strong>";
+    html += "<span style='color: #2196F3; font-weight: 600;'>" + getFormattedTime() + "</span>";
+    html += "</div>";
+
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: " + String(isTimeSynced() ? "#e8f5e9" : "#fff3cd") + "; border-radius: 5px;'>";
+    html += "<strong>Синхронізація:</strong>";
+    html += "<span style='color: " + String(isTimeSynced() ? "#4CAF50" : "#ff9800") + "; font-weight: 600;'>" + String(isTimeSynced() ? "✅ Синхронізовано" : "⚠️ Немає синхронізації") + "</span>";
+    html += "</div>";
+
+    html += "</div>"; // grid
+    html += "</div>"; // section
+
+    html += "<div class='section' style='border-left-color: #2196F3;'>";
+    html += "<h3>ℹ️ Про синхронізацію часу</h3>";
+    html += "<p>Система використовує NTP для автоматичної синхронізації часу через інтернет.</p>";
+    html += "<ul style='margin: 10px 0; padding-left: 20px;'>";
+    html += "<li>Часовий пояс: Europe/Kyiv (UTC+2 / UTC+3)</li>";
+    html += "<li>NTP сервер: pool.ntp.org</li>";
+    html += "<li>Синхронізація відбувається при підключенні до WiFi</li>";
+    html += "</ul>";
+    html += "</div>";
+
+    html += "</div>"; // tab9
 
     // Кнопки збереження
     html += "<div style='margin-top: 30px;'>";
@@ -776,29 +784,6 @@ void handleSaveSettings() {
     }
     if (server.hasArg("tempEmergencyLow")) {
         config.tempEmergencyLow = server.arg("tempEmergencyLow").toFloat();
-    }
-
-    // Параметри моніторингу аварій
-    if (server.hasArg("poTempDrop")) {
-        config.powerOutageTempDropThreshold = server.arg("poTempDrop").toFloat();
-    }
-    if (server.hasArg("poTempRise")) {
-        config.powerOutageTempRiseThreshold = server.arg("poTempRise").toFloat();
-    }
-    if (server.hasArg("poCheckInt")) {
-        config.powerOutageCheckInterval = server.arg("poCheckInt").toInt();
-    }
-    if (server.hasArg("poStage1")) {
-        config.powerOutageStage1Time = server.arg("poStage1").toInt();
-    }
-    if (server.hasArg("poPause")) {
-        config.powerOutagePauseTime = server.arg("poPause").toInt();
-    }
-    if (server.hasArg("poStage2")) {
-        config.powerOutageStage2Time = server.arg("poStage2").toInt();
-    }
-    if (server.hasArg("poAutoExit")) {
-        config.powerOutageAutoExitTime = server.arg("poAutoExit").toInt();
     }
 
     // WiFi налаштування

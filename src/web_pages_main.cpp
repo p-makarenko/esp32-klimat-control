@@ -96,9 +96,8 @@ void handleRoot() {
     html += "<div id='emergencyAlert'>";
     if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
         html += "<div class='emergency-alert'>";
-        html += "<h3>🚨 АВАРІЙНИЙ РЕЖИМ АКТИВНИЙ</h3>";
-        html += "<p style='margin: 5px 0;'>Система виявила відключення зовнішнього живлення</p>";
-        html += "<p style='margin: 5px 0;'>Етап відновлення: <span id='emergencyStage'>" + String(powerOutageState.recoveryStage) + "</span></p>";
+        html += "<h3>🚨 ВІДСУТНІСТЬ 220В!</h3>";
+        html += "<p style='margin: 5px 0;'>Напруга: " + String(powerOutageState.lastVoltage, 1) + " В</p>";
         html += "<button class='btn btn-danger' style='margin-top: 10px; padding: 12px 20px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>";
         html += "</div>";
     }
@@ -280,12 +279,7 @@ void handleRoot() {
     html += "      const emergencyAlert = document.getElementById('emergencyAlert');";
     html += "      if (emergencyAlert) {";
     html += "        if (data.powerOutageActive) {";
-    html += "          if (!emergencyAlert.innerHTML.trim()) {";
-    html += "            emergencyAlert.innerHTML = \"<div class='emergency-alert'><h3>🚨 АВАРІЙНИЙ РЕЖИМ АКТИВНИЙ</h3><p>Система виявила відключення живлення</p><p>Етап: <span id='emergencyStage'>\" + data.powerOutageStage + \"</span></p><button class='btn btn-danger' onclick='resetEmergency()'>🔄 СКИНУТИ</button></div>\";";
-    html += "          } else {";
-    html += "            const stageSpan = document.getElementById('emergencyStage');";
-    html += "            if (stageSpan) stageSpan.textContent = data.powerOutageStage;";
-    html += "          }";
+    html += "          emergencyAlert.innerHTML = \"<div class='emergency-alert'><h3>🚨 ВІДСУТНІСТЬ 220В!</h3><p>Напруга: \" + (data.lastVoltage||0).toFixed(1) + \" В</p><button class='btn btn-danger' onclick='resetEmergency()'>🔄 СКИНУТИ</button></div>\";";
     html += "        } else emergencyAlert.innerHTML = '';";
     html += "      }";
     html += "      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();";
@@ -396,7 +390,7 @@ void handleStatus() {
 
     // Інформація про аварію
     doc["powerOutageActive"] = powerOutageState.emergencyHeatingActive || powerOutageState.detected;
-    doc["powerOutageStage"] = powerOutageState.recoveryStage;
+    doc["lastVoltage"] = powerOutageState.lastVoltage;
 
     // Інформація про блокування ручного режиму
     doc["manualModeLocked"] = heatingState.manualModeLocked;

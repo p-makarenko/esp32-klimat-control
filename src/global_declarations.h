@@ -3,7 +3,6 @@
 #define GLOBAL_DECLARATIONS_H
 
 #include <Preferences.h>
-#include "learning_system.h"
 
 // Версія та інформація про збірку (автоматично оновлюється при компіляції)
 #define PROJECT_START_DATE "Dec 7 2025"
@@ -20,13 +19,5 @@
 
 // Оголошення всіх глобальних змінних
 extern Preferences prefs;
-extern LearningEntry learnings[MAX_LEARNINGS];
-extern int learningCount;
-extern PumpMode currentPumpMode;
-extern bool learningEnabled;
-
-// Функції для налаштувань
-void initLearningPreferences();
-void saveLearningPreferences();
 
 #endif

@@ -11,7 +11,6 @@
 #include "sensor_manager.h"
 #include "actuator_manager.h"
 #include "global_declarations.h"
-#include "learning_system.h"
 #include "google_sheets_sync.h"
 #include <WiFi.h>
 #include <WebServer.h>
@@ -21,7 +20,6 @@ extern bool checkAuth();
 extern bool checkCSRF();
 extern void testVentilation();
 extern void moveServoSmooth(int angle);
-extern void processLearningCommand(const String& cmd);
 
 // ============================================================================
 // ОБРОБКА КОМАНД ІЗ ВЕБ-ІНТЕРФЕЙСУ
@@ -76,7 +74,6 @@ String processWebCommand(const String& cmd) {
         // Скидаємо стан аварії при переході в AUTO
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
-        powerOutageState.recoveryStage = 0;
         return "✅ Режим: АВТОМАТИЧНИЙ";
     }
     else if (lowerCmd == "manual") {
@@ -107,9 +104,6 @@ String processWebCommand(const String& cmd) {
         // Скидання аварійного режиму
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
-        powerOutageState.recoveryStage = 0;
-        powerOutageState.autoExitCheckStart = 0;
-        powerOutageState.tempAtAutoExitStart = 0;
         heatingState.emergencyMode = false;
         heatingState.forceMode = false;
         heatingState.manualMode = false;
@@ -402,16 +396,6 @@ String processWebCommand(const String& cmd) {
             return "✅ Режим: РУЧНИЙ (автоповернення через 15 хв)";
         }
         return "❌ Невідомий режим: " + mode;
-    }
-
-    // ========================================================================
-    // СИСТЕМА НАВЧАННЯ
-    // ========================================================================
-
-    else if (lowerCmd.startsWith("learn ")) {
-        String learnCmd = cmd.substring(6);
-        processLearningCommand(learnCmd);
-        return "✅ Команда навчання виконана";
     }
 
     // ========================================================================
