@@ -147,10 +147,13 @@ LightScheduleConfig& lightSchedulerGetConfig() {
 void lightSchedulerSetConfig(const LightScheduleConfig& cfg) {
     _cfg = cfg;
     lightSchedulerSave();
-    // Застосувати відразу
-    struct tm* t = getTimeInfo();
-    if (t) {
-        RGBWColor color = lightSchedulerCalculate(t->tm_hour, t->tm_min);
-        dmxSetRGBW(color.r, color.g, color.b, color.master);
+    if (_cfg.enabled) {
+        struct tm* t = getTimeInfo();
+        if (t) {
+            RGBWColor color = lightSchedulerCalculate(t->tm_hour, t->tm_min);
+            Serial.printf("[Light] SetConfig: time=%02d:%02d R=%d G=%d B=%d M=%d\n",
+                t->tm_hour, t->tm_min, color.r, color.g, color.b, color.master);
+            dmxSetRGBW(color.r, color.g, color.b, color.master);
+        }
     }
 }

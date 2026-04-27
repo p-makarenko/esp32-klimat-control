@@ -19,7 +19,7 @@
 // UART1 = вільний → використовуємо для DMX
 // ============================================================================
 #define DMX_TX_PIN      40      // Вільний GPIO (підключити до DI MAX485)
-#define DMX_RX_PIN      36      // Вільний GPIO (не підключати)
+#define DMX_RX_PIN      41      // Вільний GPIO (loopback тест)
 #define DMX_DE_RE_PIN   37      // MAX485 DE пін
 #define DMX_UART_NUM    1       // UART1 — вільний
 
@@ -32,13 +32,11 @@
 // RGBW КАНАЛИ (налаштуй під адресу свого світильника)
 // ============================================================================
 #define DMX_START_ADDRESS   1       // Стартовий DMX-адрес світильника
-#define DMX_CH_MASTER       0       // CH1: загальна яскравість (0=вимкнено, 255=повна)
-#define DMX_CH_RED          1       // CH2: червоний
-#define DMX_CH_GREEN        2       // CH3: зелений
-#define DMX_CH_BLUE         3       // CH4: синій
-#define DMX_CH_STROBE       4       // CH5: строб (0=вимкнено)
-#define DMX_CH_WHITE        5       // CH6: color change (не використовується)
-#define DMX_CH_COUNT        6       // Всього каналів
+#define DMX_CH_RED          0       // CH1: червоний
+#define DMX_CH_GREEN        1       // CH2: зелений
+#define DMX_CH_BLUE         2       // CH3: синій
+#define DMX_CH_MASTER       3       // CH4: dimmer (загальна яскравість)
+#define DMX_CH_COUNT        4
 
 // ============================================================================
 // СТРУКТУРА RGBW

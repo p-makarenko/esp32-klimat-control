@@ -49,10 +49,10 @@ void handleLightPage() {
     html += "<b>Ручне керування</b>";
     html += "<form method='POST' action='/light/manual' style='margin-top:10px'>";
     html += "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:500px'>";
-    html += "<div><label>Яскравість (CH1)<br><input type='range' name='w' min='0' max='255' value='" + String(cur.master) + "' oninput='document.getElementById(\"wv\").textContent=this.value'> <span id='wv'>" + String(cur.master) + "</span></label></div>";
-    html += "<div><label>Червоний (CH2)<br><input type='range' name='r' min='0' max='255' value='" + String(cur.r) + "' oninput='document.getElementById(\"rv\").textContent=this.value'> <span id='rv'>" + String(cur.r) + "</span></label></div>";
-    html += "<div><label>Зелений (CH3)<br><input type='range' name='g' min='0' max='255' value='" + String(cur.g) + "' oninput='document.getElementById(\"gv\").textContent=this.value'> <span id='gv'>" + String(cur.g) + "</span></label></div>";
-    html += "<div><label>Синій (CH4)<br><input type='range' name='b' min='0' max='255' value='" + String(cur.b) + "' oninput='document.getElementById(\"bv\").textContent=this.value'> <span id='bv'>" + String(cur.b) + "</span></label></div>";
+    html += "<div><label>Червоний (CH1)<br><input type='range' name='r' min='0' max='255' value='" + String(cur.r) + "' oninput='document.getElementById(\"rv\").textContent=this.value'> <span id='rv'>" + String(cur.r) + "</span></label></div>";
+    html += "<div><label>Зелений (CH2)<br><input type='range' name='g' min='0' max='255' value='" + String(cur.g) + "' oninput='document.getElementById(\"gv\").textContent=this.value'> <span id='gv'>" + String(cur.g) + "</span></label></div>";
+    html += "<div><label>Синій (CH3)<br><input type='range' name='b' min='0' max='255' value='" + String(cur.b) + "' oninput='document.getElementById(\"bv\").textContent=this.value'> <span id='bv'>" + String(cur.b) + "</span></label></div>";
+    html += "<div><label>Яскравість (CH4)<br><input type='range' name='w' min='0' max='255' value='" + String(cur.master) + "' oninput='document.getElementById(\"wv\").textContent=this.value'> <span id='wv'>" + String(cur.master) + "</span></label></div>";
     html += "</div>";
     html += "<button type='submit' class='btn btn-success' style='margin-top:10px'>Застосувати</button>";
     html += "<button type='button' class='btn btn-danger' onclick='document.location=\"/light/off\"'>Вимкнути</button>";
@@ -65,7 +65,7 @@ void handleLightPage() {
     html += "<form method='POST' action='/light/save'>";
     html += "<table style='width:100%;border-collapse:collapse;margin-top:10px'>";
     html += "<tr style='background:#f0f0f0'><th style='padding:8px;text-align:left'>Час</th>";
-    html += "<th>R</th><th>G</th><th>B</th><th>W</th><th>Колір</th></tr>";
+    html += "<th>R (CH1)</th><th>G (CH2)</th><th>B (CH3)</th><th>Яскр (CH4)</th><th>Колір</th></tr>";
 
     for (int i = 0; i < LIGHT_KEYFRAME_COUNT; i++) {
         String pre = "kf" + String(i) + "_";
@@ -86,10 +86,10 @@ void handleLightPage() {
         html += "<td style='padding:6px'><input type='time' name='" + pre + "time' value='" + String(timeBuf) + "' style='width:90px'></td>";
 
         // RGBW
-        html += "<td><input type='number' name='" + pre + "r' value='" + String(r) + "' min='0' max='255' style='width:55px'></td>";
-        html += "<td><input type='number' name='" + pre + "g' value='" + String(g) + "' min='0' max='255' style='width:55px'></td>";
-        html += "<td><input type='number' name='" + pre + "b' value='" + String(b) + "' min='0' max='255' style='width:55px'></td>";
-        html += "<td><input type='number' name='" + pre + "w' value='" + String(w) + "' min='0' max='255' style='width:55px'></td>";
+        html += "<td><input type='number' name='" + pre + "r' value='" + String(r) + "' min='0' max='255' style='width:70px'></td>";
+        html += "<td><input type='number' name='" + pre + "g' value='" + String(g) + "' min='0' max='255' style='width:70px'></td>";
+        html += "<td><input type='number' name='" + pre + "b' value='" + String(b) + "' min='0' max='255' style='width:70px'></td>";
+        html += "<td><input type='number' name='" + pre + "w' value='" + String(w) + "' min='0' max='255' style='width:70px'></td>";
 
         // Preview кольору (тільки RGB, W не відображається браузером)
         html += "<td><div style='width:30px;height:30px;border-radius:4px;background:rgb(";

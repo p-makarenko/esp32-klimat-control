@@ -11,7 +11,7 @@
 #define VERSION_COMMENT "v5.0 Release: OTA + Backup (День 141)"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
-#define TOTAL_CODE_LINES 14562
+#define TOTAL_CODE_LINES 14552
 #define FIRMWARE_SIZE_KB 1421
 
 // Версіонування конфігурації (для міграції)

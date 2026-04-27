@@ -1,36 +1,29 @@
 // ============================================================================
-// DMX_CONTROLLER.CPP - Відправка DMX512 через ESP-IDF UART driver
+// DMX_CONTROLLER.CPP - Відправка DMX512 через HardwareSerial
 // ============================================================================
 
 #include "dmx_controller.h"
-#include "driver/uart.h"
-#include "driver/gpio.h"
 
+static HardwareSerial DmxSerial(DMX_UART_NUM);
 static uint8_t _dmxBuffer[513];
 static RGBWColor _current = {0, 0, 0, 0};
 TaskHandle_t dmxTaskHandle = nullptr;
 
 void dmxInit() {
     if (DMX_DE_RE_PIN >= 0) {
-        gpio_set_direction((gpio_num_t)DMX_DE_RE_PIN, GPIO_MODE_OUTPUT);
-        gpio_set_level((gpio_num_t)DMX_DE_RE_PIN, 1); // завжди TX
+        pinMode(DMX_DE_RE_PIN, OUTPUT);
+        digitalWrite(DMX_DE_RE_PIN, HIGH); // завжди TX
     }
 
-    uart_config_t uart_config = {
-        .baud_rate  = 250000,
-        .data_bits  = UART_DATA_8_BITS,
-        .parity     = UART_PARITY_DISABLE,
-        .stop_bits  = UART_STOP_BITS_2,
-        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_APB,
-    };
-
-    uart_driver_install((uart_port_t)DMX_UART_NUM, 1024, 0, 0, nullptr, 0);
-    uart_param_config((uart_port_t)DMX_UART_NUM, &uart_config);
-    uart_set_pin((uart_port_t)DMX_UART_NUM, DMX_TX_PIN, DMX_RX_PIN,
-                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
+    DmxSerial.begin(250000, SERIAL_8N2, DMX_RX_PIN, DMX_TX_PIN);
     memset(_dmxBuffer, 0, sizeof(_dmxBuffer));
+
+    // Loopback тест
+    DmxSerial.write(0xAA);
+    delay(10);
+    uint8_t rx = 0;
+    int len = DmxSerial.readBytes(&rx, 1);
+    Serial.printf("[DMX] UART тест: відправив=0xAA отримав=0x%02X len=%d\n", rx, len);
 
     xTaskCreatePinnedToCore(dmxTask, "DMXTask", 2048, nullptr, 2, &dmxTaskHandle, 0);
 
@@ -40,12 +33,11 @@ void dmxInit() {
 
 void dmxSetRGBW(uint8_t r, uint8_t g, uint8_t b, uint8_t master) {
     _current = {r, g, b, master};
-    uint16_t base = DMX_START_ADDRESS;
-    _dmxBuffer[base + DMX_CH_MASTER] = master;
-    _dmxBuffer[base + DMX_CH_RED]    = r;
-    _dmxBuffer[base + DMX_CH_GREEN]  = g;
-    _dmxBuffer[base + DMX_CH_BLUE]   = b;
-    _dmxBuffer[base + DMX_CH_STROBE] = 0;
+    _dmxBuffer[1] = r;       // CH1=червоний
+    _dmxBuffer[2] = g;       // CH2=зелений
+    _dmxBuffer[3] = b;       // CH3=синій
+    _dmxBuffer[4] = master;  // CH4=dimmer (загальна яскравість)
+    Serial.printf("[DMX] R=%d G=%d B=%d M=%d\n", r, g, b, master);
 }
 
 void dmxSetChannel(uint16_t channel, uint8_t value) {
@@ -56,19 +48,15 @@ void dmxSetChannel(uint16_t channel, uint8_t value) {
 RGBWColor dmxGetCurrent() { return _current; }
 
 void dmxSendFrame() {
-    // BREAK через GPIO напряму
-    gpio_set_direction((gpio_num_t)DMX_TX_PIN, GPIO_MODE_OUTPUT);
-    gpio_set_level((gpio_num_t)DMX_TX_PIN, 0);
-    ets_delay_us(176);
-    gpio_set_level((gpio_num_t)DMX_TX_PIN, 1);
-    ets_delay_us(16); // MAB
-    // Повертаємо пін UART
-    uart_set_pin((uart_port_t)DMX_UART_NUM, DMX_TX_PIN, DMX_RX_PIN,
-                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
-    // Відправляємо START code (0x00) + 512 каналів
-    uart_write_bytes((uart_port_t)DMX_UART_NUM, (const char*)_dmxBuffer, 513);
-    uart_wait_tx_done((uart_port_t)DMX_UART_NUM, pdMS_TO_TICKS(50));
+    DmxSerial.end();
+    pinMode(DMX_TX_PIN, OUTPUT);
+    digitalWrite(DMX_TX_PIN, LOW);
+    delayMicroseconds(300);  // BREAK >250мкс
+    digitalWrite(DMX_TX_PIN, HIGH);
+    delayMicroseconds(16);   // MAB
+    DmxSerial.begin(250000, SERIAL_8N2, DMX_RX_PIN, DMX_TX_PIN);
+    DmxSerial.write(_dmxBuffer, 513);
+    DmxSerial.flush();
 }
 
 void dmxTask(void* parameter) {
@@ -78,7 +66,8 @@ void dmxTask(void* parameter) {
         dmxSendFrame();
         count++;
         if (count % 100 == 0)
-            Serial.printf("[DMX] %u M=%d R=%d\n", count, _dmxBuffer[DMX_START_ADDRESS], _dmxBuffer[DMX_START_ADDRESS+1]);
+            Serial.printf("[DMX] %u M=%d R=%d\n", count,
+                _dmxBuffer[DMX_START_ADDRESS], _dmxBuffer[DMX_START_ADDRESS + 1]);
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(DMX_UPDATE_INTERVAL));
     }
 }
