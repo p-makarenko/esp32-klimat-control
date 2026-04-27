@@ -18,7 +18,7 @@ void lightSchedulerLoadDefaultPreset() {
     _cfg.enabled = true;
     _cfg.keyframeCount = 8;
 
-    // {год, хв, R, G, B, master(CH1)}
+    // {год, хв, R, G, B, master(CH4=dimmer)}
     // 05:00 - ніч
     _cfg.keyframes[0] = {5,  0,   0,   0,   0,   0};
     // 06:00 - світанок (червоно-помаранчевий, тьмяно)
@@ -27,7 +27,7 @@ void lightSchedulerLoadDefaultPreset() {
     _cfg.keyframes[2] = {7, 30, 255, 100,  10, 200};
     // 10:00 - день (яскраве з синім)
     _cfg.keyframes[3] = {10, 0, 180, 180, 255, 255};
-    // 14:00 - полудень (максимум білого)
+    // 14:00 - полудень (максимум)
     _cfg.keyframes[4] = {14, 0, 255, 255, 255, 255};
     // 18:00 - вечір (теплий жовтий)
     _cfg.keyframes[5] = {18, 0, 255,  80,   0, 220};
@@ -100,8 +100,7 @@ RGBWColor lightSchedulerCalculate(uint8_t hour, uint8_t minute) {
         else if (nextIdx == -1) nextIdx = i;
     }
 
-    if (prevIdx == -1) return {_cfg.keyframes[0].r, _cfg.keyframes[0].g,
-                               _cfg.keyframes[0].b, _cfg.keyframes[0].master};
+    if (prevIdx == -1) return {0, 0, 0, 0};
     if (nextIdx == -1) {
         auto& last = _cfg.keyframes[_cfg.keyframeCount - 1];
         return {last.r, last.g, last.b, last.master};
@@ -109,6 +108,18 @@ RGBWColor lightSchedulerCalculate(uint8_t hour, uint8_t minute) {
 
     auto& prev = _cfg.keyframes[prevIdx];
     auto& next = _cfg.keyframes[nextIdx];
+
+    auto isOff = [](const LightKeyframe& k) {
+        return k.r == 0 && k.g == 0 && k.b == 0 && k.master == 0;
+    };
+
+    // Якщо попередня точка = вимкнено → різке вмикання (тримаємо нулі до наступної)
+    if (isOff(prev)) return {0, 0, 0, 0};
+
+    // Якщо наступна точка = вимкнено → тримаємо prev без плавного переходу
+    if (isOff(next)) return {prev.r, prev.g, prev.b, prev.master};
+
+    // Обидві точки ненульові → плавна інтерполяція
     uint16_t prevMin = (uint16_t)prev.hour * 60 + prev.minute;
     uint16_t nextMin = (uint16_t)next.hour * 60 + next.minute;
     uint16_t span = nextMin - prevMin;
