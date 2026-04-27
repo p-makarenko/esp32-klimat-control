@@ -107,6 +107,7 @@ void printExtendedMode() {
     Serial.println("\nSYNC З GOOGLE SHEETS:");
     Serial.println("  sheets-sync - синхронізувати дані з Google Sheets");
     Serial.println("  sheets-stats- статистика синхронізації");
+    Serial.println("  sheets-reset- скинути лічильник (відправити всі дані знову)");
     Serial.println("══════════════════════════════════════════════════════════\n");
 }
 
@@ -464,12 +465,18 @@ void processExtendedCommand(String command) {
     }
     else if (command == "lock_manual_on") {
         heatingState.manualModeLocked = true;
+        Preferences prefs;
+        prefs.begin("climate", false);
         prefs.putBool("manualModeLocked", true);
+        prefs.end();
         Serial.println("🔒 Блокування ручного режиму: УВІМКНЕНО");
     }
     else if (command == "lock_manual_off") {
         heatingState.manualModeLocked = false;
+        Preferences prefs;
+        prefs.begin("climate", false);
         prefs.putBool("manualModeLocked", false);
+        prefs.end();
         Serial.println("🔒 Блокування ручного режиму: ВИМКНЕНО");
     }
     else if (command == "force") {
@@ -646,6 +653,10 @@ void processExtendedCommand(String command) {
     }
     else if (command == "sheets-stats" || command == "sheets stats") {
         printSyncInfo();
+    }
+    else if (command == "sheets-reset") {
+        setLastSentSequence(0);
+        Serial.println("✅ Sequence скинуто — наступна синхронізація відправить всі дані");
     }
     else if (command == "wifi reset" || command == "reset wifi") {
         Serial.println("\n🔄 Очищення WiFi налаштувань...");
@@ -871,7 +882,10 @@ void smartHeatingControl() {
     // Ціль - плавно підтримувати температуру навколо середнього значення діапазону [tempMin; tempMax]
 
     // Насос ЗАВЖДИ 0% в штатному режимі (працює лише при аваріях)
-    setPumpPercent(0);
+    // ⚠️ У аварійному режимі насос залишається на 100% (не вмикаємо його на 0%)
+    if (!heatingState.emergencyMode) {
+      setPumpPercent(0);
+    }
 
     // Розрахунок цільової температури (середина діапазону)
     float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
@@ -1023,15 +1037,7 @@ void advancedHumidityControl(float humidity, float tempRoom) {
     float adaptiveHumMin, adaptiveHumMax;
     calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
     
-    if (humidifierState.active && 
-        now - humidifierState.startTime > config.humidityConfig.maxRunTime) {
-        digitalWrite(HUMIDIFIER_PIN, LOW);
-        humidifierState.active = false;
-        Serial.println("⚠ Зволожувач: автоматично вимкнений через максимальний час роботи");
-        return;
-    }
-    
-    if (!humidifierState.active && 
+    if (!humidifierState.active &&
         now - humidifierState.lastCycle < config.humidityConfig.minInterval) {
         return;
     }
@@ -1039,7 +1045,6 @@ void advancedHumidityControl(float humidity, float tempRoom) {
     if (!humidifierState.active && humidity < adaptiveHumMin) {
         digitalWrite(HUMIDIFIER_PIN, HIGH);
         humidifierState.active = true;
-        humidifierState.startTime = now;
         humidifierState.cyclesToday++;
         Serial.printf("✓ Зволожувач: ВКЛ (Вологість: %.1f%, Ціль: %.1f%)\n", 
                      humidity, adaptiveHumMin);
@@ -1370,8 +1375,10 @@ void checkAdaptiveThresholds() {
                 // Перший раз виявили проблему - запускаємо таймер
                 heatingState.adaptive_start_time = now;
                 Serial.println("⚠️ Система не досягає цільових порогів. Моніторинг почато...");
-                Serial.printf("   Дефіцит температури: %.1f°C, дефіцит вологості: %.1f%%\n",
-                             tempDeficit, humDeficit);
+                if (tempDeficit >= TEMP_CRITICAL_DEFICIT)
+                    Serial.printf("   Дефіцит температури: %.1f°C\n", tempDeficit);
+                if (humDeficit >= HUM_CRITICAL_DEFICIT)
+                    Serial.printf("   Дефіцит вологості: %.1f%%\n", humDeficit);
             } else if (now - heatingState.adaptive_start_time >= ADAPTIVE_ACTIVATION_TIME) {
                 // Проблема тривала 30 хвилин - активуємо адаптивний режим
                 heatingState.adaptive_heating_active = true;
@@ -1609,6 +1616,19 @@ void advancedLogicTask(void *parameter) {
         // ПРІОРИТЕТ 2: Автоматичне керування (АВТО режим включає підрежими ФОРСАЖ і АВАРІЯ)
         if (!heatingState.manualMode && !powerOutageState.emergencyHeatingActive) {
             smartHeatingControl();
+        }
+
+        // 🚨 АВАРІЙНИЙ РЕЖИМ: При відключенні 220В включаємо насос ТІЛЬКИ якщо температура низька
+        if (powerOutageState.emergencyHeatingActive) {
+            // Включаємо обігрів тільки якщо температура нижче мінімуму
+            if (tempRoom < config.tempMin) {
+                setPumpPercent(100);
+                setFanPercent(100);
+            } else {
+                // Температура в нормі - вимикаємо системи для економії батареї
+                setPumpPercent(0);
+                setFanPercent(0);
+            }
         }
 
         // ПРІОРИТЕТ 4: Адаптивне зниження порогів (якщо система не справляється)

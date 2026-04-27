@@ -189,6 +189,18 @@ float getAdjustedBmeTemperature() {
   return adjustedTemp;
 }
 
+void readCO2Sensor() {
+  // Читаємо дані з SCD30
+  readSCD30();
+
+  if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
+    // Оновлюємо дані у структурі sensorData
+    sensorData.co2Level = getCO2Level();
+    sensorData.co2Valid = isCO2Valid();
+    xSemaphoreGive(getSensorMutex());
+  }
+}
+
 void sensorTask(void *parameter) {
   Serial.println("✓ Задача датчиків запущена");
   
@@ -199,20 +211,22 @@ void sensorTask(void *parameter) {
     // Читання датчиків
     readTemperatureSensors();
     readBME280();
-    
+    readCO2Sensor();
+
     // Вивід відладкових даних (кожні 30 секунд)
     static unsigned long lastDebugPrint = 0;
     unsigned long now = millis();
-    
+
     if (now - lastDebugPrint > 30000) {
       lastDebugPrint = now;
       if (sensorData.carrierValid && sensorData.roomValid && sensorData.bmeValid) {
-        Serial.printf("[SENSOR] T:%.1f/%.1f°C H:%.1f%% P:%.1fhPa\n",
+        Serial.printf("[SENSOR] T:%.1f/%.1f°C H:%.1f%% P:%.1fhPa CO2:%.0f ppm\n",
                      sensorData.tempRoom, sensorData.tempCarrier,
-                     sensorData.humidity, sensorData.pressure);
+                     sensorData.humidity, sensorData.pressure,
+                     sensorData.co2Level);
       }
     }
-    
+
     vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL));
   }
 }

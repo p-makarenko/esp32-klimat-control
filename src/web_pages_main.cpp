@@ -12,6 +12,8 @@
 #include "actuator_manager.h"
 #include "global_declarations.h"
 #include "data_logger.h"
+#include "co2_sensor.h"
+#include "plant_fan.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <WebServer.h>
@@ -144,6 +146,17 @@ void handleRoot() {
     html += "<div>Тиск: <span id='pressure'>" + (sensorData.bmeValid ? String(sensorData.pressure, 1) + " hPa" : "🚨 ПОМИЛКА") + "</span></div>";
     html += "</div>";
 
+    // CO2 (SCD30)
+    html += "<div class='card'>";
+    html += "<h3>💨 CO2 (SCD30)</h3>";
+    html += "<div class='status-value' id='co2Level' style='color: " + String(sensorData.co2Valid ? "#4CAF50" : "#f44336") + ";'>";
+    html += sensorData.co2Valid ? String(sensorData.co2Level, 0) + " ppm" : "🚨 ПОМИЛКА";
+    html += "</div>";
+    html += "<div>Статус: <span id='co2Status'>" + String(sensorData.co2Valid ? "✓ OK" : "✗ НЕ ВІДПОВІДАЄ") + "</span></div>";
+    html += "<div>T: <span id='co2Temp'>" + (sensorData.co2Valid ? String(getSCD30Temperature(), 1) + "°C" : "N/A") + "</span> | ";
+    html += "H: <span id='co2Hum'>" + (sensorData.co2Valid ? String(getSCD30Humidity(), 1) + "%" : "N/A") + "</span></div>";
+    html += "</div>";
+
     // Система
     html += "<div class='card'>";
     html += "<h3>⚙️ СИСТЕМА</h3>";
@@ -257,6 +270,15 @@ void handleRoot() {
     html += "      if (data.humidity !== undefined && !isNaN(data.humidity)) document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
     html += "      else document.getElementById('humidity').textContent = '🚨 ПОМИЛКА';";
     html += "      if (data.pressure !== undefined && !isNaN(data.pressure)) document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
+    html += "      if (data.co2Level !== undefined && !isNaN(data.co2Level)) {";
+    html += "        document.getElementById('co2Level').textContent = data.co2Level.toFixed(0) + ' ppm';";
+    html += "        document.getElementById('co2Status').textContent = '✓ OK';";
+    html += "      } else {";
+    html += "        document.getElementById('co2Level').textContent = '🚨 ПОМИЛКА';";
+    html += "        document.getElementById('co2Status').textContent = '✗ НЕ ВІДПОВІДАЄ';";
+    html += "      }";
+    html += "      if (data.co2Temp !== undefined && !isNaN(data.co2Temp)) document.getElementById('co2Temp').textContent = data.co2Temp.toFixed(1) + '°C';";
+    html += "      if (data.co2Humidity !== undefined && !isNaN(data.co2Humidity)) document.getElementById('co2Hum').textContent = data.co2Humidity.toFixed(1) + '%';";
     html += "      if (data.pumpPower !== undefined) document.getElementById('pumpPower').textContent = Math.round(data.pumpPower) + '%';";
     html += "      if (data.fanPower !== undefined) document.getElementById('fanPower').textContent = Math.round(data.fanPower) + '%';";
     html += "      if (data.extractorPower !== undefined) document.getElementById('extractorPower').textContent = Math.round(data.extractorPower) + '%';";
@@ -378,10 +400,15 @@ void handleStatus() {
     doc["tempBME"] = sensorData.bmeValid ? sensorData.tempBME : (float)NAN;
     doc["humidity"] = sensorData.bmeValid ? sensorData.humidity : (float)NAN;
     doc["pressure"] = sensorData.bmeValid ? sensorData.pressure : (float)NAN;
+    doc["co2Level"] = sensorData.co2Valid ? sensorData.co2Level : (float)NAN;
+    doc["co2Temp"] = sensorData.co2Valid ? getSCD30Temperature() : (float)NAN;
+    doc["co2Humidity"] = sensorData.co2Valid ? getSCD30Humidity() : (float)NAN;
     doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
     doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
     doc["extractorPower"] = round(heatingState.extractorPower * 100.0 / 255.0);
     doc["extractorTimer"] = config.extractorTimer.enabled;
+    doc["plantFanPower"] = plantFanGetCurrentPower();
+    doc["plantFanOn"]    = plantFanGetTimerState();
 
     if (heatingState.emergencyMode) doc["mode"] = "АВАРІЯ";
     else if (heatingState.forceMode) doc["mode"] = "ФОРСАЖ";

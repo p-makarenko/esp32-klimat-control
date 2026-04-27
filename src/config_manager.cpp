@@ -1,6 +1,8 @@
 // config_manager.cpp
 // Управління конфігурацією: backup, restore, export/import, factory reset, міграція
 
+#pragma GCC optimize("O1")
+
 #include "config_manager.h"
 #include "system_core.h"
 #include "sensor_manager.h"

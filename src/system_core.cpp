@@ -15,6 +15,7 @@ extern void ventilationTask(void *parameter);
 extern void webTask(void *parameter);
 extern void timeTask(void *parameter);
 extern void advancedLogicTask(void *parameter);
+extern void plantFanTask(void *parameter);
 
 // Р“Р»РѕР±Р°Р»СЊРЅС– РѕР±'С”РєС‚Рё
 Preferences preferences;
@@ -28,6 +29,7 @@ TaskHandle_t webTaskHandle = NULL;
 TaskHandle_t timeTaskHandle = NULL;
 TaskHandle_t advancedLogicTaskHandle = NULL;
 TaskHandle_t dataLoggerTaskHandle = NULL;
+TaskHandle_t plantFanTaskHandle = NULL;
 
 // РњКјСЋС‚РµРєСЃРё РґР»СЏ СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С—
 SemaphoreHandle_t sensorMutex;
@@ -380,7 +382,6 @@ void loadConfiguration() {
   config.humidityConfig.tempCoefficient = preferences.getFloat("humCoeff", HUM_TEMP_COEFF);
   config.humidityConfig.enabled = preferences.getBool("humCtrl", true);
   config.humidityConfig.minInterval = preferences.getULong("humInt", HUMIDIFIER_MIN_INTERVAL);
-  config.humidityConfig.maxRunTime = preferences.getULong("humMaxRun", HUMIDIFIER_MAX_RUN_TIME);
   config.humidityConfig.hysteresis = preferences.getUChar("humHyst", 3);
   config.humidityConfig.adaptiveMode = preferences.getBool("humAdapt", true);
   
@@ -409,6 +410,9 @@ void loadConfiguration() {
   
   config.history_size = preferences.getUShort("historySize", 1440);
 
+  // Інтервал запису в SPIFFS
+  config.spiffsLogInterval = preferences.getUChar("spiffsLogInt", 5);
+
   // Поріг логування за температурою кімнати
   config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
 
@@ -420,6 +424,27 @@ void loadConfiguration() {
   config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
   config.coolingMode = preferences.getBool("coolingMode", false);
 
+  // SCD30 Датчик CO2
+  config.scd30MeasurementInterval = preferences.getUShort("scd30Interval", 2);
+
+  // Вентилятор рослин (завантажується окремо з namespace "plant_fan" в plantFanLoad())
+  // Тут лише ініціалізація дефолтних значень на випадок першого запуску
+  config.plantFanTimer.enabled         = false;
+  config.plantFanTimer.breezeEnabled   = false;
+  config.plantFanTimer.onMinutes       = PLANT_FAN_TIMER_DEFAULT_ON;
+  config.plantFanTimer.onSeconds       = 0;
+  config.plantFanTimer.offMinutes      = PLANT_FAN_TIMER_DEFAULT_OFF;
+  config.plantFanTimer.offSeconds      = 0;
+  config.plantFanTimer.powerPercent    = PLANT_FAN_TIMER_DEFAULT_POWER;
+  config.plantFanTimer.minStartPercent = 60;
+
+  config.breezeConfig.baseSpeedMin = BREEZE_BASE_MIN;
+  config.breezeConfig.baseSpeedMax = BREEZE_BASE_MAX;
+  config.breezeConfig.gustBoost    = BREEZE_GUST_BOOST;
+  config.breezeConfig.gustMinSec   = BREEZE_GUST_MIN_SEC;
+  config.breezeConfig.gustMaxSec   = BREEZE_GUST_MAX_SEC;
+  config.breezeConfig.calmMinSec   = BREEZE_CALM_MIN_SEC;
+  config.breezeConfig.calmMaxSec   = BREEZE_CALM_MAX_SEC;
 
   preferences.end();
   
@@ -477,7 +502,6 @@ void saveConfiguration() {
   preferences.putFloat("humCoeff", config.humidityConfig.tempCoefficient);
   preferences.putBool("humCtrl", config.humidityConfig.enabled);
   preferences.putULong("humInt", config.humidityConfig.minInterval);
-  preferences.putULong("humMaxRun", config.humidityConfig.maxRunTime);
   preferences.putUChar("humHyst", config.humidityConfig.hysteresis);
   preferences.putBool("humAdapt", config.humidityConfig.adaptiveMode);
   
@@ -507,6 +531,11 @@ void saveConfiguration() {
   preferences.putBool("seasonalDisable", config.seasonalHeatingDisable);
   preferences.putBool("coolingMode", config.coolingMode);
 
+  // SCD30 Датчик CO2
+  preferences.putUShort("scd30Interval", config.scd30MeasurementInterval);
+
+  // Інтервал запису в SPIFFS
+  preferences.putUChar("spiffsLogInt", config.spiffsLogInterval);
 
   // Поріг логування даних
   preferences.putFloat("logTempThresh", config.logTempThreshold);
@@ -624,6 +653,16 @@ void createTasks() {
     1,                       // Пріоритет (низький)
     &dataLoggerTaskHandle,   // Handle
     0                        // Ядро 0
+  );
+
+  xTaskCreatePinnedToCore(
+    plantFanTask,            // Функція задачі
+    "PlantFanTask",          // Назва
+    4096,                    // Розмір стеку
+    NULL,                    // Параметри
+    1,                       // Пріоритет
+    &plantFanTaskHandle,     // Handle
+    1                        // Ядро 1
   );
 
   // Serial.println("вњ" Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
@@ -770,6 +809,11 @@ void suspendAllTasks() {
         Serial.println("  - DataLoggerTask призупинено");
     }
 
+    if (plantFanTaskHandle != NULL) {
+        vTaskSuspend(plantFanTaskHandle);
+        Serial.println("  - PlantFanTask призупинено");
+    }
+
     Serial.println("✅ Всі некритичні задачі призупинено");
 }
 
@@ -804,6 +848,11 @@ void resumeAllTasks() {
     if (dataLoggerTaskHandle != NULL) {
         vTaskResume(dataLoggerTaskHandle);
         Serial.println("  - DataLoggerTask відновлено");
+    }
+
+    if (plantFanTaskHandle != NULL) {
+        vTaskResume(plantFanTaskHandle);
+        Serial.println("  - PlantFanTask відновлено");
     }
 
     Serial.println("✅ Всі задачі відновлено");

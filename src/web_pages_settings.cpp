@@ -10,9 +10,9 @@
 #include <Preferences.h>
 #include "web_common.h"
 #include "global_declarations.h"
+#include "co2_sensor.h"
 
 extern WebServer server;
-extern Preferences prefs;
 extern SystemConfig config;
 extern VentilationState ventState;
 
@@ -76,11 +76,13 @@ void handleSettingsPage() {
     html += "<button type='button' class='tab' onclick='switchTab(2)'>⏰ Таймер</button>";
     html += "<button type='button' class='tab' onclick='switchTab(3)'>🔄 Сезон</button>";
     html += "<button type='button' class='tab' onclick='switchTab(4)'>🚨 Аварія</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(5)'>⚙️ Система</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(6)'>🎯 Серво</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(7)'>📶 WiFi</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(8)'>📊 Sync</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(9)'>🕒 Час</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(5)'>💨 Датчики</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(7)'>⚙️ Система</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(8)'>🎯 Серво</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(9)'>📶 WiFi</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(10)'>📊 Sync</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(10)'>🕒 Час</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(11)'>🌿 Вентилятор рослин</button>";
     html += "</div>";
 
     html += "<form method='POST' action='/settings'>";
@@ -216,7 +218,19 @@ void handleSettingsPage() {
 
     html += "</div>"; // tab4
 
-    // TAB 5: СИСТЕМА
+    // TAB 5: ДАТЧИКИ
+    html += "<div class='tab-content' id='tab5'>";
+    html += "<div class='section'>";
+    html += "<h3>💨 ДАТЧИК SCD30 (CO2)</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Інтервал вимірювання SCD30 (секунди):</label>";
+    html += "<input type='number' name='scd30Interval' value='" + String(config.scd30MeasurementInterval > 0 ? config.scd30MeasurementInterval : 2) + "' min='2' max='1800'>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>2-1800 сек. За замовчуванням 2 сек для отримання даних кожні 2 секунди</small>";
+    html += "</div>";
+    html += "</div>";
+    html += "</div>"; // tab5
+
+    // TAB 6: СИСТЕМА (перенумеровано з 5 на 6)
     html += "<div class='tab-content' id='tab5'>";
     html += "<div class='section'>";
     html += "<h3>📊 МОНІТОРИНГ ТА ЛОГУВАННЯ</h3>";
@@ -288,7 +302,7 @@ void handleSettingsPage() {
     html += "</div>"; // tab5
 
     // TAB 6: СЕРВО
-    html += "<div class='tab-content' id='tab6'>";
+    html += "<div class='tab-content' id='tab7'>";
     html += "<div class='section'>";
     html += "<h3>🎯 КАЛІБРУВАННЯ СЕРВО</h3>";
 
@@ -359,7 +373,7 @@ void handleSettingsPage() {
     html += "</div>"; // tab6
 
     // TAB 7: WIFI
-    html += "<div class='tab-content' id='tab7'>";
+    html += "<div class='tab-content' id='tab8'>";
 
     // Поточний стан WiFi
     html += "<div class='section'>";
@@ -448,7 +462,17 @@ void handleSettingsPage() {
     html += "</div>"; // tab7
 
     // TAB 8: GOOGLE SHEETS SYNC
-    html += "<div class='tab-content' id='tab8'>";
+    html += "<div class='tab-content' id='tab9'>";
+
+    // Інтервал запису в SPIFFS
+    html += "<div class='section'>";
+    html += "<h3>💾 ІНТЕРВАЛ ЗАПИСУ В SPIFFS</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Інтервал запису агрегованих даних (хвилини): <strong id='spiffsLogVal'>" + String(config.spiffsLogInterval) + "</strong></label>";
+    html += "<input type='range' name='spiffsLogInterval' min='1' max='60' value='" + String(config.spiffsLogInterval) + "' oninput=\"document.getElementById('spiffsLogVal').textContent=this.value\">";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менший інтервал = більше деталей у SPIFFS. Поточний: " + String(config.spiffsLogInterval) + " хв. За замовчуванням: 5 хв.</small>";
+    html += "</div>";
+    html += "</div>";
 
     // Поріг логування
     html += "<div class='section'>";
@@ -476,7 +500,7 @@ void handleSettingsPage() {
     html += "</div>"; // tab8
 
     // TAB 9: ЧАС
-    html += "<div class='tab-content' id='tab9'>";
+    html += "<div class='tab-content' id='tab10'>";
     html += "<div class='section' style='border-left-color: #2196F3;'>";
     html += "<h3>🕒 ЧАС СИСТЕМИ</h3>";
     html += "<div style='display: grid; gap: 15px;'>";
@@ -514,7 +538,106 @@ void handleSettingsPage() {
     html += "</ul>";
     html += "</div>";
 
-    html += "</div>"; // tab9
+    html += "</div>"; // tab10
+
+    // TAB 11: ВЕНТИЛЯТОР РОСЛИН
+    html += "<div class='tab-content' id='tab11'>";
+
+    // Індикатор поточної потужності
+    html += "<div class='section' style='border-left-color: #4CAF50;'>";
+    html += "<h3>🌿 ВЕНТИЛЯТОР РОСЛИН</h3>";
+    html += "<div style='background:#e8f5e9;padding:12px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;gap:15px;'>";
+    html += "<span style='font-weight:bold;color:#333;'>Поточна потужність:</span>";
+    html += "<span id='plfPowerVal' style='font-size:22px;font-weight:bold;color:#4CAF50;'>—</span>";
+    html += "<div style='flex:1;background:#ddd;border-radius:4px;height:12px;'>";
+    html += "<div id='plfPowerBar' style='height:12px;background:#4CAF50;border-radius:4px;width:0%;transition:width 0.3s;'></div>";
+    html += "</div>";
+    html += "<span id='plfTimerState' style='font-size:13px;color:#666;'></span>";
+    html += "</div>";
+    html += "<script>";
+    html += "function updatePlfIndicator(){fetch('/status').then(r=>r.json()).then(d=>{";
+    html += "  var p=d.plantFanPower||0;";
+    html += "  document.getElementById('plfPowerVal').textContent=p+'%';";
+    html += "  document.getElementById('plfPowerBar').style.width=p+'%';";
+    html += "  document.getElementById('plfTimerState').textContent=d.plantFanOn?'▶ ПРАЦЮЄ':'⏸ ПАУЗА';";
+    html += "}).catch(()=>{})}";
+    html += "setInterval(updatePlfIndicator,1000);";
+    html += "updatePlfIndicator();";
+    html += "</script>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='plfEnabled' " + String(config.plantFanTimer.enabled ? "checked" : "") + "> Увімкнути таймер</label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='plfBreeze' " + String(config.plantFanTimer.breezeEnabled ? "checked" : "") + "> Природній вітер під час роботи</label>";
+    html += "<small style='color:#777;display:block;margin-top:4px;'>Якщо увімкнено — швидкість змінюється як вітер. Якщо ні — фіксована потужність.</small>";
+    html += "</div>";
+    html += "</div>";
+
+    // Таймер
+    html += "<div class='section' style='border-left-color: #FF9800;'>";
+    html += "<h3>⏰ ТАЙМЕР РОСЛИН</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Час роботи (хв):</label>";
+    html += "<input type='number' name='plfOnMin' value='" + String(config.plantFanTimer.onMinutes) + "' min='0' max='240'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час роботи (сек):</label>";
+    html += "<input type='number' name='plfOnSec' value='" + String(config.plantFanTimer.onSeconds) + "' min='0' max='59'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час паузи (хв):</label>";
+    html += "<input type='number' name='plfOffMin' value='" + String(config.plantFanTimer.offMinutes) + "' min='0' max='240'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Час паузи (сек):</label>";
+    html += "<input type='number' name='plfOffSec' value='" + String(config.plantFanTimer.offSeconds) + "' min='0' max='59'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Потужність таймера (%):</label>";
+    html += "<input type='number' name='plfPower' value='" + String(config.plantFanTimer.powerPercent) + "' min='10' max='100'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімальна швидкість запуску (%):</label>";
+    html += "<small style='color:#777;display:block;margin-bottom:5px;'>Апаратний мінімум — нижче цього значення вентилятор не стартує</small>";
+    html += "<input type='number' name='plfMinStart' value='" + String(config.plantFanTimer.minStartPercent) + "' min='1' max='90'>";
+    html += "</div>";
+    html += "</div>";
+
+    // Природній вітер
+    html += "<div class='section' style='border-left-color: #2196F3;'>";
+    html += "<h3>💨 ПРИРОДНІЙ ВІТЕР</h3>";
+    html += "<p style='color:#555; font-size:14px;'>Імітація природного вітру: базова швидкість хаотично коливається, рандомні пориви наростають плавно і спадають.</p>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімальна базова швидкість (%):</label>";
+    html += "<input type='number' name='brzBaseMin' value='" + String(config.breezeConfig.baseSpeedMin) + "' min='5' max='80'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимальна базова швидкість (%):</label>";
+    html += "<input type='number' name='brzBaseMax' value='" + String(config.breezeConfig.baseSpeedMax) + "' min='10' max='100'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Підсилення пориву (% понад базу):</label>";
+    html += "<input type='number' name='brzBoost' value='" + String(config.breezeConfig.gustBoost) + "' min='5' max='60'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімальна тривалість пориву (сек):</label>";
+    html += "<input type='number' name='brzGstMin' value='" + String(config.breezeConfig.gustMinSec) + "' min='1' max='30'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимальна тривалість пориву (сек):</label>";
+    html += "<input type='number' name='brzGstMax' value='" + String(config.breezeConfig.gustMaxSec) + "' min='2' max='60'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімальне затишшя (сек):</label>";
+    html += "<input type='number' name='brzCalmMin' value='" + String(config.breezeConfig.calmMinSec) + "' min='2' max='120'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимальне затишшя (сек):</label>";
+    html += "<input type='number' name='brzCalmMax' value='" + String(config.breezeConfig.calmMaxSec) + "' min='5' max='300'>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "</div>"; // tab11
 
     // Кнопки збереження
     html += "<div style='margin-top: 30px;'>";
@@ -664,6 +787,15 @@ void handleSaveSettings() {
         config.tempMax = tempMax;
     }
 
+    // Датчик SCD30
+    if (server.hasArg("scd30Interval")) {
+        uint16_t interval = server.arg("scd30Interval").toInt();
+        if (interval >= 2 && interval <= 1800) {
+            setSCD30MeasurementInterval(interval);
+            config.scd30MeasurementInterval = interval;  // Зберігаємо у конфіг
+        }
+    }
+
     // Вологість
     if (server.hasArg("humMin")) {
         config.humidityConfig.minHumidity = server.arg("humMin").toFloat();
@@ -712,6 +844,54 @@ void handleSaveSettings() {
         config.extractorTimer.powerPercent = server.arg("extPower").toInt();
     }
     config.extractorTimer.enabled = server.hasArg("extEnabled");
+
+    // Вентилятор рослин
+    config.plantFanTimer.enabled       = server.hasArg("plfEnabled");
+    config.plantFanTimer.breezeEnabled = server.hasArg("plfBreeze");
+    if (server.hasArg("plfOnMin")) {
+        config.plantFanTimer.onMinutes = constrain(server.arg("plfOnMin").toInt(), 0, 240);
+    }
+    if (server.hasArg("plfOnSec")) {
+        config.plantFanTimer.onSeconds = constrain(server.arg("plfOnSec").toInt(), 0, 59);
+    }
+    if (server.hasArg("plfOffMin")) {
+        config.plantFanTimer.offMinutes = constrain(server.arg("plfOffMin").toInt(), 0, 240);
+    }
+    if (server.hasArg("plfOffSec")) {
+        config.plantFanTimer.offSeconds = constrain(server.arg("plfOffSec").toInt(), 0, 59);
+    }
+    if (server.hasArg("plfPower")) {
+        config.plantFanTimer.powerPercent = constrain(server.arg("plfPower").toInt(), 10, 100);
+    }
+    if (server.hasArg("plfMinStart")) {
+        config.plantFanTimer.minStartPercent = constrain(server.arg("plfMinStart").toInt(), 1, 90);
+    }
+    if (server.hasArg("brzBaseMin")) {
+        config.breezeConfig.baseSpeedMin = constrain(server.arg("brzBaseMin").toInt(), 5, 80);
+    }
+    if (server.hasArg("brzBaseMax")) {
+        config.breezeConfig.baseSpeedMax = constrain(server.arg("brzBaseMax").toInt(), 10, 100);
+    }
+    if (server.hasArg("brzBoost")) {
+        config.breezeConfig.gustBoost = constrain(server.arg("brzBoost").toInt(), 5, 60);
+    }
+    if (server.hasArg("brzGstMin")) {
+        config.breezeConfig.gustMinSec = constrain(server.arg("brzGstMin").toInt(), 1, 30);
+    }
+    if (server.hasArg("brzGstMax")) {
+        config.breezeConfig.gustMaxSec = constrain(server.arg("brzGstMax").toInt(), 2, 60);
+    }
+    if (server.hasArg("brzCalmMin")) {
+        config.breezeConfig.calmMinSec = constrain(server.arg("brzCalmMin").toInt(), 2, 120);
+    }
+    if (server.hasArg("brzCalmMax")) {
+        config.breezeConfig.calmMaxSec = constrain(server.arg("brzCalmMax").toInt(), 5, 300);
+    }
+    // Зберігаємо окремо в namespace "plant_fan"
+    extern void plantFanSave();
+    extern void plantFanResetBreeze();
+    plantFanSave();
+    plantFanResetBreeze();  // Застосувати нові параметри вітру негайно
 
     // Серво
     if (server.hasArg("servoSpeed")) {
@@ -773,6 +953,11 @@ void handleSaveSettings() {
     config.coolingMode = server.hasArg("coolingMode");
     config.seasonalHeatingDisable = server.hasArg("seasonalDisable");
 
+    // Інтервал запису в SPIFFS
+    if (server.hasArg("spiffsLogInterval")) {
+        config.spiffsLogInterval = constrain(server.arg("spiffsLogInterval").toInt(), 1, 60);
+    }
+
     // Поріг логування для Google Sheets
     if (server.hasArg("logTempThreshold")) {
         config.logTempThreshold = constrain(server.arg("logTempThreshold").toFloat(), 0.0f, 5.0f);
@@ -788,6 +973,8 @@ void handleSaveSettings() {
 
     // WiFi налаштування
     bool wifiChanged = false;
+    Preferences prefs;
+
     if (server.hasArg("wifi_ssid") && server.arg("wifi_ssid").length() > 0) {
         String newSSID = server.arg("wifi_ssid");
         if (newSSID != WiFi.SSID()) {

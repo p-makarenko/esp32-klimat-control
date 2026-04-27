@@ -12,9 +12,9 @@
 
 #define LOG_INTERVAL_RAM        60000     // Запис в RAM кожну хвилину (1 хв)
 #define LOG_INTERVAL_SPIFFS     300000    // Запис в SPIFFS кожні 5 хвилин (агреговані дані)
-#define LOG_FILE_MAX_SIZE       100000    // Максимальний розмір файлу логів (~100 КБ)
-#define LOG_MAX_FILES           3         // Максимум файлів (3 файли × 100 КБ = ~300 KB)
-#define LOG_RETENTION_DAYS      7         // Зберігати дані за останні 7 днів (оптимізовано для SPIFFS 512KB)
+#define LOG_FILE_MAX_SIZE       150000    // Максимальний розмір файлу (~150 КБ)
+#define LOG_MAX_FILES           1         // 1 файл = весь простір для даних без ротації
+#define LOG_RETENTION_DAYS      14        // Зберігати дані за 14 днів
 
 // Імена файлів (SPIFFS не підтримує підкаталоги - файли в корені)
 #define LOG_CURRENT_FILE        "/current.csv"
@@ -33,6 +33,7 @@ struct DataRecord {
   float tempRoom;              // Температура кімнати
   float tempBME;               // Температура BME280
   float humidity;              // Вологість
+  float co2Level;              // Рівень CO2 від SCD30 (ppm)
   uint8_t pumpPower;           // Потужність насоса (0-100%)
   uint8_t fanPower;            // Потужність вентилятора (0-100%)
   uint8_t extractorPower;      // Потужність витяжки (0-100%)

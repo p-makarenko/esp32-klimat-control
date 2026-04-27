@@ -39,9 +39,10 @@ bool initGoogleSheetsSync() {
     sheetsPrefs.end();
   }
 
-  Serial.printf("📊 [Sync] Стан: Seq=%lu, TS=%lu\n", 
+
+  Serial.printf("📊 [Sync] Стан: Seq=%lu, TS=%lu\n",
                 syncStats.lastSentSequence, syncStats.lastSentTimestamp);
-  
+
   return true;
 }
 
@@ -78,12 +79,12 @@ bool syncToGoogleSheets() {
   }
 
   // 2. Перевірка вільної пам'яті ДО початку
-  // Нам потрібно ~23KB для буфера + ~55KB для SSL handshake. Разом ~80KB.
+  // При 360 записів: ~12KB для буфера + ~50KB для SSL handshake = ~62KB мінімум
   uint32_t freeHeap = ESP.getFreeHeap();
-  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 55000;
+  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 50000;
 
-  if (freeHeap < requiredHeap) {
-    Serial.printf("❌ [Sync] Критично мало RAM! Free: %u, Req: %u\n", freeHeap, requiredHeap);
+  if (freeHeap < 40000) {  // Жорстка межа — критично мало для SSL
+    Serial.printf("❌ [Sync] Критично мало RAM! Free: %u KB\n", freeHeap / 1000);
     syncStats.failedSyncs++;
     return false;
   }
@@ -127,6 +128,28 @@ bool syncToGoogleSheets() {
     }
   }
 
+  // Якщо нових записів немає — перевіряємо чи не застарів lastSentSequence.
+  // Це трапляється коли NVS зберіг sequence від попередньої сесії а RAM скинувся.
+  if (recordsToSend == 0 && totalCount > 0 && syncStats.lastSentSequence > 0) {
+    uint32_t maxSeq = 0;
+    for (uint16_t i = 0; i < totalCount; i++) {
+      if (buffer[i].sequenceNumber > maxSeq) maxSeq = buffer[i].sequenceNumber;
+    }
+    if (maxSeq < syncStats.lastSentSequence) {
+      Serial.printf("⚠️ [Sync] Seq застарів (%lu > %lu) — скидаємо\n",
+                    syncStats.lastSentSequence, maxSeq);
+      syncStats.lastSentSequence = 0;
+      syncStats.lastSentTimestamp = 0;
+      // Повторна фільтрація
+      recordsToSend = 0;
+      for (uint16_t i = 0; i < totalCount; i++) {
+        if (buffer[i].timestamp > 1000000) {
+          buffer[recordsToSend++] = buffer[i];
+        }
+      }
+    }
+  }
+
   if (recordsToSend == 0) {
     Serial.println("📭 [Sync] Немає нових даних.");
     free(buffer);
@@ -142,11 +165,11 @@ bool syncToGoogleSheets() {
 
   // 5.5 Якщо записів багато і мало пам'яті - обмежуємо кількість
   uint32_t heapBeforeSSL = ESP.getFreeHeap();
-  const uint16_t MAX_RECORDS_LOW_MEM = 100;  // Максимум при низькій пам'яті
+  const uint16_t MAX_RECORDS_LOW_MEM = 150;  // Максимум при низькій пам'яті
 
-  if (heapBeforeSSL < 60000 && recordsToSend > MAX_RECORDS_LOW_MEM) {
-    Serial.printf("⚠️ [Sync] Низька пам'ять (%u), обмежуємо до %u записів\n",
-                  heapBeforeSSL, MAX_RECORDS_LOW_MEM);
+  if (heapBeforeSSL < 55000 && recordsToSend > MAX_RECORDS_LOW_MEM) {
+    Serial.printf("⚠️ [Sync] Низька пам'ять (%u KB), обмежуємо до %u записів\n",
+                  heapBeforeSSL / 1000, MAX_RECORDS_LOW_MEM);
     recordsToSend = MAX_RECORDS_LOW_MEM;
   }
 
@@ -186,7 +209,16 @@ bool syncToGoogleSheets() {
     uint16_t currentBatchSize = (recordsToSend - offset) > SYNC_BATCH_SIZE ?
                                  SYNC_BATCH_SIZE : (recordsToSend - offset);
 
-    // Передаємо адресу початку поточного пакету в буфері
+    // Перепідключаємо SSL перед кожним пакетом (Google закриває з'єднання після відповіді)
+    sslClient.stop();
+    delay(200);
+    yield();
+    if (!sslClient.connect("script.google.com", 443)) {
+        Serial.println("❌ [Sync] Reconnect failed");
+        syncStats.failedSyncs++;
+        break;
+    }
+
     if (sendBatchToSheets(&sslClient, &buffer[offset], currentBatchSize)) {
         sessionSentCount += currentBatchSize;
 
@@ -243,26 +275,27 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
     time_t ts = records[i].timestamp;
     struct tm* tm = localtime(&ts);
 
-    char line[130];
+    char line[180];
 #if ENABLE_ENERGY_MONITOR
     EnergyMeasurements em = getEnergyMeasurements();
     snprintf(line, sizeof(line),
-             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d,%.1f,%.1f\n",
+             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%.0f,%d,%d,%d,%.1f,%.1f,%.3f\n",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
              tm->tm_hour, tm->tm_min, tm->tm_sec,
              records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
-             records[i].humidity, records[i].pumpPower, records[i].fanPower,
-             records[i].extractorPower, records[i].mode,
+             records[i].humidity, records[i].co2Level, records[i].pumpPower, records[i].fanPower,
+             records[i].extractorPower,
              em.error ? 0.0f : em.voltage,
-             em.error ? 0.0f : em.power);
+             em.error ? 0.0f : em.power,
+             em.error ? 0.0f : em.energy);
 #else
     snprintf(line, sizeof(line),
-             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%d,%d,%d,%d,0,0\n",
+             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%.0f,%d,%d,%d,0,0,0\n",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
              tm->tm_hour, tm->tm_min, tm->tm_sec,
              records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
-             records[i].humidity, records[i].pumpPower, records[i].fanPower,
-             records[i].extractorPower, records[i].mode);
+             records[i].humidity, records[i].co2Level, records[i].pumpPower, records[i].fanPower,
+             records[i].extractorPower);
 #endif
     csvData += line;
   }
@@ -319,7 +352,9 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
   }
 
   String response = "";
-  while (client->available()) {
+  response.reserve(2048);  // Обмежуємо буфер
+  unsigned long responseStart = millis();
+  while (client->available() && response.length() < 2048 && millis() - responseStart < 5000) {
       response += (char)client->read();
   }
 
@@ -349,7 +384,8 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       if (!client->connect(newHost.c_str(), 443)) {
           Serial.println("❌ Redirect failed - connection to " + newHost + " failed");
           Serial.printf("💾 Free heap: %u bytes\n", ESP.getFreeHeap());
-          client->stop();  // ВАЖЛИВО: закриваємо клієнт при помилці
+          response.clear();  // Звільняємо memory
+          client->stop();
           return false;
       }
 
@@ -377,7 +413,9 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       }
 
       response = "";
-      while (client->available()) {
+      response.reserve(2048);
+      unsigned long respStart = millis();
+      while (client->available() && response.length() < 2048 && millis() - respStart < 5000) {
           response += (char)client->read();
       }
       client->stop();  // Завжди закриваємо після читання
@@ -385,10 +423,14 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       Serial.printf("📥 Final response (%d bytes):\n", response.length());
   }
 
-  Serial.println(response.substring(0, 400));
+  if (response.length() > 0) {
+      Serial.println(response.substring(0, 400));
+  }
 
   bool success = (response.indexOf("OK:") >= 0 || response.indexOf("200 OK") >= 0);
   if (success) Serial.println("✅ Success");
+
+  response.clear();  // Звільняємо memory до виходу
 
   return success;
 }

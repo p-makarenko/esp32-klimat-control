@@ -374,15 +374,6 @@ void controlHumidifier(float humidity, float tempRoom) {
   
   unsigned long now = millis();
   
-  // Перевірка на максимальний час роботи
-  if (humidifierState.active && 
-      now - humidifierState.startTime > config.humidityConfig.maxRunTime) {
-    digitalWrite(HUMIDIFIER_PIN, LOW);
-    humidifierState.active = false;
-    Serial.println("⚠ Зволожувач: автоматично вимкнено через максимальний час роботи");
-    return;
-  }
-  
   // Перевірка на мінімальний інтервал
   if (!humidifierState.active && 
       now - humidifierState.lastCycle < config.humidityConfig.minInterval) {
@@ -393,7 +384,6 @@ void controlHumidifier(float humidity, float tempRoom) {
   if (!humidifierState.active && humidity < adaptiveHumMin) {
     digitalWrite(HUMIDIFIER_PIN, HIGH);
     humidifierState.active = true;
-    humidifierState.startTime = now;
     humidifierState.cyclesToday++;
     Serial.printf("✓ Зволожувач: УВІМКНЕНО (Вологість: %.1f%%, Ціль: %.1f%%)\n", 
                   humidity, adaptiveHumMin);

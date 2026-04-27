@@ -32,6 +32,9 @@ void addToHistory() {
       history[historyIndex].humidity = sensorData.humidity;
       history[historyIndex].pressure = sensorData.pressure;
     }
+    if (sensorData.co2Valid) {
+      history[historyIndex].co2Level = sensorData.co2Level;
+    }
     history[historyIndex].pumpPower = (heatingState.pumpPower * 100) / 255;
     history[historyIndex].fanPower = (heatingState.fanPower * 100) / 255;
     history[historyIndex].extractorPower = (heatingState.extractorPower * 100) / 255;

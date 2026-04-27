@@ -166,6 +166,7 @@ inline String getMainNavigation() {
     html += "<a href='/help' class='nav-btn' style='background: #9c27b0;'>📖 ДОВІДКА</a>";
     html += "<a href='/history' class='nav-btn' style='background: #e91e63;'>📈 ГРАФІКИ</a>";
     html += "<a href='/debug' class='nav-btn'>🔧 ВІДЛАДКА</a>";
+    html += "<a href='/light' class='nav-btn' style='background:#f59e0b;'>💡 ОСВІТЛЕННЯ</a>";
     html += "</div>";
     return html;
 }

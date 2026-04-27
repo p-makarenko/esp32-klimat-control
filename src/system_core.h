@@ -17,9 +17,11 @@ struct SensorData {
   float humidity;
   float pressure;
   float bmeOffset;        // Різниця між DS18B20 (кімната) і BME280 (постійна)
+  float co2Level;         // Рівень CO2 з SCD30 (ppm)
   bool carrierValid;
   bool roomValid;
   bool bmeValid;
+  bool co2Valid;          // Валідність даних CO2
   unsigned long timestamp;
 };
 
@@ -29,7 +31,6 @@ struct HumidityConfig {
   float tempCoefficient;
   bool enabled;
   uint32_t minInterval;
-  uint32_t maxRunTime;
   uint8_t hysteresis;
   bool adaptiveMode;
 };
@@ -44,6 +45,27 @@ struct ExtractorTimer {
   unsigned long cycleStart;
   unsigned long lastChange;
   uint8_t powerPercent;
+};
+
+struct PlantFanTimer {
+  bool     enabled;         // Таймер увімкнено
+  bool     breezeEnabled;   // Природній вітер під час ON фази
+  uint16_t onMinutes;
+  uint16_t onSeconds;
+  uint16_t offMinutes;
+  uint16_t offSeconds;
+  uint8_t  powerPercent;    // Потужність (без вітру)
+  uint8_t  minStartPercent; // Мінімальна швидкість запуску (апаратне обмеження)
+};
+
+struct BreezeConfig {
+  uint8_t  baseSpeedMin;  // % мінімальна базова швидкість
+  uint8_t  baseSpeedMax;  // % максимальна базова швидкість
+  uint8_t  gustBoost;     // % підсилення пориву відносно бази
+  uint16_t gustMinSec;    // сек мінімальна тривалість пориву
+  uint16_t gustMaxSec;    // сек максимальна тривалість пориву
+  uint16_t calmMinSec;    // сек мінімальне затишшя
+  uint16_t calmMaxSec;    // сек максимальне затишшя
 };
 
 struct SystemConfig {
@@ -100,7 +122,15 @@ struct SystemConfig {
 
 
   ExtractorTimer extractorTimer;
+  PlantFanTimer  plantFanTimer;
+  BreezeConfig   breezeConfig;
   uint16_t history_size;
+
+  // SCD30 Датчик CO2
+  uint16_t scd30MeasurementInterval;  // Інтервал вимірювання в секундах (2-1800)
+
+  // Інтервал запису в SPIFFS (хвилини)
+  uint8_t spiffsLogInterval;   // 1-60 хв, default 5
 
   // Поріг логування даних (для економії пакетів)
   float logTempThreshold;      // Мінімальна зміна температури кімнати для запису (°C, default 0.5)
@@ -162,7 +192,6 @@ struct VentilationState {
 
 struct HumidifierState {
   bool active;
-  unsigned long startTime;
   unsigned long lastCycle;
   float lastHumidity;
   uint8_t cyclesToday;
@@ -183,6 +212,7 @@ struct HistoryData {
   float tempBME;
   float humidity;
   float pressure;
+  float co2Level;         // Рівень CO2 від SCD30 (ppm)
   uint8_t pumpPower;
   uint8_t fanPower;
   uint8_t extractorPower;
@@ -271,6 +301,7 @@ extern TaskHandle_t webTaskHandle;
 extern TaskHandle_t timeTaskHandle;
 extern TaskHandle_t advancedLogicTaskHandle;
 extern TaskHandle_t dataLoggerTaskHandle;
+extern TaskHandle_t plantFanTaskHandle;
 
 // Функції призупинення/відновлення задач (для OTA)
 void suspendAllTasks();

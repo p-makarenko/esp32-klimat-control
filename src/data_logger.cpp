@@ -20,8 +20,6 @@ uint32_t globalSequence = 0;  // Глобальний лічильник для 
 DataRecord aggregationBuffer[5];
 uint8_t aggregationBufferIndex = 0;
 
-// Остання залогована температура кімнати для порівняння порога
-static float lastLoggedTempRoom = -999.0f;
 
 // ============================================================================
 // ІНІЦІАЛІЗАЦІЯ
@@ -68,8 +66,28 @@ bool initDataLogger() {
     File file = SPIFFS.open(LOG_CURRENT_FILE, "r");
     if (file) {
       loggerStats.currentFileSize = file.size();
-      Serial.printf("✓ Знайдено існуючий лог-файл: %u байт\n", loggerStats.currentFileSize);
+      // Перевіряємо чи файл не пошкоджений (перший байт не має бути 0xFF)
+      bool corrupted = false;
+      if (file.size() > 0) {
+        uint8_t firstByte = file.read();
+        if (firstByte == 0xFF) {
+          corrupted = true;
+        }
+      }
       file.close();
+
+      if (corrupted) {
+        Serial.println("⚠️ Лог-файл пошкоджений (0xFF) - видаляємо і створюємо заново");
+        SPIFFS.remove(LOG_CURRENT_FILE);
+        File newFile = SPIFFS.open(LOG_CURRENT_FILE, "w");
+        if (newFile) {
+          newFile.close();
+          loggerStats.currentFileSize = 0;
+          Serial.println("✓ Створено новий лог-файл");
+        }
+      } else {
+        Serial.printf("✓ Знайдено існуючий лог-файл: %u байт\n", loggerStats.currentFileSize);
+      }
     }
   } else {
     // Створюємо новий файл БЕЗ заголовка (економія 50% місця)
@@ -130,19 +148,6 @@ bool initDataLogger() {
 // ============================================================================
 
 void logDataToRAM() {
-  // Перевіряємо поріг температури кімнати перед записом
-  float tempDelta = fabs(sensorData.tempRoom - lastLoggedTempRoom);
-
-  if (lastLoggedTempRoom != -999.0f && tempDelta < config.logTempThreshold) {
-    // Температура кімнати змінилася менше ніж на поріг - пропускаємо весь рядок
-    return;
-  }
-
-  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
-    return;
-  }
-
-  // Створюємо новий запис
   DataRecord record;
   record.timestamp = getCurrentTimestamp();
   record.sequenceNumber = ++globalSequence;
@@ -151,49 +156,27 @@ void logDataToRAM() {
   record.tempRoom = sensorData.tempRoom;
   record.tempBME = sensorData.tempBME;
   record.humidity = sensorData.humidity;
-  // Конвертуємо потужності з 0-255 до 0-100%
+  record.co2Level = sensorData.co2Level;
   record.pumpPower = (heatingState.pumpPower * 100) / 255;
   record.fanPower = (heatingState.fanPower * 100) / 255;
   record.extractorPower = (heatingState.extractorPower * 100) / 255;
+  record.mode = heatingState.emergencyMode ? 3 : (heatingState.forceMode ? 2 : (heatingState.manualMode ? 1 : 0));
 
-  // Визначаємо режим: 0=AUTO, 1=MANUAL, 2=FORCE, 3=EMERGENCY
-  if (heatingState.emergencyMode) {
-    record.mode = 3;
-  } else if (heatingState.forceMode) {
-    record.mode = 2;
-  } else if (heatingState.manualMode) {
-    record.mode = 1;
-  } else {
-    record.mode = 0;
+  // Зберігаємо у RAM буфер
+  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) == pdTRUE) {
+    ramBuffer[ramBufferIndex] = record;
+    ramBufferIndex = (ramBufferIndex + 1) % HISTORY_BUFFER_SIZE;
+    xSemaphoreGive(getRamBufferMutex());
   }
-
-  // Оновлюємо останню залоговану температуру кімнати
-  lastLoggedTempRoom = sensorData.tempRoom;
-
-  // Зберігаємо у RAM буфер (циклічний буфер)
-  ramBuffer[ramBufferIndex] = record;
-  ramBufferIndex = (ramBufferIndex + 1) % HISTORY_BUFFER_SIZE;
-
-  xSemaphoreGive(getRamBufferMutex());
 
   loggerStats.totalRecordsRAM++;
   loggerStats.lastLogTimeRAM = millis();
 
-  // Зберігаємо sequence counter в NVS після кожного запису
-  Preferences prefs;
-  if (prefs.begin("data_logger", false)) {  // read-write
-    prefs.putULong("seq_num", globalSequence);
-    prefs.end();
-  }
-
-  // Додаємо у буфер агрегації
+  // Додаємо у буфер агрегації для SPIFFS
   aggregationBuffer[aggregationBufferIndex] = record;
   aggregationBufferIndex++;
-
-  // Якщо буфер агрегації заповнений (5 записів = 5 хвилин), агрегуємо і зберігаємо
   if (aggregationBufferIndex >= 5) {
     aggregateAndSave();
-    aggregationBufferIndex = 0;
   }
 }
 
@@ -275,8 +258,8 @@ void logDataToSPIFFS() {
   // Скидаємо watchdog перед файловою операцією
   yield();
 
-  // Відкриваємо файл для дозапису
-  File file = SPIFFS.open(LOG_CURRENT_FILE, "a");
+  // Відкриваємо файл для дозапису (r+ = read/write без truncate)
+  File file = SPIFFS.open(LOG_CURRENT_FILE, "r+");
   if (!file) {
     Serial.printf("❌ [SPIFFS] Failed to open file. Used: %u / %u bytes\n",
                   SPIFFS.usedBytes(), SPIFFS.totalBytes());
@@ -311,7 +294,8 @@ void logDataToSPIFFS() {
     return;
   }
 
-  Serial.printf("✓ [SPIFFS] File opened, size before: %u bytes\n", file.size());
+  size_t sizeBefore = file.size();
+  Serial.printf("✓ [SPIFFS] File opened, size before: %u bytes\n", sizeBefore);
 
   // Агрегуємо дані перед записом
   AggregatedRecord aggRecord;
@@ -332,41 +316,43 @@ void logDataToSPIFFS() {
 
   uint8_t count = aggregationBufferIndex;
 
+  // Агрегуємо CO2
+  float sumCO2 = 0;
+  for (uint8_t i = 0; i < aggregationBufferIndex; i++) {
+    sumCO2 += aggregationBuffer[i].co2Level;
+  }
+
   // Формуємо CSV рядок
   String line = String(aggRecord.timestamp) + ",";
   line += String(sumTempCarrier / count, 1) + ",";
   line += String(sumTempRoom / count, 1) + ",";
   line += String(sumTempBME / count, 1) + ",";
   line += String(sumHumidity / count, 1) + ",";
+  line += String(sumCO2 / count, 0) + ",";
   line += String(sumPump / count) + ",";
   line += String(sumFan / count) + ",";
   line += String(sumExtractor / count) + ",";
   line += String(aggregationBuffer[0].mode);
 
-  // Записуємо
-  file.println(line);
+  // Записуємо через seek до кінця (надійніше ніж "a" на SPIFFS)
+  file.seek(sizeBefore);
+  size_t written = file.print(line + "\n");
   file.close();
 
-  yield();  // Знову скидаємо watchdog після запису
+  yield();
 
   loggerStats.totalRecordsSPIFFS++;
   loggerStats.lastLogTimeSPIFFS = millis();
+  loggerStats.currentFileSize = sizeBefore + written;
 
-  // Оновлюємо розмір файлу
-  file = SPIFFS.open(LOG_CURRENT_FILE, "r");
-  if (file) {
-    loggerStats.currentFileSize = file.size();
-    Serial.printf("✓ [SPIFFS] File written, size after: %u bytes\n", loggerStats.currentFileSize);
-    file.close();
+  Serial.printf("✓ [SPIFFS] Written %u bytes, total: %u\n", written, loggerStats.currentFileSize);
 
-    // Перевіряємо чи потрібна ротація
-    if (loggerStats.currentFileSize > LOG_FILE_MAX_SIZE) {
-      Serial.printf("🔄 [SPIFFS] File rotation needed (%u > %u)\n", loggerStats.currentFileSize, LOG_FILE_MAX_SIZE);
-      rotateLogFiles();
-    }
+  // Перевіряємо чи потрібна ротація
+  if (loggerStats.currentFileSize > LOG_FILE_MAX_SIZE) {
+    rotateLogFiles();
   }
 
-  aggregationBufferIndex = 0;  // Очищуємо буфер агрегації
+  aggregationBufferIndex = 0;
 }
 
 // ============================================================================
@@ -432,16 +418,17 @@ static void parseCSVFileToJson(File& file, JsonArray& dataArray,
           char* field = strtok(tempBuf, ",");
           int fieldIdx = 0;
 
-          while (field && fieldIdx < 9) {
+          while (field && fieldIdx < 10) {
             if (fieldIdx == 0) record["timestamp"] = strtoul(field, NULL, 10);
             else if (fieldIdx == 1) record["tempCarrier"] = atof(field);
             else if (fieldIdx == 2) record["tempRoom"] = atof(field);
             else if (fieldIdx == 3) record["tempBME"] = atof(field);
             else if (fieldIdx == 4) record["humidity"] = atof(field);
-            else if (fieldIdx == 5) record["pumpPower"] = atoi(field);
-            else if (fieldIdx == 6) record["fanPower"] = atoi(field);
-            else if (fieldIdx == 7) record["extractorPower"] = atoi(field);
-            else if (fieldIdx == 8) record["mode"] = atoi(field);
+            else if (fieldIdx == 5) record["co2Level"] = atoi(field);
+            else if (fieldIdx == 6) record["pumpPower"] = atoi(field);
+            else if (fieldIdx == 7) record["fanPower"] = atoi(field);
+            else if (fieldIdx == 8) record["extractorPower"] = atoi(field);
+            else if (fieldIdx == 9) record["mode"] = atoi(field);
 
             field = strtok(NULL, ",");
             fieldIdx++;
@@ -458,8 +445,8 @@ static void parseCSVFileToJson(File& file, JsonArray& dataArray,
 }
 
 bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData) {
-  unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
-  unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
+  unsigned long startTimestamp = stringToTimestamp(startDate, false);
+  unsigned long endTimestamp = stringToTimestamp(endDate, true);
 
   if (startTimestamp == 0 || endTimestamp == 0) {
     jsonData = "{\"data\":[]}";
@@ -534,7 +521,7 @@ bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvDa
   unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
   unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
 
-  csvData = "timestamp,tempCarrier,tempRoom,tempBME,humidity,pumpPower,fanPower,extractorPower,mode\n";
+  csvData = "timestamp,tempCarrier,tempRoom,tempBME,humidity,co2Level,pumpPower,fanPower,extractorPower,mode\n";
 
   // 1. Читаємо поточний файл
   File file = SPIFFS.open(LOG_CURRENT_FILE, "r");
@@ -756,9 +743,16 @@ unsigned long stringToTimestamp(const char* dateStr, bool endOfDay) {
   // Парсимо рядок формату "YYYY-MM-DD" або "YYYY-MM-DD HH:MM:SS"
   struct tm timeinfo = {0};
 
+  // Спроба спочатку парсити з часом
   int parsed = sscanf(dateStr, "%d-%d-%d %d:%d:%d",
              &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday,
              &timeinfo.tm_hour, &timeinfo.tm_min, &timeinfo.tm_sec);
+
+  // Якщо не вдалось парсити час, спробуємо тільки дату
+  if (parsed < 3) {
+    parsed = sscanf(dateStr, "%d-%d-%d",
+               &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday);
+  }
 
   if (parsed >= 3) {
     timeinfo.tm_year -= 1900;  // tm_year = роки з 1900
@@ -799,8 +793,9 @@ void dataLoggerTask(void *parameter) {
       lastRAMLog = now;
     }
 
-    // Примусовий запис в SPIFFS кожні 5 хвилин (якщо є незбережені дані)
-    if (now - lastSPIFFSLog >= LOG_INTERVAL_SPIFFS) {
+    // Резервний запис в SPIFFS за налаштованим інтервалом
+    unsigned long spiffsInterval = (unsigned long)config.spiffsLogInterval * 60000UL;
+    if (now - lastSPIFFSLog >= spiffsInterval) {
       if (aggregationBufferIndex > 0) {
         logDataToSPIFFS();
       }

@@ -11,6 +11,7 @@
 #include "web_common.h"
 #include "global_declarations.h"
 #include "data_logger.h"
+#include "google_sheets_sync.h"
 
 extern WebServer server;
 
@@ -50,14 +51,16 @@ void handleHistoryPage() {
     // Вибір джерела даних
     html += "<div class='card' style='border-left-color: #ffc107;'>";
     html += "<strong>📁 Джерело даних:</strong><br>";
-    html += "<div style='margin-top: 10px;'>";
-    html += "<label style='margin-right: 20px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останні 24 години)</label>";
+    html += "<div style='margin-top: 10px; display: flex; flex-wrap: wrap; gap: 15px;'>";
+    html += "<label><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останні 24 год)</label>";
     html += "<label><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 SPIFFS (архів)</label>";
+    html += "<label><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
     html += "<div id='dateSelector' style='display: none; margin-top: 15px;'>";
     html += "<label style='margin-right: 10px;'>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
     html += "<label style='margin-right: 10px;'>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<button onclick='loadArchiveData()' class='btn' style='margin-top: 10px;'>📥 Завантажити</button>";
+    html += "<button id='loadBtn' onclick='loadArchiveData()' class='btn' style='margin-top: 10px;'>📥 Завантажити</button>";
+    html += "<span id='loadStatus' style='margin-left: 15px; color: #666; font-size: 0.9em;'></span>";
     html += "</div>";
     html += "</div>";
 
@@ -111,11 +114,20 @@ void handleHistoryPage() {
     html += "<div class='chart-container'><canvas id='humChart'></canvas></div>";
     html += "</div>";
 
+    // Графік CO2
+    html += "<div class='chart-wrapper'>";
+    html += "<div class='chart-header'>";
+    html += "<h2>💨 CO2 (ppm)</h2>";
+    html += "<button onclick='co2Chart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
+    html += "</div>";
+    html += "<div class='chart-container'><canvas id='co2Chart'></canvas></div>";
+    html += "</div>";
+
     html += "</div>"; // container
 
     // JavaScript для графіків
     html += "<script>";
-    html += "let tempChart, humChart;";
+    html += "let tempChart, humChart, co2Chart;";
 
     // Конфігурація zoom з оптимізованими threshold для touch
     // (Критика Крок 2: покращено touch events)
@@ -150,6 +162,7 @@ void handleHistoryPage() {
     html += "const tempRoom = [];";
     html += "const tempBME = [];";
     html += "const humidity = [];";
+    html += "const co2Level = [];";
 
     html += "data.forEach(record => {";
     html += "if (record.timestamp > 0) {";
@@ -161,6 +174,7 @@ void handleHistoryPage() {
     html += "tempRoom.push(record.tempRoom);";
     html += "tempBME.push(record.tempBME);";
     html += "humidity.push(record.humidity);";
+    html += "co2Level.push(record.co2Level || 0);";
     html += "}";
     html += "});";
 
@@ -241,9 +255,41 @@ void handleHistoryPage() {
     html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
     html += "}});";
 
+    // Графік CO2
+    html += "co2Chart = new Chart(document.getElementById('co2Chart'), {";
+    html += "type: 'line',";
+    html += "data: {";
+    html += "labels: labels,";
+    html += "datasets: [{";
+    html += "label: '💨 CO2 (ppm)',";
+    html += "data: co2Level,";
+    html += "borderColor: '#e67e22',";
+    html += "backgroundColor: 'rgba(230, 126, 34, 0.1)',";
+    html += "fill: true,";
+    html += "borderWidth: 2,";
+    html += "pointRadius: 0,";
+    html += "tension: 0.4";
+    html += "}]},";
+    html += "options: {";
+    html += "responsive: true,";
+    html += "maintainAspectRatio: false,";
+    html += "interaction: { mode: 'index', intersect: false },";
+    html += "plugins: {";
+    html += "legend: { display: true, position: 'top' },";
+    html += "tooltip: {";
+    html += "callbacks: {";
+    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "label: function(ctx) { return ctx.parsed.y.toFixed(0) + ' ppm'; }";
+    html += "}},";
+    html += "zoom: zoomConfig";
+    html += "},";
+    html += "scales: { y: { beginAtZero: false, title: { display: true, text: 'ppm' } } }";
+    html += "}});";
+
     // Подвійний клік для скидання масштабу
     html += "document.getElementById('tempChart').ondblclick = function() { tempChart.resetZoom(); };";
     html += "document.getElementById('humChart').ondblclick = function() { humChart.resetZoom(); };";
+    html += "document.getElementById('co2Chart').ondblclick = function() { co2Chart.resetZoom(); };";
 
     html += "})";
     html += ".catch(error => {";
@@ -251,16 +297,20 @@ void handleHistoryPage() {
     html += "alert('Помилка завантаження історичних даних. Перезавантажте сторінку.');";
     html += "});";
 
+    // URL Google Apps Script (для читання з браузера)
+    html += "const SHEETS_URL = '" + String(GOOGLE_SCRIPT_URL) + "';";
+
     // Функція переключення джерела даних
     html += "function switchDataSource() {";
     html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "const dateSelector = document.getElementById('dateSelector');";
-    html += "if (source === 'spiffs') {";
+    html += "if (source === 'spiffs' || source === 'sheets') {";
     html += "dateSelector.style.display = 'block';";
     html += "const today = new Date().toISOString().split('T')[0];";
     html += "const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];";
     html += "document.getElementById('endDate').value = today;";
     html += "document.getElementById('startDate').value = weekAgo;";
+    html += "document.getElementById('loadBtn').textContent = source === 'sheets' ? '☁️ Завантажити з Sheets' : '📥 Завантажити';";
     html += "} else {";
     html += "dateSelector.style.display = 'none';";
     html += "location.reload();";
@@ -271,10 +321,9 @@ void handleHistoryPage() {
     html += "function loadArchiveData() {";
     html += "const startDate = document.getElementById('startDate').value;";
     html += "const endDate = document.getElementById('endDate').value;";
-    html += "if (!startDate || !endDate) {";
-    html += "alert('Оберіть дати!');";
-    html += "return;";
-    html += "}";
+    html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
+    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "if (source === 'sheets') { loadSheetsData(startDate, endDate); return; }";
     html += "fetch(`/history/data?source=spiffs&start=${startDate}&end=${endDate}&format=json`)";
     html += ".then(response => response.json())";
     html += ".then(result => {";
@@ -288,6 +337,7 @@ void handleHistoryPage() {
     html += "const tempRoom = [];";
     html += "const tempBME = [];";
     html += "const humidity = [];";
+    html += "const co2Level = [];";
     html += "data.forEach(record => {";
     html += "if (record.timestamp > 0) {";
     html += "const date = new Date(record.timestamp * 1000);";
@@ -300,6 +350,7 @@ void handleHistoryPage() {
     html += "tempRoom.push(record.tempRoom);";
     html += "tempBME.push(record.tempBME);";
     html += "humidity.push(record.humidity);";
+    html += "co2Level.push(record.co2Level || 0);";
     html += "}";
     html += "});";
     html += "tempChart.data.labels = labels;";
@@ -310,10 +361,50 @@ void handleHistoryPage() {
     html += "humChart.data.labels = labels;";
     html += "humChart.data.datasets[0].data = humidity;";
     html += "humChart.update();";
+    html += "co2Chart.data.labels = labels;";
+    html += "co2Chart.data.datasets[0].data = co2Level;";
+    html += "co2Chart.update();";
     html += "})";
     html += ".catch(error => {";
     html += "console.error('Помилка:', error);";
     html += "alert('Помилка завантаження архівних даних');";
+    html += "});";
+    html += "}";
+
+    // Завантаження даних з Google Sheets (браузер → Apps Script напряму)
+    html += "function loadSheetsData(startDate, endDate) {";
+    html += "const status = document.getElementById('loadStatus');";
+    html += "const btn = document.getElementById('loadBtn');";
+    html += "btn.disabled = true;";
+    html += "status.textContent = '⏳ Завантаження...';";
+    html += "const url = SHEETS_URL + '?action=read&from=' + startDate + '&to=' + endDate;";
+    html += "fetch(url)";
+    html += ".then(r => r.text())";
+    html += ".then(text => {";
+    html += "let rows;";
+    html += "try { rows = JSON.parse(text); } catch(e) { throw new Error('Відповідь: ' + text.substring(0,100)); }";
+    html += "if (!Array.isArray(rows) || rows.length === 0) { status.textContent = '⚠️ Немає даних за період'; btn.disabled = false; return; }";
+    // Стовпці: 0=datetime, 1=tempCarrier, 2=tempRoom, 3=tempBME, 4=humidity, 5=co2, 6=pump, 7=fan, 8=extractor, 9=voltage, 10=power, 11=totalEnergy
+    html += "const labels=[], tc=[], tr=[], tb=[], hum=[], co2=[];";
+    html += "rows.forEach(r => {";
+    html += "if (!r[0]) return;";
+    html += "const dt = String(r[0]);";
+    html += "labels.push(dt.substring(5,16));";  // "MM-DD HH:MM"
+    html += "tc.push(parseFloat(r[1])||0);";
+    html += "tr.push(parseFloat(r[2])||0);";
+    html += "tb.push(parseFloat(r[3])||0);";
+    html += "hum.push(parseFloat(r[4])||0);";
+    html += "co2.push(parseFloat(r[5])||0);";
+    html += "});";
+    html += "tempChart.data.labels=labels; tempChart.data.datasets[0].data=tc; tempChart.data.datasets[1].data=tr; tempChart.data.datasets[2].data=tb; tempChart.update();";
+    html += "humChart.data.labels=labels; humChart.data.datasets[0].data=hum; humChart.update();";
+    html += "co2Chart.data.labels=labels; co2Chart.data.datasets[0].data=co2; co2Chart.update();";
+    html += "status.textContent = '✅ ' + rows.length + ' записів';";
+    html += "btn.disabled = false;";
+    html += "})";
+    html += ".catch(err => {";
+    html += "status.textContent = '❌ ' + err.message;";
+    html += "btn.disabled = false;";
     html += "});";
     html += "}";
 
@@ -350,7 +441,7 @@ void handleHistoryData() {
             server.setContentLength(CONTENT_LENGTH_UNKNOWN);
             server.send(200, "text/csv", "");
 
-            server.sendContent("timestamp,tempCarrier,tempRoom,tempBME,humidity,pumpPower,fanPower,extractorPower,mode\n");
+            server.sendContent("timestamp,tempCarrier,tempRoom,tempBME,humidity,co2Level,pumpPower,fanPower,extractorPower,mode\n");
 
             const uint16_t CHUNK_SIZE = 50;
             DataRecord chunk[CHUNK_SIZE];
@@ -365,10 +456,11 @@ void handleHistoryData() {
                     for (uint16_t i = 0; i < chunkCount; i++) {
                         if (chunk[i].timestamp > 0) {
                             csvChunk += String(chunk[i].timestamp) + ",";
-                            csvChunk += String(chunk[i].tempCarrier, 1) + ",";
-                            csvChunk += String(chunk[i].tempRoom, 1) + ",";
-                            csvChunk += String(chunk[i].tempBME, 1) + ",";
-                            csvChunk += String(chunk[i].humidity, 1) + ",";
+                            csvChunk += String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
+                            csvChunk += String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
+                            csvChunk += String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
+                            csvChunk += String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
+                            csvChunk += String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
                             csvChunk += String(chunk[i].pumpPower) + ",";
                             csvChunk += String(chunk[i].fanPower) + ",";
                             csvChunk += String(chunk[i].extractorPower) + ",";
@@ -403,10 +495,11 @@ void handleHistoryData() {
                             if (!firstRecord) jsonChunk += ",";
                             jsonChunk += "{";
                             jsonChunk += "\"timestamp\":" + String(chunk[i].timestamp) + ",";
-                            jsonChunk += "\"tempCarrier\":" + String(chunk[i].tempCarrier, 1) + ",";
-                            jsonChunk += "\"tempRoom\":" + String(chunk[i].tempRoom, 1) + ",";
-                            jsonChunk += "\"tempBME\":" + String(chunk[i].tempBME, 1) + ",";
-                            jsonChunk += "\"humidity\":" + String(chunk[i].humidity, 1) + ",";
+                            jsonChunk += "\"tempCarrier\":" + String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
+                            jsonChunk += "\"tempRoom\":" + String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
+                            jsonChunk += "\"tempBME\":" + String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
+                            jsonChunk += "\"humidity\":" + String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
+                            jsonChunk += "\"co2Level\":" + String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
                             jsonChunk += "\"pumpPower\":" + String(chunk[i].pumpPower) + ",";
                             jsonChunk += "\"fanPower\":" + String(chunk[i].fanPower) + ",";
                             jsonChunk += "\"extractorPower\":" + String(chunk[i].extractorPower) + ",";
@@ -461,6 +554,25 @@ void handleHistoryData() {
 // ============================================================================
 // API: СТАТИСТИКА ЛОГУВАННЯ
 // ============================================================================
+
+void handleHistoryClearLogs() {
+    File f = SPIFFS.open(LOG_CURRENT_FILE, "w");
+    if (f) { f.close(); }
+
+    File root = SPIFFS.open("/");
+    if (root) {
+        File file = root.openNextFile();
+        while (file) {
+            String name = file.name();
+            file.close();
+            if (name.indexOf("archive_") >= 0) SPIFFS.remove(name);
+            file = root.openNextFile();
+        }
+        root.close();
+    }
+    Serial.println("🧹 [SPIFFS] Всі логи очищено через веб");
+    server.send(200, "application/json", "{\"ok\":true}");
+}
 
 void handleHistoryStats() {
     if (WiFi.status() != WL_CONNECTED) {

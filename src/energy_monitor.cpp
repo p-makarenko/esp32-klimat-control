@@ -75,6 +75,14 @@ bool pzemReadRegisters(uint8_t addr, uint8_t *resp, uint8_t respLen) {
 void initEnergyMonitor() {
 #if ENABLE_ENERGY_MONITOR
     Serial.println("⚙️  Ініціалізація енергоконтролера...");
+
+    // Ініціалізація LittleFS для історії
+    if (!LittleFS.begin(true)) {
+        Serial.println("⚠️  Помилка ініціалізації LittleFS");
+    } else {
+        Serial.println("✓ LittleFS ініціалізовано");
+    }
+
     PZEMSerial.begin(9600, SERIAL_8N1, PZEM_RX_PIN, PZEM_TX_PIN);
     Serial.printf("📌 PZEM піни: RX=%d, TX=%d\n", PZEM_RX_PIN, PZEM_TX_PIN);
     Serial.println("✅ Енергоконтролер готовий");
@@ -365,19 +373,10 @@ void handleEnergyPage() {
     html += "<div class='chart-container' style='height:300px'><canvas id='powerCanvas'></canvas></div>";
     html += "</div>";
 
-    // Графік енергії kWh
-    html += "<div class='chart-wrapper'>";
-    html += "<div class='chart-header'>";
-    html += "<h2>📊 Енергія (kWh)</h2>";
-    html += "<button onclick='energyChart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
-    html += "</div>";
-    html += "<div class='chart-container' style='height:300px'><canvas id='energyCanvas'></canvas></div>";
-    html += "</div>";
-
     html += "</div>"; // container
 
     html += R"rawliteral(<script>
-var powerChart, energyChart;
+var powerChart;
 var allPowerData = [];
 var currentTab = 'day';
 
@@ -441,33 +440,9 @@ function initCharts(){
     }
   });
 
-  energyChart = new Chart(document.getElementById('energyCanvas'),{
-    type:'bar',
-    data:{labels:[],datasets:[{
-      label:'Енергія (kWh)',data:[],
-      backgroundColor:'rgba(33,150,243,0.6)',borderColor:'#2196F3',borderWidth:1
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:false,animation:{duration:300},
-      scales:{
-        x:{ticks:{font:{size:11}},grid:{display:false}},
-        y:{beginAtZero:true,title:{display:true,text:'kWh'},ticks:{font:{size:11}},grid:{color:'#eee'}}
-      },
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{
-          label:function(c){return c.parsed.y.toFixed(3)+' kWh';}
-        }},
-        zoom:zoomCfg
-      }
-    }
-  });
-
   document.getElementById('powerCanvas').ondblclick=function(){powerChart.resetZoom();};
-  document.getElementById('energyCanvas').ondblclick=function(){energyChart.resetZoom();};
 
   loadPowerData();
-  loadEnergyHistory();
 }
 
 function switchTab(tab){
@@ -520,34 +495,6 @@ async function loadPowerData(){
   }catch(e){}
 }
 
-async function loadEnergyHistory(){
-  try{
-    var r=await fetch('/energy/history');
-    var txt=await r.text();
-    var lines=txt.trim().split('\n');
-    var hourly={};
-    for(var i=0;i<lines.length;i++){
-      var parts=lines[i].split(',');
-      if(parts.length<2) continue;
-      var ts=parseInt(parts[0]),val=parseFloat(parts[1]);
-      if(isNaN(ts)||isNaN(val)) continue;
-      var d=new Date(ts*1000);
-      var key=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':00';
-      hourly[key]=val;
-    }
-    var labels=Object.keys(hourly);
-    var data=labels.map(function(k){return hourly[k];});
-    // Показуємо дату і час
-    var fmtLabels=labels.map(function(k){
-      var p=k.split(' ');
-      var dp=p[0].split('-');
-      return dp[2]+'.'+dp[1]+' '+p[1];
-    });
-    energyChart.data.labels=fmtLabels;
-    energyChart.data.datasets[0].data=data;
-    energyChart.update();
-  }catch(e){}
-}
 
 async function upd(){
   try{
@@ -583,7 +530,6 @@ async function resetKwh(){
 
 initCharts();
 setInterval(upd,2000); upd();
-// Оновлюємо графік потужності з RAM кожні 2 хв
 setInterval(loadPowerData,120000);
 </script>)rawliteral";
 

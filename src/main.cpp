@@ -17,6 +17,9 @@
 #include "energy_monitor.h"
 #include "config_manager.h"
 #include "ota_manager.h"
+#include "co2_sensor.h"
+#include "dmx_controller.h"
+#include "light_scheduler.h"
 #include <Arduino.h>
 
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -28,9 +31,11 @@ SensorData sensorData = {
   .humidity = 0.0,
   .pressure = 0.0,
   .bmeOffset = 0.0,
+  .co2Level = 0.0,
   .carrierValid = false,
   .roomValid = false,
   .bmeValid = false,
+  .co2Valid = false,
   .timestamp = 0
 };
 HeatingState heatingState;
@@ -113,6 +118,16 @@ void setup() {
   } else {
     Serial.println("✅  Датчик BME280 готовий");
   }
+
+  if (!initSCD30()) {
+    Serial.println("⚠️  Помилка: Проблема з датчиком SCD30!");
+  } else {
+    Serial.println("✅  Датчик SCD30 готовий");
+    // Встановлюємо збережений інтервал вимірювання
+    if (config.scd30MeasurementInterval > 0) {
+      setSCD30MeasurementInterval(config.scd30MeasurementInterval);
+    }
+  }
   
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ВИКОНАВЧИХ ПРИСТРОЇВ ===");
   initGPIO();
@@ -141,6 +156,10 @@ void setup() {
     Serial.println("⚠️  Попередження: OTA недоступний");
   }
 
+  Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ DMX/ОСВІТЛЕННЯ ===");
+  dmxInit();
+  lightSchedulerInit();
+
   Serial.println("\n=== СТВОРЕННЯ ЗАВДАНЬ ===");
   createTasks();
   
@@ -163,7 +182,6 @@ void setup() {
   prefs.end();
   
   humidifierState.active = false;
-  humidifierState.startTime = 0;
   humidifierState.lastCycle = 0;
   humidifierState.cyclesToday = 0;
 
@@ -317,6 +335,8 @@ void loop() {
               delay(100);
               MDNS.addService("http", "tcp", 80);
             }
+            // Перезапускаємо веб-сервер
+            server.begin();
             
             // Виводимо інформацію про перепідключення
             Serial.println("\n╔════════════════════════════════════════════════════════╗");

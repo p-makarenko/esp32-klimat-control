@@ -25,6 +25,7 @@ void handleHistoryPage();
 void handleHistoryData();
 void handleHistoryStats();
 void handleHistoryExport();
+void handleHistoryClearLogs();
 void handleHelpPage();
 void handleDebugPage();
 
@@ -60,6 +61,16 @@ void handleEnergyPage();
 void handleEnergyAPI();
 void handleEnergyHistory();
 void handleEnergyHistoryStats();
+
+// ============================================================================
+// ОСВІТЛЕННЯ - forward declarations
+// ============================================================================
+void handleLightPage();
+void handleLightSave();
+void handleLightManual();
+void handleLightOff();
+void handleLightToggle();
+void handleLightPreset();
 
 // ============================================================================
 // OTA ТА BACKUP - forward declarations

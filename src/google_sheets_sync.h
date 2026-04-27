@@ -11,7 +11,7 @@
 // ============================================================================
 
 // URL Google Apps Script Web App - замініть на ваш новий deployment URL
-#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbwIpmd9CbyHAm7JS0OUQy5i1bSlniZYrPY6fNtyV5UqEESfkIjOGo3WjPuCw4Gq4oAY/exec"
+#define GOOGLE_SCRIPT_URL "https://script.google.com/macros/s/AKfycbzdU004SLrLyaaS8lQomOwLM9PRLoEK9jCUhI2dCZ36qE0B-r1H6mmFN0svd3vNbJJ-/exec"
 
 // Налаштування синхронізації
 #define SYNC_INTERVAL_MS 1800000          // 30 хвилин

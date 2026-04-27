@@ -9,6 +9,8 @@
 #define ONE_WIRE_PIN      16    // DS18B20 датчики температури
 #define I2C_SDA           1     // BME280 SDA
 #define I2C_SCL           2     // BME280 SCL
+#define SCD30_I2C_SDA     4     // SCD30 SDA
+#define SCD30_I2C_SCL     5     // SCD30 SCL
 #define PUMP_PWM_PIN      21    // Насос (PWM)
 #define FAN_PWM_PIN       38    // Вентилятор обігріву (PWM)
 #define EXTRACTOR_PIN     12    // Витяжка (PWM)
@@ -50,7 +52,6 @@
 #define HUM_MAX_DEFAULT        70.0f   // Базова максимальна вологість
 #define HUM_TEMP_COEFF         0.5f    // Коефіцієнт корекції %/C
 #define HUMIDIFIER_MIN_INTERVAL 30000  // Мінімальний інтервал роботи зволожувача (мс)
-#define HUMIDIFIER_MAX_RUN_TIME 600000 // Максимальний час безперервної роботи (мс)
 
 // ============================================================================
 // СЕРВО КОНСТАНТИ
@@ -58,6 +59,26 @@
 #define SERVO_CLOSED_ANGLE     166     // Кут закритої вентиляції
 #define SERVO_OPEN_ANGLE       18      // Кут відкритої вентиляції
 #define SERVO_DETACH_DELAY     1000    // Затримка перед detach (мс)
+
+// ============================================================================
+// ВЕНТИЛЯТОР РОСЛИН
+// ============================================================================
+#define PLANT_FAN_PIN              11    // GPIO вентилятора рослин (PWM)
+#define PLANT_FAN_CHANNEL          3     // PWM канал (0-2 зайняті)
+
+// Таймер
+#define PLANT_FAN_TIMER_DEFAULT_ON   20  // Час роботи за замовчуванням (хв)
+#define PLANT_FAN_TIMER_DEFAULT_OFF  40  // Час паузи за замовчуванням (хв)
+#define PLANT_FAN_TIMER_DEFAULT_POWER 50 // Потужність за замовчуванням (%)
+
+// Режим природнього вітру
+#define BREEZE_BASE_MIN      20   // Мінімальна базова швидкість (%)
+#define BREEZE_BASE_MAX      60   // Максимальна базова швидкість (%)
+#define BREEZE_GUST_BOOST    30   // Підсилення пориву відносно бази (%)
+#define BREEZE_GUST_MIN_SEC  2    // Мінімальна тривалість пориву (сек)
+#define BREEZE_GUST_MAX_SEC  8    // Максимальна тривалість пориву (сек)
+#define BREEZE_CALM_MIN_SEC  5    // Мінімальне затишшя (сек)
+#define BREEZE_CALM_MAX_SEC  20   // Максимальне затишшя (сек)
 
 // ============================================================================
 // ТАЙМЕР ВИТЯЖКИ КОНСТАНТИ
@@ -79,7 +100,7 @@
 #define STATUS_PRINT_INTERVAL  30000   // Період автовиведення статусу (мс)
 #define TEMP_HISTORY_SIZE      300     // Історія температури (5 хв при 1с)
 #define HEATING_CHECK_INTERVAL 300000  // Перевірка ефективності (5 хв)
-#define HISTORY_BUFFER_SIZE    720     // Зберігаємо 12 годин даних (720 хвилин, оптимізовано для RAM)
+#define HISTORY_BUFFER_SIZE    360     // Зберігаємо 6 годин даних (360 хвилин, оптимізовано для RAM при низькій вільній пам'яті)
 #define NTP_UPDATE_INTERVAL    3600000 // Оновлення часу NTP кожну годину
 #define EXTRACTOR_TIMER_CYCLE  3600000 // Цикл таймера витяжки (1 година)
 

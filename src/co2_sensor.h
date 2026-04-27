@@ -10,8 +10,14 @@ bool initSCD30();
 // Читання даних з SCD30 датчика
 void readSCD30();
 
-// Отримання рівня CO2
-uint16_t getCO2Level();
+// Отримання рівня CO2 (ppm)
+float getCO2Level();
+
+// Отримання температури від SCD30 (°C)
+float getSCD30Temperature();
+
+// Отримання вологості від SCD30 (%)
+float getSCD30Humidity();
 
 // Перевірка валідності даних
 bool isCO2Valid();

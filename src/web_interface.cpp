@@ -18,6 +18,8 @@
 #include "google_sheets_sync.h"
 #include "energy_monitor.h"
 #include "config_manager.h"
+#include "dmx_controller.h"
+#include "light_scheduler.h"
 #include "ota_manager.h"
 #include <WiFi.h>
 #include <WebServer.h>
@@ -277,6 +279,7 @@ void initWiFi() {
     server.on("/history/data", HTTP_GET, handleHistoryData);
     server.on("/history/stats", HTTP_GET, handleHistoryStats);
     server.on("/history/export", HTTP_GET, handleHistoryExport);
+    server.on("/history/clear-logs", HTTP_POST, handleHistoryClearLogs);
 
     // Серво калібрування
     server.on("/servo", HTTP_GET, handleServoPage);
@@ -289,6 +292,14 @@ void initWiFi() {
     server.on("/energy/stats", HTTP_GET, handleEnergyHistoryStats);
     server.on("/energy/reset", HTTP_POST, handleEnergyReset);
     server.on("/energy/power", HTTP_GET, handleEnergyPowerData);
+
+    // Освітлення
+    server.on("/light", HTTP_GET, handleLightPage);
+    server.on("/light/save", HTTP_POST, handleLightSave);
+    server.on("/light/manual", HTTP_POST, handleLightManual);
+    server.on("/light/off", HTTP_GET, handleLightOff);
+    server.on("/light/toggle", HTTP_POST, handleLightToggle);
+    server.on("/light/preset", HTTP_GET, handleLightPreset);
 
     // OTA та Backup
     server.on("/ota", HTTP_GET, handleOTAPage);
