@@ -1,4 +1,4 @@
-﻿#ifndef SYSTEM_CORE_H
+#ifndef SYSTEM_CORE_H
 #define SYSTEM_CORE_H
 
 #include <Arduino.h>
@@ -109,16 +109,10 @@ struct SystemConfig {
   
   HumidityConfig humidityConfig;
   
-  uint8_t a_adaptive_min;
-  uint8_t a_adaptive_max;
-  uint8_t a_normal_range_min;
-  uint8_t a_normal_range_max;
-  uint8_t b_start_percent;
-  uint16_t trend_window_seconds;
-  float temp_drop_threshold;
-  uint16_t heating_check_interval;
   uint8_t adaptive_temp_step;
   uint8_t adaptive_hum_step;
+  uint16_t adaptive_activation_time_min;
+  uint16_t adaptive_recovery_time_min;
 
 
   ExtractorTimer extractorTimer;
@@ -134,6 +128,9 @@ struct SystemConfig {
 
   // Поріг логування даних (для економії пакетів)
   float logTempThreshold;      // Мінімальна зміна температури кімнати для запису (°C, default 0.5)
+
+  // Інтервал відправки в Google Sheets (хвилини, навіть без зміни температури)
+  uint16_t sheetsSyncIntervalMin; // 1-1440 хв, default 15
 
   // Пороги для режимів форсаж та аварія
   float tempCriticalLow;       // Поріг для ФОРСАЖУ - критично низька температура (°C, default 20.0)

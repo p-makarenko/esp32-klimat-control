@@ -73,18 +73,17 @@ void handleSettingsPage() {
     html += "<div class='tabs'>";
     html += "<button type='button' class='tab active' onclick='switchTab(0)'>🌡️ Клімат</button>";
     html += "<button type='button' class='tab' onclick='switchTab(1)'>🔧 Пристрої</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(2)'>⏰ Таймер</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(2)'>🌀 Витяжка</button>";
     html += "<button type='button' class='tab' onclick='switchTab(3)'>🔄 Сезон</button>";
     html += "<button type='button' class='tab' onclick='switchTab(4)'>🚨 Аварія</button>";
     html += "<button type='button' class='tab' onclick='switchTab(5)'>💨 Датчики</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(7)'>⚙️ Система</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(8)'>🎯 Серво</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(9)'>📶 WiFi</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(10)'>📊 Sync</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(6)'>⚙️ Система</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(7)'>🎯 Серво</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(8)'>📶 WiFi</button>";
+    html += "<button type='button' class='tab' onclick='switchTab(9)'>📊 Sync</button>";
     html += "<button type='button' class='tab' onclick='switchTab(10)'>🕒 Час</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(11)'>🌿 Вентилятор рослин</button>";
-    html += "</div>";
-
+    html += "<button type='button' class='tab' onclick='switchTab(11)'>💨 Вітер</button>";
+    html += "</div>"; // Закриваємо .tabs
     html += "<form method='POST' action='/settings'>";
 
     // TAB 0: КЛІМАТ
@@ -230,8 +229,8 @@ void handleSettingsPage() {
     html += "</div>";
     html += "</div>"; // tab5
 
-    // TAB 6: СИСТЕМА (перенумеровано з 5 на 6)
-    html += "<div class='tab-content' id='tab5'>";
+    // TAB 6: СИСТЕМА
+    html += "<div class='tab-content' id='tab6'>";
     html += "<div class='section'>";
     html += "<h3>📊 МОНІТОРИНГ ТА ЛОГУВАННЯ</h3>";
     html += "<div class='form-group'>";
@@ -252,56 +251,26 @@ void handleSettingsPage() {
     html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>";
     html += "<small style='color: #856404;'>⚠️ <strong>Увага:</strong> Змінюйте ці параметри тільки якщо розумієте що вони роблять!</small>";
     html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Мінімум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='adaptiveMin' value='" + String(config.a_adaptive_min) + "' min='0' max='100'>";
+    html += "<div class='form-group' title='Час (у хвилинах) протягом якого температура або вологість не можуть досягти заданих порогів, після чого вмикається адаптивний режим (зниження цілі)'>";
+    html += "<label>Час до активації адаптації (хвилини):</label>";
+    html += "<input type='number' name='adaptiveActTime' value='" + String(config.adaptive_activation_time_min) + "' min='1' max='240'>";
     html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Максимум адаптивного режиму (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='adaptiveMax' value='" + String(config.a_adaptive_max) + "' min='0' max='100'>";
+    html += "<div class='form-group' title='Час (у хвилинах) після якого система спробує відновити оригінальні пороги (якщо температура почала стабілізуватися)'>";
+    html += "<label>Час до спроби відновлення порогів (хвилини):</label>";
+    html += "<input type='number' name='adaptiveRecTime' value='" + String(config.adaptive_recovery_time_min) + "' min='1' max='240'>";
     html += "</div>";
-    html += "<div class='form-group'>";
+    html += "<div class='form-group' title='На скільки десятих градуса (наприклад, 1 = 0.1°C) знижувати цільову температуру при активації адаптивного режиму'>";
     html += "<label>Крок адаптації температури (0.1°C):</label>";
     html += "<input type='number' name='adaptiveTempStep' value='" + String(config.adaptive_temp_step) + "' min='1' max='20'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>На скільки знижувати ціль температури, якщо система не досягає порогів 30 хв (1=0.1°C)</small>";
     html += "</div>";
-    html += "<div class='form-group'>";
+    html += "<div class='form-group' title='На скільки відсотків (%) знижувати цільову вологість при активації адаптивного режиму'>";
     html += "<label>Крок адаптації вологості (%):</label>";
     html += "<input type='number' name='adaptiveHumStep' value='" + String(config.adaptive_hum_step) + "' min='1' max='20'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>На скільки % знижувати ціль вологості, якщо система не досягає порогів 30 хв</small>";
     html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Нормальний діапазон мін (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='normalRangeMin' value='" + String(config.a_normal_range_min) + "' min='0' max='100'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Нормальний діапазон макс (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='normalRangeMax' value='" + String(config.a_normal_range_max) + "' min='0' max='100'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Стартова потужність насоса (%) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='bStartPercent' value='" + String(config.b_start_percent) + "' min='0' max='100'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Вікно аналізу тренду (секунди) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='trendWindow' value='" + String(config.trend_window_seconds) + "' min='60' max='600'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Поріг падіння температури (°C) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='tempDropThreshold' value='" + String(config.temp_drop_threshold, 1) + "' min='0.1' max='5.0' step='0.1'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Інтервал перевірки обігріву (секунди) <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='heatingCheckInt' value='" + String(config.heating_check_interval / 1000) + "' min='30' max='600'>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Розмір історії даних <span style='color:#999;font-size:0.85em;'>[резерв]</span>:</label>";
-    html += "<input type='number' name='historySize' value='" + String(config.history_size) + "' min='100' max='2000'>";
-    html += "</div>";
-    html += "</div>";
-    html += "</div>"; // tab5
+    html += "</div>"; // tab6
+    html += "</div>"; // tab6
 
-    // TAB 6: СЕРВО
+    // TAB 7: СЕРВО
     html += "<div class='tab-content' id='tab7'>";
     html += "<div class='section'>";
     html += "<h3>🎯 КАЛІБРУВАННЯ СЕРВО</h3>";
@@ -474,13 +443,23 @@ void handleSettingsPage() {
     html += "</div>";
     html += "</div>";
 
+    // Інтервал відправки в Google Sheets
+    html += "<div class='section'>";
+    html += "<h3>☁️ ІНТЕРВАЛ ВІДПРАВКИ В GOOGLE SHEETS</h3>";
+    html += "<div class='form-group'>";
+    html += "<label>Регулярний інтервал відправки (хвилини): <strong id='sheetsIntVal'>" + String(config.sheetsSyncIntervalMin) + "</strong></label>";
+    html += "<input type='range' name='sheetsSyncInterval' min='1' max='120' value='" + String(config.sheetsSyncIntervalMin) + "' oninput=\"document.getElementById('sheetsIntVal').textContent=this.value\">";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Дані відправляються, якщо температура кімнати змінилась на поріг нижче, АБО гарантовано кожні вказані хвилини (навіть без зміни температури). Поточний: " + String(config.sheetsSyncIntervalMin) + " хв. Типово: 15 хв.</small>";
+    html += "</div>";
+    html += "</div>";
+
     // Поріг логування
     html += "<div class='section'>";
     html += "<h3>📊 ПОРІГ ЗАПИСУ ДАНИХ</h3>";
     html += "<div class='form-group'>";
     html += "<label>Мінімальна зміна температури кімнати для запису (°C):</label>";
     html += "<input type='number' step='0.1' name='logTempThreshold' value='" + String(config.logTempThreshold, 1) + "' min='0.0' max='5.0'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура змінилась менше ніж на цей поріг, рядок не буде записано. 0 = записувати всі зміни. Типове значення: 0.5°C</small>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура змінилась менше ніж на цей поріг, рядок не буде записано (поки не мине інтервал вище). 0 = записувати всі зміни. Типове значення: 0.5°C</small>";
     html += "</div>";
     html += "</div>";
 
@@ -545,7 +524,7 @@ void handleSettingsPage() {
 
     // Індикатор поточної потужності
     html += "<div class='section' style='border-left-color: #4CAF50;'>";
-    html += "<h3>🌿 ВЕНТИЛЯТОР РОСЛИН</h3>";
+    html += "<h3>💨 ВЕНТИЛЯТОР ТА ПРИРОДНІЙ ВІТЕР</h3>";
     html += "<div style='background:#e8f5e9;padding:12px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;gap:15px;'>";
     html += "<span style='font-weight:bold;color:#333;'>Поточна потужність:</span>";
     html += "<span id='plfPowerVal' style='font-size:22px;font-weight:bold;color:#4CAF50;'>—</span>";
@@ -907,38 +886,17 @@ void handleSaveSettings() {
     config.manualVentControl = server.hasArg("manualVent");
 
     // Розширені параметри
-    if (server.hasArg("adaptiveMin")) {
-        config.a_adaptive_min = constrain(server.arg("adaptiveMin").toInt(), 0, 100);
+    if (server.hasArg("adaptiveActTime")) {
+        config.adaptive_activation_time_min = constrain(server.arg("adaptiveActTime").toInt(), 1, 240);
     }
-    if (server.hasArg("adaptiveMax")) {
-        config.a_adaptive_max = constrain(server.arg("adaptiveMax").toInt(), 0, 100);
+    if (server.hasArg("adaptiveRecTime")) {
+        config.adaptive_recovery_time_min = constrain(server.arg("adaptiveRecTime").toInt(), 1, 240);
     }
     if (server.hasArg("adaptiveTempStep")) {
         config.adaptive_temp_step = constrain(server.arg("adaptiveTempStep").toInt(), 1, 20);
     }
     if (server.hasArg("adaptiveHumStep")) {
         config.adaptive_hum_step = constrain(server.arg("adaptiveHumStep").toInt(), 1, 20);
-    }
-    if (server.hasArg("normalRangeMin")) {
-        config.a_normal_range_min = constrain(server.arg("normalRangeMin").toInt(), 0, 100);
-    }
-    if (server.hasArg("normalRangeMax")) {
-        config.a_normal_range_max = constrain(server.arg("normalRangeMax").toInt(), 0, 100);
-    }
-    if (server.hasArg("bStartPercent")) {
-        config.b_start_percent = constrain(server.arg("bStartPercent").toInt(), 0, 100);
-    }
-    if (server.hasArg("trendWindow")) {
-        config.trend_window_seconds = constrain(server.arg("trendWindow").toInt(), 60, 600);
-    }
-    if (server.hasArg("tempDropThreshold")) {
-        config.temp_drop_threshold = constrain(server.arg("tempDropThreshold").toFloat(), 0.1f, 5.0f);
-    }
-    if (server.hasArg("heatingCheckInt")) {
-        config.heating_check_interval = constrain(server.arg("heatingCheckInt").toInt(), 30, 600) * 1000UL;
-    }
-    if (server.hasArg("historySize")) {
-        config.history_size = constrain(server.arg("historySize").toInt(), 100, 2000);
     }
 
     // Калібрування серво
@@ -956,6 +914,11 @@ void handleSaveSettings() {
     // Інтервал запису в SPIFFS
     if (server.hasArg("spiffsLogInterval")) {
         config.spiffsLogInterval = constrain(server.arg("spiffsLogInterval").toInt(), 1, 60);
+    }
+
+    // Інтервал відправки в Google Sheets (хвилини)
+    if (server.hasArg("sheetsSyncInterval")) {
+        config.sheetsSyncIntervalMin = constrain(server.arg("sheetsSyncInterval").toInt(), 1, 1440);
     }
 
     // Поріг логування для Google Sheets

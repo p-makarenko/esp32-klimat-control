@@ -356,11 +356,11 @@ void loadConfiguration() {
   config.autoStatusEnabled = preferences.getBool("autoStatus", false);
   
   // Мережеві налаштування
-  config.useStaticIP = false;  // Вернено на DHCP
-  config.staticIP = "192.168.1.100";
-  config.gateway = "192.168.1.1";
-  config.subnet = "255.255.255.0";
-  config.dns = "8.8.8.8";
+  config.useStaticIP = preferences.getBool("useStaticIP", false);
+  config.staticIP = preferences.getString("staticIP", "192.168.1.100");
+  config.gateway = preferences.getString("gateway", "192.168.1.1");
+  config.subnet = preferences.getString("subnet", "255.255.255.0");
+  config.dns = preferences.getString("dns", "8.8.8.8");
   
   // Безпека
   config.useAuth = preferences.getBool("useAuth", false);
@@ -386,16 +386,10 @@ void loadConfiguration() {
   config.humidityConfig.adaptiveMode = preferences.getBool("humAdapt", true);
   
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
-  config.a_adaptive_min = preferences.getUChar("aAdaptMin", 30);
-  config.a_adaptive_max = preferences.getUChar("aAdaptMax", 45);
-  config.a_normal_range_min = preferences.getUChar("aNormMin", 30);
-  config.a_normal_range_max = preferences.getUChar("aNormMax", 35);
-  config.b_start_percent = preferences.getUChar("bStart", 32);
-  config.trend_window_seconds = preferences.getUShort("trendWindow", 300);
-  config.temp_drop_threshold = preferences.getFloat("dropThresh", 2.0f);
-  config.heating_check_interval = preferences.getULong("heatCheck", 300000);
   config.adaptive_temp_step = preferences.getUChar("tempStep", 1);
   config.adaptive_hum_step = preferences.getUChar("humStep", 1);
+  config.adaptive_activation_time_min = preferences.getUShort("adpActMin", 30);
+  config.adaptive_recovery_time_min = preferences.getUShort("adpRecMin", 10);
   
   // Таймер витяжки
   config.extractorTimer.enabled = preferences.getBool("extTimer", false);
@@ -415,6 +409,9 @@ void loadConfiguration() {
 
   // Поріг логування за температурою кімнати
   config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
+
+  // Інтервал відправки в Google Sheets (хвилини, навіть без зміни температури)
+  config.sheetsSyncIntervalMin = preferences.getUShort("sheetsIntMin", 15);
 
   // Пороги для режимів форсаж та аварія
   config.tempCriticalLow = preferences.getFloat("tempCritLow", 20.0f);
@@ -506,16 +503,10 @@ void saveConfiguration() {
   preferences.putBool("humAdapt", config.humidityConfig.adaptiveMode);
   
   // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
-  preferences.putUChar("aAdaptMin", config.a_adaptive_min);
-  preferences.putUChar("aAdaptMax", config.a_adaptive_max);
-  preferences.putUChar("aNormMin", config.a_normal_range_min);
-  preferences.putUChar("aNormMax", config.a_normal_range_max);
-  preferences.putUChar("bStart", config.b_start_percent);
-  preferences.putUShort("trendWindow", config.trend_window_seconds);
-  preferences.putFloat("dropThresh", config.temp_drop_threshold);
-  preferences.putULong("heatCheck", config.heating_check_interval);
   preferences.putUChar("tempStep", config.adaptive_temp_step);
   preferences.putUChar("humStep", config.adaptive_hum_step);
+  preferences.putUShort("adpActMin", config.adaptive_activation_time_min);
+  preferences.putUShort("adpRecMin", config.adaptive_recovery_time_min);
   
   // Таймер витяжки
   preferences.putBool("extTimer", config.extractorTimer.enabled);
@@ -539,6 +530,9 @@ void saveConfiguration() {
 
   // Поріг логування даних
   preferences.putFloat("logTempThresh", config.logTempThreshold);
+
+  // Інтервал відправки в Google Sheets
+  preferences.putUShort("sheetsIntMin", config.sheetsSyncIntervalMin);
 
   // Пороги для режимів форсаж та аварія
   preferences.putFloat("tempCritLow", config.tempCriticalLow);
@@ -684,6 +678,7 @@ void setTimeSynced(bool synced) {
 }
 
 struct tm* getTimeInfo() {
+  updateTimeInfo();
   return &timeInfo;
 }
 

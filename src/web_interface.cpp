@@ -93,6 +93,43 @@ void initWiFi() {
     bool connected = false;
     String connectedSSID = "";
 
+    // Збираємо список відомих мереж (з Preferences та KNOWN_NETWORKS)
+    struct NetworkCred {
+        String ssid;
+        String password;
+    };
+    std::vector<NetworkCred> allKnownNets;
+
+    preferences.begin("wifi", true);
+    int savedCount = preferences.getInt("netCount", 0);
+    for (int i = 0; i < savedCount && i < 10; i++) {
+        String s = preferences.getString(("ssid" + String(i)).c_str(), "");
+        String p = preferences.getString(("pass" + String(i)).c_str(), "");
+        if (s.length() > 0) {
+            allKnownNets.push_back({s, p});
+        }
+    }
+    String lastSSID = preferences.getString("ssid", "");
+    String lastPass = preferences.getString("password", "");
+    if (lastSSID.length() > 0) {
+        bool exists = false;
+        for (const auto& kn : allKnownNets) {
+            if (kn.ssid == lastSSID) { exists = true; break; }
+        }
+        if (!exists) allKnownNets.push_back({lastSSID, lastPass});
+    }
+    preferences.end();
+
+    for (int i = 0; i < KNOWN_NETWORKS_COUNT; i++) {
+        bool exists = false;
+        for (const auto& kn : allKnownNets) {
+            if (kn.ssid == KNOWN_NETWORKS[i].ssid) { exists = true; break; }
+        }
+        if (!exists) {
+            allKnownNets.push_back({KNOWN_NETWORKS[i].ssid, KNOWN_NETWORKS[i].password});
+        }
+    }
+
     // Збираємо список доступних відомих мереж
     struct AvailableNetwork {
         String ssid;
@@ -102,10 +139,10 @@ void initWiFi() {
 
     std::vector<AvailableNetwork> availableNetworks;
 
-    for (int i = 0; i < KNOWN_NETWORKS_COUNT; i++) {
+    for (const auto& kn : allKnownNets) {
         for (int j = 0; j < n; j++) {
-            if (WiFi.SSID(j) == KNOWN_NETWORKS[i].ssid) {
-                availableNetworks.push_back({KNOWN_NETWORKS[i].ssid, KNOWN_NETWORKS[i].password, WiFi.RSSI(j)});
+            if (WiFi.SSID(j) == kn.ssid) {
+                availableNetworks.push_back({kn.ssid, kn.password, WiFi.RSSI(j)});
                 break;
             }
         }

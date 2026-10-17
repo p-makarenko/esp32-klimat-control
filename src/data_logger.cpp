@@ -148,8 +148,13 @@ bool initDataLogger() {
 // ============================================================================
 
 void logDataToRAM() {
+  unsigned long currentTs = getCurrentTimestamp();
+  if (currentTs < 1000000000) {
+    return; // Пропускаємо некоректні 1970 timestamp до синхронізації NTP
+  }
+
   DataRecord record;
-  record.timestamp = getCurrentTimestamp();
+  record.timestamp = currentTs;
   record.sequenceNumber = ++globalSequence;
   record.dataVersion = 2;
   record.tempCarrier = sensorData.tempCarrier;
@@ -258,10 +263,10 @@ void logDataToSPIFFS() {
   // Скидаємо watchdog перед файловою операцією
   yield();
 
-  // Відкриваємо файл для дозапису (r+ = read/write без truncate)
-  File file = SPIFFS.open(LOG_CURRENT_FILE, "r+");
+  // Відкриваємо файл для дозапису (a = append, створює або дописує в кінець)
+  File file = SPIFFS.open(LOG_CURRENT_FILE, "a");
   if (!file) {
-    Serial.printf("❌ [SPIFFS] Failed to open file. Used: %u / %u bytes\n",
+    Serial.printf("❌ [SPIFFS] Failed to open file for append. Used: %u / %u bytes\n",
                   SPIFFS.usedBytes(), SPIFFS.totalBytes());
 
     // Спроба відновлення: очистити старі логи
@@ -291,11 +296,12 @@ void logDataToSPIFFS() {
 
       failCount = 0;
     }
+    aggregationBufferIndex = 0; // ВАЖЛИВО: скидаємо буфер щоб уникнути overflow!
     return;
   }
 
   size_t sizeBefore = file.size();
-  Serial.printf("✓ [SPIFFS] File opened, size before: %u bytes\n", sizeBefore);
+  Serial.printf("✓ [SPIFFS] File opened for append, size before: %u bytes\n", sizeBefore);
 
   // Агрегуємо дані перед записом
   AggregatedRecord aggRecord;
@@ -334,8 +340,7 @@ void logDataToSPIFFS() {
   line += String(sumExtractor / count) + ",";
   line += String(aggregationBuffer[0].mode);
 
-  // Записуємо через seek до кінця (надійніше ніж "a" на SPIFFS)
-  file.seek(sizeBefore);
+  // Записуємо у файл (режим 'a' автоматично дописує в кінець)
   size_t written = file.print(line + "\n");
   file.close();
 
@@ -366,32 +371,48 @@ bool readRAMData(DataRecord* buffer, uint16_t* count) {
     return false;
   }
 
-  // Копіюємо всі дані з RAM буфера
-  memcpy(buffer, ramBuffer, sizeof(ramBuffer));
+  uint16_t total = (loggerStats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : (uint16_t)loggerStats.totalRecordsRAM;
+  uint16_t startIdx = (loggerStats.totalRecordsRAM >= HISTORY_BUFFER_SIZE) ? ramBufferIndex : 0;
 
+  for (uint16_t i = 0; i < total; i++) {
+    uint16_t idx = (startIdx + i) % HISTORY_BUFFER_SIZE;
+    buffer[i] = ramBuffer[idx];
+  }
+
+  *count = total;
   xSemaphoreGive(getRamBufferMutex());
-  *count = HISTORY_BUFFER_SIZE;  // Повертаємо всі записи з буфера
-
   return true;
 }
 
-// Читання частини даних з RAM (chunked read для економії пам'яті)
+// Читання частини даних з RAM у хронологічному порядку (chunked read для економії пам'яті)
 bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
   if (!buffer) return false;
-  if (offset >= HISTORY_BUFFER_SIZE) return false;
-  if (offset + count > HISTORY_BUFFER_SIZE) count = HISTORY_BUFFER_SIZE - offset;
 
-  // Копіюємо тільки потрібну частину
-  memcpy(buffer, &ramBuffer[offset], count * sizeof(DataRecord));
+  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
+    return false;
+  }
 
+  uint16_t total = (loggerStats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : (uint16_t)loggerStats.totalRecordsRAM;
+  if (offset >= total) {
+    xSemaphoreGive(getRamBufferMutex());
+    return false;
+  }
+
+  uint16_t recordsToCopy = ((offset + count) > total) ? (total - offset) : count;
+  uint16_t startIdx = (loggerStats.totalRecordsRAM >= HISTORY_BUFFER_SIZE) ? ramBufferIndex : 0;
+
+  for (uint16_t i = 0; i < recordsToCopy; i++) {
+    uint16_t idx = (startIdx + offset + i) % HISTORY_BUFFER_SIZE;
+    buffer[i] = ramBuffer[idx];
+  }
+
+  xSemaphoreGive(getRamBufferMutex());
   return true;
 }
 
-// Допоміжна функція для парсингу CSV файлу в JSON array
-static void parseCSVFileToJson(File& file, JsonArray& dataArray,
-                                unsigned long startTimestamp, unsigned long endTimestamp) {
+void parseCSVFileToJson(File& file, JsonArray& dataArray, unsigned long startTimestamp, unsigned long endTimestamp) {
   char buffer[256];
-  int bufIdx = 0;
+  size_t bufIdx = 0;
   int lineCount = 0;
 
   while (file.available()) {

@@ -1,4 +1,4 @@
-﻿#include "advanced_climate_logic.h"
+#include "advanced_climate_logic.h"
 #include "sensor_manager.h"
 #include "actuator_manager.h"
 #include "system_core.h"
@@ -1363,8 +1363,8 @@ void checkAdaptiveThresholds() {
     // Константи для адаптивного режиму
     const float TEMP_CRITICAL_DEFICIT = 2.0f; // Якщо більше 2°C нижче цілі
     const float HUM_CRITICAL_DEFICIT = 10.0f; // Якщо більше 10% нижче цілі
-    const unsigned long ADAPTIVE_ACTIVATION_TIME = 1800000; // 30 хвилин
-    const unsigned long RECOVERY_CHECK_TIME = 600000; // 10 хвилин для перевірки відновлення
+    const unsigned long ADAPTIVE_ACTIVATION_TIME = (unsigned long)config.adaptive_activation_time_min * 60000UL;
+    const unsigned long RECOVERY_CHECK_TIME = (unsigned long)config.adaptive_recovery_time_min * 60000UL;
 
     // === АКТИВАЦІЯ АДАПТИВНОГО РЕЖИМУ ===
     if (!heatingState.adaptive_heating_active) {

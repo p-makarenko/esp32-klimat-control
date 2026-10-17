@@ -1,4 +1,4 @@
-﻿#ifndef CONFIG_H
+#ifndef CONFIG_H
 #define CONFIG_H
 
 #include <Arduino.h>
@@ -100,7 +100,7 @@
 #define STATUS_PRINT_INTERVAL  30000   // Період автовиведення статусу (мс)
 #define TEMP_HISTORY_SIZE      300     // Історія температури (5 хв при 1с)
 #define HEATING_CHECK_INTERVAL 300000  // Перевірка ефективності (5 хв)
-#define HISTORY_BUFFER_SIZE    360     // Зберігаємо 6 годин даних (360 хвилин, оптимізовано для RAM при низькій вільній пам'яті)
+#define HISTORY_BUFFER_SIZE    360     // 6 годин (360 записів) в RAM для гарантованої стабільності SSL і WebServer
 #define NTP_UPDATE_INTERVAL    3600000 // Оновлення часу NTP кожну годину
 #define EXTRACTOR_TIMER_CYCLE  3600000 // Цикл таймера витяжки (1 година)
 

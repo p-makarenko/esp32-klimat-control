@@ -1,4 +1,4 @@
-﻿#include <Arduino.h>
+#include <Arduino.h>
 #include <ESPmDNS.h>
 #include <NetBIOS.h>
 #include <esp_system.h>
@@ -86,7 +86,6 @@ void setup() {
   Serial.println("╚════════════════════════════════════════════════════════╝");
   
   initMutexes();
-  resetNetworkSettings();  // Очистити неправильні мережеві налаштування
   loadConfiguration();
 
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ CONFIG MANAGER ===");
@@ -318,6 +317,19 @@ void loop() {
         if (bestSSID.length() > 0) {
           WiFi.disconnect();
           delay(100);
+
+          if (config.useStaticIP) {
+            IPAddress ip, gateway, subnet, dns;
+            if (ip.fromString(config.staticIP) &&
+                gateway.fromString(config.gateway) &&
+                subnet.fromString(config.subnet) &&
+                dns.fromString(config.dns)) {
+                if ((ip & subnet) == (gateway & subnet)) {
+                    WiFi.config(ip, gateway, subnet, dns);
+                }
+            }
+          }
+
           WiFi.begin(bestSSID.c_str(), bestPassword.c_str());
           
           int attempts = 0;

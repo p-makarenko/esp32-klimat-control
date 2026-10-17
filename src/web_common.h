@@ -10,6 +10,9 @@
 
 #include <Arduino.h>
 
+// Forward declaration
+extern String getUkraineMarquee();
+
 // ============================================================================
 // СПІЛЬНІ CSS СТИЛІ
 // ============================================================================
@@ -73,8 +76,11 @@ inline String getCommonCSS() {
     css += ".tooltip .tooltiptext::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #555 transparent transparent transparent; }";
     css += ".tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }";
 
-    // Charts
+    // Charts & Tabs
     css += ".chart-container { position: relative; height: 300px; margin: 30px 0; }";
+    css += ".tab-btn { padding: 8px 16px; border: 1px solid #ddd; background: #f5f5f5; color: #333; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }";
+    css += ".tab-btn:hover { background: #e0e0e0; }";
+    css += ".tab-btn.active { background: #667eea; color: #fff; border-color: #667eea; font-weight: 600; box-shadow: 0 2px 4px rgba(102,126,234,0.3); }";
 
     return css;
 }

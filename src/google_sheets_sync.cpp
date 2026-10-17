@@ -50,12 +50,14 @@ bool initGoogleSheetsSync() {
 // ДОПОМІЖНІ ФУНКЦІЇ
 // ============================================================================
 
-// Компаратор для qsort (сортування DataRecord)
+// Компаратор для qsort (сортування DataRecord за часом)
 int compareRecords(const void* a, const void* b) {
     DataRecord* recA = (DataRecord*)a;
     DataRecord* recB = (DataRecord*)b;
     
-    // Сортуємо по Sequence
+    // Сортуємо хронологічно за реальним часом timestamp
+    if (recA->timestamp < recB->timestamp) return -1;
+    if (recA->timestamp > recB->timestamp) return 1;
     if (recA->sequenceNumber < recB->sequenceNumber) return -1;
     if (recA->sequenceNumber > recB->sequenceNumber) return 1;
     return 0;
@@ -153,12 +155,55 @@ bool syncToGoogleSheets() {
   if (recordsToSend == 0) {
     Serial.println("📭 [Sync] Немає нових даних.");
     free(buffer);
+    syncStats.lastSyncTime = millis();
     syncStats.syncInProgress = false;
     return true;
   }
 
   // 5. Сортування відфільтрованих даних
   qsort(buffer, recordsToSend, sizeof(DataRecord), compareRecords);
+
+  // 5.1 Фільтрація за порогом температури кімнати та регулярним інтервалом
+  if (config.logTempThreshold > 0.05f && recordsToSend > 1) {
+    static float lastLoggedTemp = -999.0f;
+    static unsigned long lastLoggedTime = 0;
+
+    if (lastLoggedTemp < -900.0f) {
+      lastLoggedTemp = buffer[0].tempRoom;
+      lastLoggedTime = buffer[0].timestamp;
+    }
+
+    uint16_t filteredCount = 0;
+    unsigned long intervalSec = (unsigned long)config.sheetsSyncIntervalMin * 60UL;
+    if (intervalSec < 60UL) intervalSec = 60UL;
+
+    for (uint16_t i = 0; i < recordsToSend; i++) {
+      bool keep = false;
+
+      // Критерій 1: температура кімнати змінилась на поріг
+      if (fabs(buffer[i].tempRoom - lastLoggedTemp) >= config.logTempThreshold) {
+        keep = true;
+      }
+      // Критерій 2: минув час інтервалу (heartbeat)
+      else if ((buffer[i].timestamp - lastLoggedTime) >= intervalSec) {
+        keep = true;
+      }
+      // Критерій 3: останній запис пачки завжди зберігаємо для свіжості
+      else if (i == recordsToSend - 1) {
+        keep = true;
+      }
+
+      if (keep) {
+        buffer[filteredCount++] = buffer[i];
+        lastLoggedTemp = buffer[i].tempRoom;
+        lastLoggedTime = buffer[i].timestamp;
+      }
+    }
+
+    Serial.printf("🔍 [Sync] Фільтрація порогу (%.1f°C / %u хв): %u -> %u записів\n",
+                  config.logTempThreshold, config.sheetsSyncIntervalMin, recordsToSend, filteredCount);
+    recordsToSend = filteredCount;
+  }
 
   Serial.printf("📊 [Sync] Готуємо до відправки %u записів (Seq %lu -> %lu)\n",
                 recordsToSend, buffer[0].sequenceNumber, buffer[recordsToSend-1].sequenceNumber);
@@ -196,6 +241,7 @@ bool syncToGoogleSheets() {
     }
 
     free(buffer);
+    syncStats.lastSyncTime = millis();
     syncStats.syncInProgress = false;
     syncStats.failedSyncs++;
     return false;
@@ -467,10 +513,24 @@ void autoSyncTask() {
         lastDailySyncDone = false;
     }
 
-    // Перевірка інтервалу 30 хвилин
-    if (syncStats.lastSyncTime == 0 || (now - syncStats.lastSyncTime) > SYNC_INTERVAL_MS) {
-        Serial.println("⏰ [Sync] Auto-trigger");
-        syncToGoogleSheets();
+    // Перевірка динамічного інтервалу та порогу температури
+    unsigned long syncIntervalMs = (unsigned long)config.sheetsSyncIntervalMin * 60000UL;
+    if (syncIntervalMs < 60000UL) syncIntervalMs = 60000UL;
+
+    static float lastAutoSyncTemp = -999.0f;
+    bool tempTrigger = false;
+    if (config.logTempThreshold > 0.05f && lastAutoSyncTemp > -900.0f) {
+        if (fabs(sensorData.tempRoom - lastAutoSyncTemp) >= config.logTempThreshold) {
+            tempTrigger = true;
+        }
+    }
+
+    if (syncStats.lastSyncTime == 0 || (now - syncStats.lastSyncTime) >= syncIntervalMs || tempTrigger) {
+        Serial.printf("⏰ [Sync] Auto-trigger: %s (t=%.1f, last=%.1f)\n",
+                      tempTrigger ? "TEMP_DELTA" : "INTERVAL", sensorData.tempRoom, lastAutoSyncTemp);
+        if (syncToGoogleSheets()) {
+            lastAutoSyncTemp = sensorData.tempRoom;
+        }
     }
 }
 

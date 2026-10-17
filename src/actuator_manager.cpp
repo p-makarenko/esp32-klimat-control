@@ -26,6 +26,7 @@ void initServo() {
   ESP32PWM::allocateTimer(3);  // Виділяємо таймер 3 для серво, щоб не конфліктувати з PWM каналами 0,1,2
   ventServo.setPeriodHertz(50);
   
+  pinMode(VENT_SWITCH_PIN, INPUT_PULLUP);
   ventState.switchState = digitalRead(VENT_SWITCH_PIN);
   // LOW = ВНИЗ = ЗАКРИТО, HIGH = ВГОРУ = ВІДКРИТО
   ventState.open = (ventState.switchState == HIGH);
@@ -36,7 +37,7 @@ void initServo() {
   
   ventServo.attach(SERVO_PIN);
   ventServo.write(ventState.currentAngle);
-  delay(1000);
+  delay(600);
   ventServo.detach();
   
   Serial.printf("✓ Сервопривід ініціалізовано: %s (%d°)\n", 
@@ -51,29 +52,14 @@ void initGPIO() {
   // Читаємо стан вимикача
   bool switchState = digitalRead(VENT_SWITCH_PIN);
   ventState.switchState = switchState;
-
-  // Встановлюємо серво у відповідне положення при старті
-  // LOW = ВНИЗ = ЗАКРИТО, HIGH = ВГОРУ = ВІДКРИТО
-  ventState.moving = true;
-  int targetAngle = (switchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
-  
-  if (!ventState.servoAttached) {
-    ventServo.attach(SERVO_PIN);
-    ventState.servoAttached = true;
-    delay(50);
-  }
-  
-  ventServo.write(targetAngle);
-  ventState.currentAngle = targetAngle;
   ventState.open = (switchState == HIGH);
-
-  delay(500);  // Даємо час серво досягнути позиції
-  ventServo.detach();
-  ventState.servoAttached = false;
+  ventState.currentAngle = ventState.open ? config.servoOpenAngle : config.servoClosedAngle;
   ventState.moving = false;
+  ventState.servoAttached = false;
+  ventState.calibrationMode = false;
 
-  Serial.printf("✓ GPIO ініціалізовано. Серво: %s (%d°)\n",
-                ventState.open ? "ВІДКРИТО" : "ЗАКРИТО", targetAngle);
+  Serial.printf("✓ GPIO ініціалізовано. Положення перемикача: %s (%d°)\n",
+                ventState.open ? "ВІДКРИТО" : "ЗАКРИТО", ventState.currentAngle);
 }
 
 void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower) {
@@ -285,9 +271,8 @@ void moveServoSmooth(int targetAngle) {
 
   // Дозволяємо рух у режимі калібрування БЕЗ механічного вимикача
   // Дозволяємо рух при вмиканні флага moving (через вентиляційний вимикач)
-  // Обовʼязково одне з цих умов має бути істинною
-  
   if (targetAngle == ventState.currentAngle) {
+    ventState.open = (targetAngle == config.servoOpenAngle);
     ventState.moving = false;
     return;
   }
@@ -325,9 +310,9 @@ void moveServoSmooth(int targetAngle) {
   if (currentSwitchState != ventState.switchState) {
     Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
     ventState.switchState = currentSwitchState;
-    delay(100);
+    delay(50);
     ventState.moving = true;
-    int newTargetAngle = (currentSwitchState == LOW) ? config.servoOpenAngle : config.servoClosedAngle;
+    int newTargetAngle = (currentSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
     moveServoSmooth(newTargetAngle);
   }
 }
@@ -342,22 +327,32 @@ void controlVentilation() {
     return;
   }
   
-  bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
+  // Захист від брязкоту контактів (Debounce)
+  static uint32_t lastDebounceTime = 0;
+  static int lastRawState = -1;
+  int rawState = digitalRead(VENT_SWITCH_PIN);
   
-  // Рухаємо серво ТІЛЬКИ якщо змінився стан вимикача
-  // LOW = вимикач ВНИЗ = ЗАКРИТО
-  // HIGH = вимикач ВГОРУ = ВІДКРИТО
-  if (currentSwitchState != ventState.switchState) {
-    Serial.printf("Перемикач змінено: %d -> %d\n", ventState.switchState, currentSwitchState);
-    ventState.switchState = currentSwitchState;
-    ventState.moving = true;
+  if (rawState != lastRawState) {
+    lastDebounceTime = millis();
+    lastRawState = rawState;
+  }
+  
+  if ((millis() - lastDebounceTime) >= 50) {
+    int stableSwitchState = rawState;
+    // LOW = вимикач ВНИЗ = ЗАКРИТО
+    // HIGH = вимикач ВГОРУ = ВІДКРИТО
+    int expectedAngle = (stableSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
+    bool expectedOpen = (stableSwitchState == HIGH);
 
-    if (currentSwitchState == LOW) {
-      moveServoSmooth(config.servoClosedAngle);
-      Serial.println("✓ Вентиляція ЗАКРИТА (вимикач ВНИЗ)");
-    } else {
-      moveServoSmooth(config.servoOpenAngle);
-      Serial.println("✓ Вентиляція ВІДКРИТА (вимикач ВГОРУ)");
+    // Перевіряємо як зміну положення перемикача, так і розсинхронізацію кута заслонки
+    if (stableSwitchState != ventState.switchState || ventState.currentAngle != expectedAngle || ventState.open != expectedOpen) {
+      Serial.printf("🔄 Синхронізація заслонки: перемикач=%s, поточний кут=%d°, цільовий=%d° (%s)\n",
+                    stableSwitchState == HIGH ? "ВГОРУ(ВІДКРИТИ)" : "ВНИЗ(ЗАКРИТИ)",
+                    ventState.currentAngle, expectedAngle, expectedOpen ? "ВІДКРИТО" : "ЗАКРИТО");
+      ventState.switchState = stableSwitchState;
+      ventState.moving = true;
+      moveServoSmooth(expectedAngle);
+      ventState.open = expectedOpen;
     }
   }
 }

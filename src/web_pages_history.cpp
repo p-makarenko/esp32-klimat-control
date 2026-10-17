@@ -48,19 +48,32 @@ void handleHistoryPage() {
     html += " | Оновлення кожну хвилину";
     html += "</div>";
 
-    // Вибір джерела даних
-    html += "<div class='card' style='border-left-color: #ffc107;'>";
-    html += "<strong>📁 Джерело даних:</strong><br>";
-    html += "<div style='margin-top: 10px; display: flex; flex-wrap: wrap; gap: 15px;'>";
-    html += "<label><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останні 24 год)</label>";
-    html += "<label><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 SPIFFS (архів)</label>";
-    html += "<label><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
+    // Панель навігації по періодах та вибору джерела
+    html += "<div class='card' style='border-left-color: #667eea;'>";
+    html += "<strong>📅 Період відображення:</strong><br>";
+    html += "<div style='display: flex; gap: 8px; margin: 10px 0 15px 0; flex-wrap: wrap;'>";
+    html += "<button class='tab-btn active' id='tabDay' onclick='selectPeriod(\"day\")'>📅 День</button>";
+    html += "<button class='tab-btn' id='tabWeek' onclick='selectPeriod(\"week\")'>📅 Тиждень</button>";
+    html += "<button class='tab-btn' id='tabMonth' onclick='selectPeriod(\"month\")'>📅 Місяць</button>";
+    html += "<button class='tab-btn' id='tabYear' onclick='selectPeriod(\"year\")'>📅 Рік</button>";
+    html += "<button class='tab-btn' id='tabCustom' onclick='selectPeriod(\"custom\")'>📆 Свій період</button>";
     html += "</div>";
-    html += "<div id='dateSelector' style='display: none; margin-top: 15px;'>";
-    html += "<label style='margin-right: 10px;'>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<label style='margin-right: 10px;'>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<button id='loadBtn' onclick='loadArchiveData()' class='btn' style='margin-top: 10px;'>📥 Завантажити</button>";
-    html += "<span id='loadStatus' style='margin-left: 15px; color: #666; font-size: 0.9em;'></span>";
+
+    html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; padding-top: 10px; border-top: 1px solid #eee;'>";
+    html += "<div><strong>📁 Джерело даних:</strong> ";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (6 год)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div id='dateSelector' style='display: none; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee;'>";
+    html += "<div style='display: flex; flex-wrap: wrap; gap: 10px; align-items: center;'>";
+    html += "<label>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<label>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>📥 Завантажити</button>";
+    html += "<span id='loadStatus' style='margin-left: 10px; color: #666; font-size: 0.9em;'></span>";
+    html += "</div>";
     html += "</div>";
     html += "</div>";
 
@@ -128,231 +141,78 @@ void handleHistoryPage() {
     // JavaScript для графіків
     html += "<script>";
     html += "let tempChart, humChart, co2Chart;";
+    html += "window.chartFullDates = [];";
+    html += "let currentPeriod = 'day';";
+    html += "const SHEETS_URL = '" + String(GOOGLE_SCRIPT_URL) + "';";
 
     // Конфігурація zoom з оптимізованими threshold для touch
-    // (Критика Крок 2: покращено touch events)
     html += "const zoomConfig = {";
     html += "  zoom: {";
     html += "    wheel: { enabled: true, speed: 0.1 },";
-    html += "    pinch: { enabled: true },";  // Pinch zoom для мобільних
+    html += "    pinch: { enabled: true },";
     html += "    drag: {";
     html += "      enabled: true,";
     html += "      backgroundColor: 'rgba(66, 133, 244, 0.2)',";
     html += "      borderColor: 'rgba(66, 133, 244, 0.8)',";
     html += "      borderWidth: 1,";
-    html += "      threshold: 10";  // Менший threshold для touch
+    html += "      threshold: 10";
     html += "    },";
     html += "    mode: 'x'";
     html += "  },";
     html += "  pan: {";
     html += "    enabled: true,";
     html += "    mode: 'x',";
-    html += "    threshold: 5,";  // Менший threshold для плавного panning
-    html += "    modifierKey: null";  // Працює без Ctrl на touch
+    html += "    threshold: 5,";
+    html += "    modifierKey: null";
     html += "  }";
     html += "};";
 
-    // Завантаження даних
-    html += "fetch('/history/data?source=ram&format=json')";
-    html += ".then(response => response.json())";
-    html += ".then(result => {";
-    html += "const data = result.data || [];";
-    html += "const labels = [];";
-    html += "const tempCarrier = [];";
-    html += "const tempRoom = [];";
-    html += "const tempBME = [];";
-    html += "const humidity = [];";
-    html += "const co2Level = [];";
-
-    html += "data.forEach(record => {";
-    html += "if (record.timestamp > 0) {";
-    html += "const date = new Date(record.timestamp * 1000);";
-    html += "const hours = String(date.getHours()).padStart(2, '0');";
-    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "labels.push(hours + ':' + minutes);";
-    html += "tempCarrier.push(record.tempCarrier);";
-    html += "tempRoom.push(record.tempRoom);";
-    html += "tempBME.push(record.tempBME);";
-    html += "humidity.push(record.humidity);";
-    html += "co2Level.push(record.co2Level || 0);";
-    html += "}";
-    html += "});";
-
-    // Графік температури
+    // Ініціалізація порожніх графіків
+    html += "function initCharts() {";
     html += "tempChart = new Chart(document.getElementById('tempChart'), {";
-    html += "type: 'line',";
-    html += "data: {";
-    html += "labels: labels,";
-    html += "datasets: [{";
-    html += "label: '🔥 Теплоносій',";
-    html += "data: tempCarrier,";
-    html += "borderColor: '#e74c3c',";
-    html += "backgroundColor: 'rgba(231, 76, 60, 0.1)',";
-    html += "borderWidth: 2,";
-    html += "pointRadius: 0,";  // Без точок для швидшого рендерингу
-    html += "tension: 0.4";
-    html += "}, {";
-    html += "label: '🏠 Кімната',";
-    html += "data: tempRoom,";
-    html += "borderColor: '#3498db',";
-    html += "backgroundColor: 'rgba(52, 152, 219, 0.1)',";
-    html += "borderWidth: 2,";
-    html += "pointRadius: 0,";
-    html += "tension: 0.4";
-    html += "}, {";
-    html += "label: '🌡️ BME280',";
-    html += "data: tempBME,";
-    html += "borderColor: '#2ecc71',";
-    html += "backgroundColor: 'rgba(46, 204, 113, 0.1)',";
-    html += "borderWidth: 2,";
-    html += "pointRadius: 0,";
-    html += "tension: 0.4";
-    html += "}]},";
-    html += "options: {";
-    html += "responsive: true,";
-    html += "maintainAspectRatio: false,";
-    html += "interaction: { mode: 'index', intersect: false },";
-    html += "plugins: {";
-    html += "legend: { display: true, position: 'top' },";
-    html += "tooltip: {";
-    html += "callbacks: {";
-    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "type: 'line', data: { labels: [], datasets: [";
+    html += "{ label: '🔥 Теплоносій', data: [], borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.4 },";
+    html += "{ label: '🏠 Кімната', data: [], borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.4 },";
+    html += "{ label: '🌡️ BME280', data: [], borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.4 }";
+    html += "]}, options: {";
+    html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
+    html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
+    html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
     html += "label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '°C'; }";
-    html += "}},";
-    html += "zoom: zoomConfig";
-    html += "},";
+    html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: '°C' } } }";
     html += "}});";
 
-    // Графік вологості
     html += "humChart = new Chart(document.getElementById('humChart'), {";
-    html += "type: 'line',";
-    html += "data: {";
-    html += "labels: labels,";
-    html += "datasets: [{";
-    html += "label: '💧 Вологість',";
-    html += "data: humidity,";
-    html += "borderColor: '#3498db',";
-    html += "backgroundColor: 'rgba(52, 152, 219, 0.2)',";
-    html += "fill: true,";
-    html += "borderWidth: 2,";
-    html += "pointRadius: 0,";
-    html += "tension: 0.4";
-    html += "}]},";
-    html += "options: {";
-    html += "responsive: true,";
-    html += "maintainAspectRatio: false,";
-    html += "interaction: { mode: 'index', intersect: false },";
-    html += "plugins: {";
-    html += "legend: { display: true, position: 'top' },";
-    html += "tooltip: {";
-    html += "callbacks: {";
-    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "type: 'line', data: { labels: [], datasets: [";
+    html += "{ label: '💧 Вологість', data: [], borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.2)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.4 }";
+    html += "]}, options: {";
+    html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
+    html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
+    html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
     html += "label: function(ctx) { return ctx.parsed.y.toFixed(1) + '%'; }";
-    html += "}},";
-    html += "zoom: zoomConfig";
-    html += "},";
+    html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
     html += "}});";
 
-    // Графік CO2
     html += "co2Chart = new Chart(document.getElementById('co2Chart'), {";
-    html += "type: 'line',";
-    html += "data: {";
-    html += "labels: labels,";
-    html += "datasets: [{";
-    html += "label: '💨 CO2 (ppm)',";
-    html += "data: co2Level,";
-    html += "borderColor: '#e67e22',";
-    html += "backgroundColor: 'rgba(230, 126, 34, 0.1)',";
-    html += "fill: true,";
-    html += "borderWidth: 2,";
-    html += "pointRadius: 0,";
-    html += "tension: 0.4";
-    html += "}]},";
-    html += "options: {";
-    html += "responsive: true,";
-    html += "maintainAspectRatio: false,";
-    html += "interaction: { mode: 'index', intersect: false },";
-    html += "plugins: {";
-    html += "legend: { display: true, position: 'top' },";
-    html += "tooltip: {";
-    html += "callbacks: {";
-    html += "title: function(ctx) { return ctx[0].label; },";
+    html += "type: 'line', data: { labels: [], datasets: [";
+    html += "{ label: '💨 CO2 (ppm)', data: [], borderColor: '#e67e22', backgroundColor: 'rgba(230, 126, 34, 0.1)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.4 }";
+    html += "]}, options: {";
+    html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
+    html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
+    html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
     html += "label: function(ctx) { return ctx.parsed.y.toFixed(0) + ' ppm'; }";
-    html += "}},";
-    html += "zoom: zoomConfig";
-    html += "},";
+    html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: 'ppm' } } }";
     html += "}});";
 
-    // Подвійний клік для скидання масштабу
     html += "document.getElementById('tempChart').ondblclick = function() { tempChart.resetZoom(); };";
     html += "document.getElementById('humChart').ondblclick = function() { humChart.resetZoom(); };";
     html += "document.getElementById('co2Chart').ondblclick = function() { co2Chart.resetZoom(); };";
-
-    html += "})";
-    html += ".catch(error => {";
-    html += "console.error('Помилка завантаження даних:', error);";
-    html += "alert('Помилка завантаження історичних даних. Перезавантажте сторінку.');";
-    html += "});";
-
-    // URL Google Apps Script (для читання з браузера)
-    html += "const SHEETS_URL = '" + String(GOOGLE_SCRIPT_URL) + "';";
-
-    // Функція переключення джерела даних
-    html += "function switchDataSource() {";
-    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
-    html += "const dateSelector = document.getElementById('dateSelector');";
-    html += "if (source === 'spiffs' || source === 'sheets') {";
-    html += "dateSelector.style.display = 'block';";
-    html += "const today = new Date().toISOString().split('T')[0];";
-    html += "const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];";
-    html += "document.getElementById('endDate').value = today;";
-    html += "document.getElementById('startDate').value = weekAgo;";
-    html += "document.getElementById('loadBtn').textContent = source === 'sheets' ? '☁️ Завантажити з Sheets' : '📥 Завантажити';";
-    html += "} else {";
-    html += "dateSelector.style.display = 'none';";
-    html += "location.reload();";
-    html += "}";
     html += "}";
 
-    // Функція завантаження архівних даних
-    html += "function loadArchiveData() {";
-    html += "const startDate = document.getElementById('startDate').value;";
-    html += "const endDate = document.getElementById('endDate').value;";
-    html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
-    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
-    html += "if (source === 'sheets') { loadSheetsData(startDate, endDate); return; }";
-    html += "fetch(`/history/data?source=spiffs&start=${startDate}&end=${endDate}&format=json`)";
-    html += ".then(response => response.json())";
-    html += ".then(result => {";
-    html += "const data = result.data || [];";
-    html += "if (data.length === 0) {";
-    html += "alert('Немає даних за вибраний період');";
-    html += "return;";
-    html += "}";
-    html += "const labels = [];";
-    html += "const tempCarrier = [];";
-    html += "const tempRoom = [];";
-    html += "const tempBME = [];";
-    html += "const humidity = [];";
-    html += "const co2Level = [];";
-    html += "data.forEach(record => {";
-    html += "if (record.timestamp > 0) {";
-    html += "const date = new Date(record.timestamp * 1000);";
-    html += "const day = String(date.getDate()).padStart(2, '0');";
-    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
-    html += "const hours = String(date.getHours()).padStart(2, '0');";
-    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "labels.push(day + '/' + month + ' ' + hours + ':' + minutes);";
-    html += "tempCarrier.push(record.tempCarrier);";
-    html += "tempRoom.push(record.tempRoom);";
-    html += "tempBME.push(record.tempBME);";
-    html += "humidity.push(record.humidity);";
-    html += "co2Level.push(record.co2Level || 0);";
-    html += "}";
-    html += "});";
+    html += "function updateCharts(labels, tempCarrier, tempRoom, tempBME, humidity, co2Level) {";
     html += "tempChart.data.labels = labels;";
     html += "tempChart.data.datasets[0].data = tempCarrier;";
     html += "tempChart.data.datasets[1].data = tempRoom;";
@@ -364,49 +224,207 @@ void handleHistoryPage() {
     html += "co2Chart.data.labels = labels;";
     html += "co2Chart.data.datasets[0].data = co2Level;";
     html += "co2Chart.update();";
+    html += "}";
+
+    // Функція вибору періоду
+    html += "function selectPeriod(period) {";
+    html += "currentPeriod = period;";
+    html += "document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));";
+    html += "const tabBtn = document.getElementById('tab' + period.charAt(0).toUpperCase() + period.slice(1));";
+    html += "if (tabBtn) tabBtn.classList.add('active');";
+    html += "const today = new Date().toISOString().split('T')[0];";
+    html += "let start = today;";
+    html += "if (period === 'day') {";
+    html += "document.getElementById('startDate').value = today;";
+    html += "document.getElementById('endDate').value = today;";
+    html += "document.getElementById('dateSelector').style.display = 'none';";
+    html += "const src = document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "if (src === 'ram') { loadRAMData(); return; }";
+    html += "} else if (period === 'week') {";
+    html += "start = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];";
+    html += "} else if (period === 'month') {";
+    html += "start = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];";
+    html += "} else if (period === 'year') {";
+    html += "start = new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0];";
+    html += "} else if (period === 'custom') {";
+    html += "document.getElementById('dateSelector').style.display = 'block';";
+    html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
+    html += "document.querySelector('input[name=\"dataSource\"][value=\"spiffs\"]').checked = true;";
+    html += "}";
+    html += "return;";
+    html += "}";
+    html += "document.getElementById('startDate').value = start;";
+    html += "document.getElementById('endDate').value = today;";
+    html += "document.getElementById('dateSelector').style.display = 'block';";
+    html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
+    html += "document.querySelector('input[name=\"dataSource\"][value=\"spiffs\"]').checked = true;";
+    html += "}";
+    html += "loadDataForCurrentSelection();";
+    html += "}";
+
+    // Перемикання джерела даних
+    html += "function switchDataSource() {";
+    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "const dateSelector = document.getElementById('dateSelector');";
+    html += "if (source === 'ram') {";
+    html += "selectPeriod('day');";
+    html += "} else {";
+    html += "const today = new Date().toISOString().split('T')[0];";
+    html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
+    html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
+    html += "dateSelector.style.display = 'block';";
+    html += "const status = document.getElementById('loadStatus');";
+    html += "if (source === 'sheets') {";
+    html += "  if (status) status.textContent = 'ℹ️ Оберіть дати та натисніть «Завантажити»';";
+    html += "} else {";
+    html += "  loadDataForCurrentSelection();";
+    html += "}";
+    html += "}";
+    html += "}";
+
+    // Завантаження за поточним вибором
+    html += "function loadDataForCurrentSelection() {";
+    html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "const startDate = document.getElementById('startDate').value;";
+    html += "const endDate = document.getElementById('endDate').value;";
+    html += "if (source === 'ram') { loadRAMData(); }";
+    html += "else if (source === 'sheets') { loadSheetsData(startDate, endDate); }";
+    html += "else { loadArchiveData(startDate, endDate); }";
+    html += "}";
+
+    // Завантаження RAM
+    html += "function loadRAMData() {";
+    html += "const status = document.getElementById('loadStatus');";
+    html += "if (status) status.textContent = '⏳ Оновлення...';";
+    html += "fetch('/history/data?source=ram&format=json')";
+    html += ".then(response => response.json())";
+    html += ".then(result => {";
+    html += "let data = result.data || [];";
+    html += "data = data.filter(r => r.timestamp > 1000000000);";
+    html += "data.sort((a, b) => a.timestamp - b.timestamp);";
+    html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
+    html += "data.forEach(record => {";
+    html += "const date = new Date(record.timestamp * 1000);";
+    html += "const day = String(date.getDate()).padStart(2, '0');";
+    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "const year = date.getFullYear();";
+    html += "const hours = String(date.getHours()).padStart(2, '0');";
+    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "labels.push(hours + ':' + minutes);";
+    html += "fullDates.push(day + '.' + month + '.' + year + ' ' + hours + ':' + minutes);";
+    html += "tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
+    html += "hum.push(record.humidity); co2.push(record.co2Level || 0);";
+    html += "});";
+    html += "window.chartFullDates = fullDates;";
+    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
+    html += "if (status) status.textContent = '✅ ' + data.length + ' записів';";
     html += "})";
     html += ".catch(error => {";
     html += "console.error('Помилка:', error);";
-    html += "alert('Помилка завантаження архівних даних');";
+    html += "if (status) status.textContent = '❌ Помилка RAM';";
     html += "});";
     html += "}";
 
-    // Завантаження даних з Google Sheets (браузер → Apps Script напряму)
+    // Завантаження архіву SPIFFS
+    html += "function loadArchiveData(startDate, endDate) {";
+    html += "const status = document.getElementById('loadStatus');";
+    html += "const btn = document.getElementById('loadBtn');";
+    html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
+    html += "if (btn) btn.disabled = true;";
+    html += "if (status) status.textContent = '⏳ Завантаження SPIFFS...';";
+    html += "fetch(`/history/data?source=spiffs&start=${startDate}&end=${endDate}&format=json`)";
+    html += ".then(response => response.json())";
+    html += ".then(result => {";
+    html += "let data = result.data || [];";
+    html += "data = data.filter(r => r.timestamp > 1000000000);";
+    html += "data.sort((a, b) => a.timestamp - b.timestamp);";
+    html += "if (data.length === 0) {";
+    html += "if (status) status.textContent = '⚠️ Немає даних за період';";
+    html += "if (btn) btn.disabled = false;";
+    html += "return;";
+    html += "}";
+    html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
+    html += "data.forEach(record => {";
+    html += "const date = new Date(record.timestamp * 1000);";
+    html += "const day = String(date.getDate()).padStart(2, '0');";
+    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "const year = date.getFullYear();";
+    html += "const hours = String(date.getHours()).padStart(2, '0');";
+    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "labels.push(day + '.' + month + ' ' + hours + ':' + minutes);";
+    html += "fullDates.push(day + '.' + month + '.' + year + ' ' + hours + ':' + minutes);";
+    html += "tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
+    html += "hum.push(record.humidity); co2.push(record.co2Level || 0);";
+    html += "});";
+    html += "window.chartFullDates = fullDates;";
+    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
+    html += "if (status) status.textContent = '✅ ' + data.length + ' записів';";
+    html += "if (btn) btn.disabled = false;";
+    html += "})";
+    html += ".catch(error => {";
+    html += "console.error('Помилка:', error);";
+    html += "if (status) status.textContent = '❌ Помилка читання архіву';";
+    html += "if (btn) btn.disabled = false;";
+    html += "});";
+    html += "}";
+
+    // Завантаження Google Sheets
     html += "function loadSheetsData(startDate, endDate) {";
     html += "const status = document.getElementById('loadStatus');";
     html += "const btn = document.getElementById('loadBtn');";
-    html += "btn.disabled = true;";
-    html += "status.textContent = '⏳ Завантаження...';";
+    html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
+    html += "if (btn) btn.disabled = true;";
+    html += "  if (status) status.textContent = '⏳ Завантаження Sheets...';";
+    html += "const controller = new AbortController();";
+    html += "const timeoutId = setTimeout(() => controller.abort(), 35000);";
     html += "const url = SHEETS_URL + '?action=read&from=' + startDate + '&to=' + endDate;";
-    html += "fetch(url)";
-    html += ".then(r => r.text())";
+    html += "fetch(url, { signal: controller.signal })";
+    html += ".then(r => { clearTimeout(timeoutId); if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })";
     html += ".then(text => {";
     html += "let rows;";
-    html += "try { rows = JSON.parse(text); } catch(e) { throw new Error('Відповідь: ' + text.substring(0,100)); }";
-    html += "if (!Array.isArray(rows) || rows.length === 0) { status.textContent = '⚠️ Немає даних за період'; btn.disabled = false; return; }";
-    // Стовпці: 0=datetime, 1=tempCarrier, 2=tempRoom, 3=tempBME, 4=humidity, 5=co2, 6=pump, 7=fan, 8=extractor, 9=voltage, 10=power, 11=totalEnergy
-    html += "const labels=[], tc=[], tr=[], tb=[], hum=[], co2=[];";
+    html += "try { rows = JSON.parse(text); } catch(e) { ";
+    html += "  if (text.indexOf('<html') >= 0 || text.indexOf('<!DOCTYPE') >= 0) {";
+    html += "    throw new Error('Google Script вимагає авторизації (доступ: Anyone)');";
+    html += "  }";
+    html += "  throw new Error('Відповідь: ' + text.substring(0,60));";
+    html += "}";
+    html += "if (!Array.isArray(rows) || rows.length === 0) {";
+    html += "if (status) status.textContent = '⚠️ Немає даних за період';";
+    html += "return;";
+    html += "}";
+    html += "rows.sort((a, b) => (a[0] > b[0] ? 1 : (a[0] < b[0] ? -1 : 0)));";
+    html += "const labels=[], fullDates=[], tc=[], tr=[], tb=[], hum=[], co2=[];";
     html += "rows.forEach(r => {";
     html += "if (!r[0]) return;";
     html += "const dt = String(r[0]);";
-    html += "labels.push(dt.substring(5,16));";  // "MM-DD HH:MM"
+    html += "labels.push(dt.substring(5,16));";
+    html += "fullDates.push(dt);";
     html += "tc.push(parseFloat(r[1])||0);";
     html += "tr.push(parseFloat(r[2])||0);";
     html += "tb.push(parseFloat(r[3])||0);";
     html += "hum.push(parseFloat(r[4])||0);";
     html += "co2.push(parseFloat(r[5])||0);";
     html += "});";
-    html += "tempChart.data.labels=labels; tempChart.data.datasets[0].data=tc; tempChart.data.datasets[1].data=tr; tempChart.data.datasets[2].data=tb; tempChart.update();";
-    html += "humChart.data.labels=labels; humChart.data.datasets[0].data=hum; humChart.update();";
-    html += "co2Chart.data.labels=labels; co2Chart.data.datasets[0].data=co2; co2Chart.update();";
-    html += "status.textContent = '✅ ' + rows.length + ' записів';";
-    html += "btn.disabled = false;";
+    html += "window.chartFullDates = fullDates;";
+    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
+    html += "if (status) status.textContent = '✅ ' + rows.length + ' записів';";
     html += "})";
     html += ".catch(err => {";
-    html += "status.textContent = '❌ ' + err.message;";
-    html += "btn.disabled = false;";
+    html += "clearTimeout(timeoutId);";
+    html += "if (err.name === 'AbortError') {";
+    html += "  if (status) status.textContent = '❌ Таймаут Google Sheets (перевірте зв\\'язок)';";
+    html += "} else {";
+    html += "  if (status) status.textContent = '❌ ' + err.message;";
+    html += "}";
+    html += "})";
+    html += ".finally(() => {";
+    html += "if (btn) btn.disabled = false;";
     html += "});";
     html += "}";
+
+    // Старт
+    html += "initCharts();";
+    html += "selectPeriod('day');";
 
     html += "</script>";
 

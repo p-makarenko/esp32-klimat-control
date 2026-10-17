@@ -2,12 +2,14 @@
 #include "system_core.h"
 #include "config.h"
 #include "web_common.h"
+#include "google_sheets_sync.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <time.h>
 
 // Forward declaration
 bool checkAuth();
+extern String getUkraineMarquee();
 
 // ============================================================================
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -107,16 +109,30 @@ void updateEnergyData() {
         uint16_t recvCrc = resp[23] | (resp[24] << 8);
         uint16_t calcCrc = crc16(resp, 23);
         if (recvCrc == calcCrc && resp[1] == 0x04 && resp[2] == 20) {
-            energyData.voltage   = (resp[3] << 8 | resp[4]) * 0.1f;
+            float v = (resp[3] << 8 | resp[4]) * 0.1f;
             uint32_t rawCurrent  = (resp[5] << 8 | resp[6]) | ((uint32_t)(resp[7] << 8 | resp[8]) << 16);
-            energyData.current   = rawCurrent * 0.001f;
+            float c = rawCurrent * 0.001f;
             uint32_t rawPower    = (resp[9] << 8 | resp[10]) | ((uint32_t)(resp[11] << 8 | resp[12]) << 16);
-            energyData.power     = rawPower * 0.1f;
+            float p = rawPower * 0.1f;
             uint32_t rawEnergy   = (resp[13] << 8 | resp[14]) | ((uint32_t)(resp[15] << 8 | resp[16]) << 16);
-            energyData.energy    = rawEnergy * 0.001f;
-            energyData.frequency = (resp[17] << 8 | resp[18]) * 0.1f;
-            energyData.powerFactor = (resp[19] << 8 | resp[20]) * 0.01f;
-            energyData.error = false;
+            float e = rawEnergy * 0.001f;
+            float freq = (resp[17] << 8 | resp[18]) * 0.1f;
+            float pf = (resp[19] << 8 | resp[20]) * 0.01f;
+
+            // Санітарна фільтрація хибних пакетів PZEM
+            // Напруга в мережі повинна бути в межах 0..350V, струм 0..100A, частота 0 або 40..70Hz
+            if (v >= 0.0f && v <= 350.0f && c >= 0.0f && c <= 100.0f && p >= 0.0f && p <= 25000.0f &&
+                (freq == 0.0f || (freq >= 40.0f && freq <= 70.0f))) {
+                energyData.voltage   = v;
+                energyData.current   = c;
+                energyData.power     = p;
+                energyData.energy    = e;
+                energyData.frequency = freq;
+                energyData.powerFactor = pf;
+                energyData.error = false;
+            } else {
+                energyData.error = true;
+            }
         } else {
             energyData.error = true;
         }
@@ -124,16 +140,16 @@ void updateEnergyData() {
         energyData.error = true;
     }
 
-    // Запис в RAM буфер кожні 2 хвилини
-    if (!energyData.error && (now - lastPowerRecord >= 120000 || lastPowerRecord == 0)) {
+    // Запис в RAM буфер кожні 2 хвилини (навіть коли світло вимкнено - записуємо 0)
+    if (now - lastPowerRecord >= 120000 || lastPowerRecord == 0) {
         lastPowerRecord = now;
         time_t t;
         time(&t);
         if (t > 1000000) {  // Час синхронізовано
             powerBuffer[powerBufferIndex].timestamp = (uint32_t)t;
-            powerBuffer[powerBufferIndex].power = energyData.power;
-            powerBuffer[powerBufferIndex].voltage = energyData.voltage;
-            powerBuffer[powerBufferIndex].current = energyData.current;
+            powerBuffer[powerBufferIndex].power   = energyData.error ? 0.0f : energyData.power;
+            powerBuffer[powerBufferIndex].voltage = energyData.error ? 0.0f : energyData.voltage;
+            powerBuffer[powerBufferIndex].current = energyData.error ? 0.0f : energyData.current;
             powerBufferIndex = (powerBufferIndex + 1) % ENERGY_POWER_BUFFER_SIZE;
             if (powerBufferCount < ENERGY_POWER_BUFFER_SIZE) powerBufferCount++;
         }
@@ -220,7 +236,7 @@ void handleEnergyPowerData() {
 
     for (uint16_t i = 0; i < count; i++) {
         uint16_t idx = (startIdx + i) % ENERGY_POWER_BUFFER_SIZE;
-        if (powerBuffer[idx].timestamp == 0) continue;
+        if (powerBuffer[idx].timestamp < 1000000000) continue;
         if (!first) server.sendContent(",");
         String rec = "{\"t\":" + String(powerBuffer[idx].timestamp) +
                      ",\"p\":" + String(powerBuffer[idx].power, 1) +
@@ -349,190 +365,406 @@ void handleEnergyPage() {
     // Кнопка скидання — окрема
     html += "<div style='margin:15px 0;text-align:center'><button class='btn' id='rstBtn' style='background:#f44336;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer' onclick='resetKwh()'>🔄 Скинути лічильник kWh</button></div>";
 
-    // Вкладки для графіка потужності
+    // Панель навігації по періодах
+    html += "<div class='card' style='border-left-color: #f59e0b;'>";
+    html += "<strong>📅 Період відображення:</strong><br>";
+    html += "<div style='display: flex; gap: 8px; margin: 10px 0 15px 0; flex-wrap: wrap;'>";
+    html += "<button class='tab-btn active' id='tabDay' onclick='selectPeriod(\"day\")'>📅 День</button>";
+    html += "<button class='tab-btn' id='tabWeek' onclick='selectPeriod(\"week\")'>📅 Тиждень</button>";
+    html += "<button class='tab-btn' id='tabMonth' onclick='selectPeriod(\"month\")'>📅 Місяць</button>";
+    html += "<button class='tab-btn' id='tabYear' onclick='selectPeriod(\"year\")'>📅 Рік</button>";
+    html += "<button class='tab-btn' id='tabCustom' onclick='selectPeriod(\"custom\")'>📆 Свій період</button>";
+    html += "</div>";
+
+    html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #eee;'>";
+    html += "<div><strong>📁 Джерело даних:</strong> ";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (24 год)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
+    html += "</div>";
+    html += "<div style='display: flex; gap: 12px;'>";
+    html += "<label style='font-size: 0.9rem;'><input type='checkbox' id='chkPower' checked onchange='updateDatasets()'> ⚡ Потужність (W)</label>";
+    html += "<label style='font-size: 0.9rem;'><input type='checkbox' id='chkVoltage' checked onchange='updateDatasets()'> 🔌 Напруга (V)</label>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div id='dateSelector' style='display: none; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee;'>";
+    html += "<div style='display: flex; flex-wrap: wrap; gap: 10px; align-items: center;'>";
+    html += "<label>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<label>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>📥 Завантажити</button>";
+    html += "<span id='loadStatus' style='margin-left: 10px; color: #666; font-size: 0.9em;'></span>";
+    html += "</div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Інструкції для масштабування
+    html += "<div class='card' style='border-left-color: #2196F3;'>";
+    html += "<strong>📊 Керування графіками:</strong><br>";
+    html += "<span style='display: inline-block; margin-top: 5px;'>🖱️ <strong>Масштабування:</strong> прокрутка коліщатком миші / pinch на сенсорному екрані</span><br>";
+    html += "<span style='display: inline-block;'>👆 <strong>Переміщення:</strong> клік і перетягування графіка</span><br>";
+    html += "<span style='display: inline-block;'>🔄 <strong>Скидання:</strong> подвійний клік по графіку або кнопка нижче</span>";
+    html += "</div>";
+
+    // Графік потужності та напруги
     html += "<div class='chart-wrapper'>";
     html += "<div class='chart-header'>";
     html += "<h2>⚡ Потужність та Напруга</h2>";
     html += "<button onclick='powerChart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
     html += "</div>";
-
-    // Вкладки день / тиждень / місяць / рік
-    html += "<div style='display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap'>";
-    html += "<button class='tab-btn active' id='tabDay' onclick='switchTab(\"day\")'>День</button>";
-    html += "<button class='tab-btn' id='tabWeek' onclick='switchTab(\"week\")'>Тиждень</button>";
-    html += "<button class='tab-btn' id='tabMonth' onclick='switchTab(\"month\")'>Місяць</button>";
-    html += "<button class='tab-btn' id='tabYear' onclick='switchTab(\"year\")'>Рік</button>";
-    html += "<div style='margin-left:auto;display:flex;gap:10px;align-items:center'>";
-    html += "<label style='font-size:0.9rem'><input type='checkbox' id='chkPower' checked onchange='updateDatasets()'>Потужність (W)</label>";
-    html += "<label style='font-size:0.9rem'><input type='checkbox' id='chkVoltage' checked onchange='updateDatasets()'>Напруга (V)</label>";
-    html += "</div></div>";
-
-    html += "<style>.tab-btn{padding:8px 16px;border:1px solid #ddd;background:#f5f5f5;border-radius:5px;cursor:pointer;font-size:0.9rem}";
-    html += ".tab-btn.active{background:#f59e0b;color:#fff;border-color:#f59e0b}</style>";
-
+    html += "<div style='display:flex;gap:15px;flex-wrap:wrap;background:#fff8e1;padding:12px 16px;border-radius:8px;border-left:4px solid #f59e0b;margin-bottom:15px;align-items:center;'>";
+    html += "<div><span style='color:#666;font-size:0.85rem;'>⚡ Спожито за період:</span><br><strong id='periodEnergy' style='font-size:1.3rem;color:#d97706;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>kWh</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>📊 Сер. потужність:</span><br><strong id='periodAvgPower' style='font-size:1.3rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>W</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>🔥 Пікова потужність:</span><br><strong id='periodMaxPower' style='font-size:1.3rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>W</span></div>";
+    html += "</div>";
     html += "<div class='chart-container' style='height:300px'><canvas id='powerCanvas'></canvas></div>";
     html += "</div>";
 
     html += "</div>"; // container
 
-    html += R"rawliteral(<script>
-var powerChart;
-var allPowerData = [];
-var currentTab = 'day';
+    html += "<script>";
+    html += "var powerChart;";
+    html += "var allPowerData = [];";
+    html += "window.chartFullDates = [];";
+    html += "var currentPeriod = 'day';";
+    html += "const SHEETS_URL = '" + String(GOOGLE_SCRIPT_URL) + "';";
 
-var zoomCfg = {
-  zoom: {
-    wheel:{enabled:true,speed:0.1},
-    pinch:{enabled:true},
-    drag:{enabled:true,backgroundColor:'rgba(245,158,11,0.2)',borderColor:'rgba(245,158,11,0.8)',borderWidth:1,threshold:10},
-    mode:'x'
-  },
-  pan:{enabled:true,mode:'x',threshold:5}
-};
+    html += "var zoomCfg = {";
+    html += "  zoom: { wheel:{enabled:true,speed:0.1}, pinch:{enabled:true},";
+    html += "    drag:{enabled:true,backgroundColor:'rgba(245,158,11,0.2)',borderColor:'rgba(245,158,11,0.8)',borderWidth:1,threshold:10}, mode:'x' },";
+    html += "  pan:{enabled:true,mode:'x',threshold:5,modifierKey:null}";
+    html += "};";
 
-function fmtTime(ts){
-  var d=new Date(ts*1000);
-  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-}
-function fmtDate(ts){
-  var d=new Date(ts*1000);
-  return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-}
-function fmtDateYear(ts){
-  var d=new Date(ts*1000);
-  return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear();
-}
+    html += "function initCharts(){";
+    html += "  powerChart = new Chart(document.getElementById('powerCanvas'),{";
+    html += "    type:'line',";
+    html += "    data:{labels:[],datasets:[";
+    html += "      { label:'⚡ Потужність (W)',data:[], borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)', borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y',hidden:false },";
+    html += "      { label:'🔌 Напруга (V)',data:[], borderColor:'#3498db',backgroundColor:'rgba(52,152,219,0.1)', borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y1',hidden:false }";
+    html += "    ]},";
+    html += "    options:{";
+    html += "      responsive:true,maintainAspectRatio:false,animation:{duration:0},";
+    html += "      interaction:{mode:'index',intersect:false},";
+    html += "      scales:{";
+    html += "        x:{ticks:{maxTicksLimit:12,font:{size:11}},grid:{display:false}},";
+    html += "        y:{position:'left',beginAtZero:true,title:{display:true,text:'W'},ticks:{font:{size:11}},grid:{color:'#eee'}},";
+    html += "        y1:{position:'right',beginAtZero:false,title:{display:true,text:'V'},ticks:{font:{size:11}},grid:{display:false}}";
+    html += "      },";
+    html += "      plugins:{";
+    html += "        legend:{display:true,position:'top'},";
+    html += "        tooltip:{callbacks:{";
+    html += "          title:function(c){ return (window.chartFullDates && window.chartFullDates[c[0].dataIndex]) ? window.chartFullDates[c[0].dataIndex] : c[0].label; },";
+    html += "          label:function(c){ return c.dataset.label+': '+c.parsed.y.toFixed(1); }";
+    html += "        }},";
+    html += "        zoom:zoomCfg";
+    html += "      }";
+    html += "    }";
+    html += "  });";
+    html += "  document.getElementById('powerCanvas').ondblclick=function(){powerChart.resetZoom();};";
+    html += "}";
 
-function initCharts(){
-  powerChart = new Chart(document.getElementById('powerCanvas'),{
-    type:'line',
-    data:{labels:[],datasets:[
-      {
-        label:'Потужність (W)',data:[],
-        borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',
-        borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y',hidden:false
-      },
-      {
-        label:'Напруга (V)',data:[],
-        borderColor:'#3498db',backgroundColor:'rgba(52,152,219,0.1)',
-        borderWidth:2,fill:true,tension:0.3,pointRadius:0,yAxisID:'y1',hidden:false
-      }
-    ]},
-    options:{
-      responsive:true,maintainAspectRatio:false,animation:{duration:0},
-      interaction:{mode:'index',intersect:false},
-      scales:{
-        x:{ticks:{maxTicksLimit:10,font:{size:11}},grid:{display:false}},
-        y:{position:'left',beginAtZero:true,title:{display:true,text:'W'},ticks:{font:{size:11}},grid:{color:'#eee'}},
-        y1:{position:'right',beginAtZero:true,title:{display:true,text:'V'},ticks:{font:{size:11}},grid:{display:false}}
-      },
-      plugins:{
-        legend:{display:true,position:'top'},
-        tooltip:{callbacks:{
-          title:function(c){return c[0].label;},
-          label:function(c){
-            var ds=c.dataset.label;
-            return ds+': '+c.parsed.y.toFixed(c.datasetIndex===0?1:1);
-          }
-        }},
-        zoom:zoomCfg
-      }
-    }
-  });
+    html += "function selectPeriod(period){";
+    html += "  currentPeriod=period;";
+    html += "  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});";
+    html += "  var tabBtn=document.getElementById('tab'+period.charAt(0).toUpperCase()+period.slice(1));";
+    html += "  if(tabBtn) tabBtn.classList.add('active');";
+    html += "  var today=new Date().toISOString().split('T')[0];";
+    html += "  var start=today;";
+    html += "  if(period==='day'){";
+    html += "    document.getElementById('startDate').value=today;";
+    html += "    document.getElementById('endDate').value=today;";
+    html += "    document.getElementById('dateSelector').style.display='none';";
+    html += "    var src=document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "    if(src==='ram'){ loadRAMData(); return; }";
+    html += "  } else if(period==='week'){";
+    html += "    start=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];";
+    html += "  } else if(period==='month'){";
+    html += "    start=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];";
+    html += "  } else if(period==='year'){";
+    html += "    start=new Date(Date.now()-365*24*60*60*1000).toISOString().split('T')[0];";
+    html += "  } else if(period==='custom'){";
+    html += "    document.getElementById('dateSelector').style.display='block';";
+    html += "    document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "    return;";
+    html += "  }";
+    html += "  document.getElementById('startDate').value=start;";
+    html += "  document.getElementById('endDate').value=today;";
+    html += "  document.getElementById('dateSelector').style.display='block';";
+    html += "  document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "  loadDataForCurrentSelection();";
+    html += "}";
 
-  document.getElementById('powerCanvas').ondblclick=function(){powerChart.resetZoom();};
+    html += "function switchDataSource(){";
+    html += "  var source=document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "  var dateSelector=document.getElementById('dateSelector');";
+    html += "  if(source==='ram'){";
+    html += "    selectPeriod('day');";
+    html += "  } else {";
+    html += "    var today=new Date().toISOString().split('T')[0];";
+    html += "    if(!document.getElementById('startDate').value) document.getElementById('startDate').value=today;";
+    html += "    if(!document.getElementById('endDate').value) document.getElementById('endDate').value=today;";
+    html += "    dateSelector.style.display='block';";
+    html += "    var status=document.getElementById('loadStatus');";
+    html += "    if(source==='sheets'){";
+    html += "      if(status) status.textContent='ℹ️ Оберіть дати та натисніть «Завантажити»';";
+    html += "    } else {";
+    html += "      loadDataForCurrentSelection();";
+    html += "    }";
+    html += "  }";
+    html += "}";
 
-  loadPowerData();
-}
+    html += "function loadDataForCurrentSelection(){";
+    html += "  var source=document.querySelector('input[name=\"dataSource\"]:checked').value;";
+    html += "  var startDate=document.getElementById('startDate').value;";
+    html += "  var endDate=document.getElementById('endDate').value;";
+    html += "  if(source==='ram'){ loadRAMData(); }";
+    html += "  else if(source==='spiffs'){ loadDeviceEnergyData(startDate, endDate); }";
+    html += "  else { loadSheetsData(startDate, endDate); }";
+    html += "}";
 
-function switchTab(tab){
-  currentTab=tab;
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-  var tabId='tab'+tab.charAt(0).toUpperCase()+tab.slice(1);
-  if(document.getElementById(tabId)) document.getElementById(tabId).classList.add('active');
-  filterPowerData(tab);
-}
+    html += "function updateDatasets(){";
+    html += "  var showPower=document.getElementById('chkPower').checked;";
+    html += "  var showVoltage=document.getElementById('chkVoltage').checked;";
+    html += "  powerChart.data.datasets[0].hidden=!showPower;";
+    html += "  powerChart.data.datasets[1].hidden=!showVoltage;";
+    html += "  powerChart.update('none');";
+    html += "}";
 
-function updateDatasets(){
-  var showPower=document.getElementById('chkPower').checked;
-  var showVoltage=document.getElementById('chkVoltage').checked;
-  powerChart.data.datasets[0].hidden=!showPower;
-  powerChart.data.datasets[1].hidden=!showVoltage;
-  powerChart.update('none');
-}
+    html += "function updatePeriodSummary(kwh, avgW, maxW){";
+    html += "  document.getElementById('periodEnergy').textContent = (kwh !== null && !isNaN(kwh)) ? kwh.toFixed(3) : '--';";
+    html += "  document.getElementById('periodAvgPower').textContent = (avgW !== null && !isNaN(avgW)) ? Math.round(avgW) : '--';";
+    html += "  document.getElementById('periodMaxPower').textContent = (maxW !== null && !isNaN(maxW)) ? Math.round(maxW) : '--';";
+    html += "}";
+    html += "";
+    html += "async function loadRAMData(){";
+    html += "  var status=document.getElementById('loadStatus');";
+    html += "  if(status) status.textContent='⏳ Оновлення...';";
+    html += "  try{";
+    html += "    var r=await fetch('/energy/power');";
+    html += "    var j=await r.json();";
+    html += "    var data=j.data||[];";
+    html += "    data=data.filter(function(d){ return d && d.t > 1000000000; });";
+    html += "    data.sort(function(a,b){ return a.t - b.t; });";
+    html += "    var labels=[], fullDates=[], power=[], voltage=[];";
+    html += "    var sumKwh=0, sumW=0, maxW=0;";
+    html += "    for(var i=0;i<data.length;i++){";
+    html += "      var d=new Date(data[i].t*1000);";
+    html += "      var day=('0'+d.getDate()).slice(-2);";
+    html += "      var month=('0'+(d.getMonth()+1)).slice(-2);";
+    html += "      var year=d.getFullYear();";
+    html += "      var hours=('0'+d.getHours()).slice(-2);";
+    html += "      var minutes=('0'+d.getMinutes()).slice(-2);";
+    html += "      labels.push(day+'.'+month+' '+hours+':'+minutes);";
+    html += "      fullDates.push(day+'.'+month+'.'+year+' '+hours+':'+minutes);";
+    html += "      var p = data[i].p || 0;";
+    html += "      power.push(p);";
+    html += "      voltage.push(data[i].v);";
+    html += "      if(p > maxW) maxW = p;";
+    html += "      sumW += p;";
+    html += "      if(i > 0){";
+    html += "        var dt = (data[i].t - data[i-1].t) / 3600;";
+    html += "        if(dt > 0 && dt < 2){";
+    html += "          sumKwh += ((p + (data[i-1].p||0)) / 2 * dt) / 1000;";
+    html += "        }";
+    html += "      }";
+    html += "    }";
+    html += "    window.chartFullDates=fullDates;";
+    html += "    powerChart.data.labels=labels;";
+    html += "    powerChart.data.datasets[0].data=power;";
+    html += "    powerChart.data.datasets[1].data=voltage;";
+    html += "    powerChart.resetZoom();";
+    html += "    powerChart.update('none');";
+    html += "    var avgW = data.length > 0 ? (sumW / data.length) : 0;";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    if(status) status.textContent='✅ '+data.length+' записів';";
+    html += "  }catch(e){";
+    html += "    if(status) status.textContent='❌ Помилка RAM';";
+    html += "  }";
+    html += "}";
 
-function filterPowerData(period){
-  var now=Math.floor(Date.now()/1000);
-  var cutoff=now;
-  if(period=='day') cutoff=now-86400;
-  else if(period=='week') cutoff=now-604800;
-  else if(period=='month') cutoff=now-2592000;
-  else if(period=='year') cutoff=now-31536000;
+    html += "function loadDeviceEnergyData(startDate, endDate){";
+    html += "  var status=document.getElementById('loadStatus');";
+    html += "  var btn=document.getElementById('loadBtn');";
+    html += "  if(!startDate || !endDate){ alert('Оберіть дати!'); return; }";
+    html += "  if(btn) btn.disabled=true;";
+    html += "  if(status) status.textContent='⏳ Завантаження архіву...';";
+    html += "  fetch('/energy/history')";
+    html += "  .then(function(r){ if(!r.ok) throw new Error('Немає файлу архіву'); return r.text(); })";
+    html += "  .then(function(text){";
+    html += "    var lines=text.trim().split('\\n');";
+    html += "    var labels=[], fullDates=[], power=[], voltage=[];";
+    html += "    var startTs=new Date(startDate+'T00:00:00').getTime()/1000;";
+    html += "    var endTs=new Date(endDate+'T23:59:59').getTime()/1000;";
+    html += "    var prevEnergy=null, firstEnergy=null, lastEnergy=null;";
+    html += "    var sumW=0, maxW=0;";
+    html += "    lines.forEach(function(l){";
+    html += "      var parts=l.split(',');";
+    html += "      if(parts.length<2) return;";
+    html += "      var ts=parseInt(parts[0]);";
+    html += "      var kwh=parseFloat(parts[1]);";
+    html += "      if(isNaN(ts) || isNaN(kwh) || ts<startTs || ts>endTs) return;";
+    html += "      if(firstEnergy===null) firstEnergy=kwh;";
+    html += "      lastEnergy=kwh;";
+    html += "      var d=new Date(ts*1000);";
+    html += "      var day=('0'+d.getDate()).slice(-2);";
+    html += "      var month=('0'+(d.getMonth()+1)).slice(-2);";
+    html += "      var hours=('0'+d.getHours()).slice(-2);";
+    html += "      var minutes=('0'+d.getMinutes()).slice(-2);";
+    html += "      labels.push(day+'.'+month+' '+hours+':'+minutes);";
+    html += "      fullDates.push(day+'.'+month+'.'+d.getFullYear()+' '+hours+':'+minutes);";
+    html += "      var pEst=(prevEnergy!==null && kwh>=prevEnergy) ? (kwh-prevEnergy)*1000 : 0;";
+    html += "      prevEnergy=kwh;";
+    html += "      power.push(pEst);";
+    html += "      voltage.push(230.0);";
+    html += "      if(pEst>maxW) maxW=pEst;";
+    html += "      sumW+=pEst;";
+    html += "    });";
+    html += "    if(labels.length===0){";
+    html += "      if(status) status.textContent='⚠️ Немає даних за період';";
+    html += "      updatePeriodSummary(null, null, null);";
+    html += "      if(btn) btn.disabled=false; return;";
+    html += "    }";
+    html += "    window.chartFullDates=fullDates;";
+    html += "    powerChart.data.labels=labels;";
+    html += "    powerChart.data.datasets[0].data=power;";
+    html += "    powerChart.data.datasets[1].data=voltage;";
+    html += "    powerChart.resetZoom();";
+    html += "    powerChart.update('none');";
+    html += "    var sumKwh=(firstEnergy!==null && lastEnergy!==null && lastEnergy>=firstEnergy) ? (lastEnergy-firstEnergy) : 0;";
+    html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    if(status) status.textContent='✅ '+labels.length+' записів';";
+    html += "    if(btn) btn.disabled=false;";
+    html += "  })";
+    html += "  .catch(function(err){";
+    html += "    if(status) status.textContent='❌ '+err.message;";
+    html += "    updatePeriodSummary(null, null, null);";
+    html += "    if(btn) btn.disabled=false;";
+    html += "  });";
+    html += "}";
+    html += "";
+    html += "function loadSheetsData(startDate, endDate){";
+    html += "  var status=document.getElementById('loadStatus');";
+    html += "  var btn=document.getElementById('loadBtn');";
+    html += "  if(!startDate || !endDate){ alert('Оберіть дати!'); return; }";
+    html += "  if(btn) btn.disabled=true;";
+    html += "  if(status) status.textContent='⏳ Завантаження Sheets...';";
+    html += "  var controller=new AbortController();";
+    html += "  var timeoutId=setTimeout(function(){ controller.abort(); }, 35000);";
+    html += "  var url=SHEETS_URL+'?action=read&from='+startDate+'&to='+endDate;";
+    html += "  fetch(url, { signal: controller.signal })";
+    html += "  .then(function(r){ clearTimeout(timeoutId); if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })";
+    html += "  .then(function(text){";
+    html += "    var rows;";
+    html += "    try{ rows=JSON.parse(text); }catch(e){";
+    html += "      if(text.indexOf('<html')>=0 || text.indexOf('<!DOCTYPE')>=0){";
+    html += "        throw new Error('Google Script вимагає авторизації (доступ: Anyone)');";
+    html += "      }";
+    html += "      throw new Error('Відповідь: '+text.substring(0,60));";
+    html += "    }";
+    html += "    if(!Array.isArray(rows) || rows.length===0){";
+    html += "      if(status) status.textContent='⚠️ Немає даних за період';";
+    html += "      updatePeriodSummary(null, null, null);";
+    html += "      return;";
+    html += "    }";
+    html += "    rows.sort(function(a,b){ return (a[0]>b[0]?1:(a[0]<b[0]?-1:0)); });";
+    html += "    var labels=[], fullDates=[], power=[], voltage=[];";
+    html += "    var sumKwh=0, sumW=0, maxW=0;";
+    html += "    var prevD=null, prevP=0;";
+    html += "    rows.forEach(function(r){";
+    html += "      if(!r[0]) return;";
+    html += "      var dt=String(r[0]);";
+    html += "      var d = new Date(dt.indexOf('T') >= 0 ? dt : dt.replace(' ', 'T'));";
+    html += "      var lbl = dt.substring(5,16);";
+    html += "      if(!isNaN(d.getTime())){";
+    html += "        var day=('0'+d.getDate()).slice(-2);";
+    html += "        var month=('0'+(d.getMonth()+1)).slice(-2);";
+    html += "        var hours=('0'+d.getHours()).slice(-2);";
+    html += "        var minutes=('0'+d.getMinutes()).slice(-2);";
+    html += "        lbl = day + '.' + month + ' ' + hours + ':' + minutes;";
+    html += "      }";
+    html += "      labels.push(lbl);";
+    html += "      fullDates.push(dt);";
+    html += "      var v = parseFloat(r[9])||0;";
+    html += "      var p = parseFloat(r[10])||0;";
+    html += "      voltage.push(v);";
+    html += "      power.push(p);";
+    html += "      if(p>maxW) maxW=p;";
+    html += "      sumW+=p;";
+    html += "      if(!isNaN(d.getTime())){";
+    html += "        if(prevD!==null){";
+    html += "          var dtHours=(d.getTime()-prevD.getTime())/3600000;";
+    html += "          if(dtHours>0 && dtHours<24){";
+    html += "            sumKwh+=((p+prevP)/2*dtHours)/1000;";
+    html += "          }";
+    html += "        }";
+    html += "        prevD=d; prevP=p;";
+    html += "      }";
+    html += "    });";
+    html += "    window.chartFullDates=fullDates;";
+    html += "    powerChart.data.labels=labels;";
+    html += "    powerChart.data.datasets[0].data=power;";
+    html += "    powerChart.data.datasets[1].data=voltage;";
+    html += "    powerChart.resetZoom();";
+    html += "    powerChart.update('none');";
+    html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    if(status) status.textContent='✅ '+rows.length+' записів';";
+    html += "  })";
+    html += "  .catch(function(err){";
+    html += "    clearTimeout(timeoutId);";
+    html += "    if(err.name==='AbortError'){";
+    html += "      if(status) status.textContent='❌ Таймаут Google Sheets (перевірте зв\\'язок)';";
+    html += "    } else {";
+    html += "      if(status) status.textContent='❌ '+err.message;";
+    html += "    }";
+    html += "    updatePeriodSummary(null, null, null);";
+    html += "  })";
+    html += "  .finally(function(){";
+    html += "    if(btn) btn.disabled=false;";
+    html += "  });";
+    html += "}";
 
-  var labels=[],power=[],voltage=[];
-  for(var i=0;i<allPowerData.length;i++){
-    if(allPowerData[i].t>=cutoff){
-      if(period=='day') labels.push(fmtTime(allPowerData[i].t));
-      else if(period=='year') labels.push(fmtDateYear(allPowerData[i].t));
-      else labels.push(fmtDate(allPowerData[i].t));
-      power.push(allPowerData[i].p);
-      voltage.push(allPowerData[i].v);
-    }
-  }
-  powerChart.data.labels=labels;
-  powerChart.data.datasets[0].data=power;
-  powerChart.data.datasets[1].data=voltage;
-  powerChart.resetZoom();
-  powerChart.update('none');
-}
+    html += "async function upd(){";
+    html += "  try{";
+    html += "    var r=await fetch('/energy/api');var d=await r.json();";
+    html += "    if(!d.err){";
+    html += "      document.getElementById('v').innerText=d.v.toFixed(1);";
+    html += "      document.getElementById('c').innerText=d.c.toFixed(2);";
+    html += "      document.getElementById('p').innerText=d.p.toFixed(0);";
+    html += "      document.getElementById('e').innerText=d.e.toFixed(2);";
+    html += "      document.getElementById('f').innerText=d.f.toFixed(1);";
+    html += "      document.getElementById('pf').innerText=d.pf.toFixed(2);";
+    html += "      document.getElementById('st').style.background='#4CAF50';";
+    html += "      document.getElementById('st').innerText='ONLINE';";
+    html += "    } else {";
+    html += "      document.getElementById('st').style.background='#f44336';";
+    html += "      document.getElementById('st').innerText='ПОМИЛКА';";
+    html += "    }";
+    html += "  }catch(e){";
+    html += "    document.getElementById('st').style.background='#f44336';";
+    html += "    document.getElementById('st').innerText='OFFLINE';";
+    html += "  }";
+    html += "}";
 
-async function loadPowerData(){
-  try{
-    var r=await fetch('/energy/power');
-    var j=await r.json();
-    allPowerData=j.data||[];
-    filterPowerData('day');
-  }catch(e){}
-}
+    html += "async function resetKwh(){";
+    html += "  if(!confirm('Скинути лічильник kWh на 0?')) return;";
+    html += "  if(!confirm('Ви впевнені? Дані буде втрачено!')) return;";
+    html += "  var r=await fetch('/energy/reset',{method:'POST'});";
+    html += "  if(r.ok){";
+    html += "    document.getElementById('rstBtn').innerText='Скинуто!';";
+    html += "    setTimeout(function(){document.getElementById('rstBtn').innerText='🔄 Скинути лічильник kWh';},2000);";
+    html += "  }";
+    html += "}";
 
+    html += "initCharts();";
+    html += "loadRAMData();";
+    html += "setInterval(upd,2000); upd();";
+    html += "setInterval(function(){ if(currentPeriod==='day' && document.querySelector('input[name=\"dataSource\"]:checked').value==='ram') loadRAMData(); }, 120000);";
+    html += "</script>";
 
-async function upd(){
-  try{
-    var r=await fetch('/energy/api');var d=await r.json();
-    if(!d.err){
-      document.getElementById('v').innerText=d.v.toFixed(1);
-      document.getElementById('c').innerText=d.c.toFixed(2);
-      document.getElementById('p').innerText=d.p.toFixed(0);
-      document.getElementById('e').innerText=d.e.toFixed(2);
-      document.getElementById('f').innerText=d.f.toFixed(1);
-      document.getElementById('pf').innerText=d.pf.toFixed(2);
-      document.getElementById('st').style.background='#4CAF50';
-      document.getElementById('st').innerText='ONLINE';
-    } else {
-      document.getElementById('st').style.background='#f44336';
-      document.getElementById('st').innerText='ПОМИЛКА';
-    }
-  }catch(e){
-    document.getElementById('st').style.background='#f44336';
-    document.getElementById('st').innerText='OFFLINE';
-  }
-}
-
-async function resetKwh(){
-  if(!confirm('Скинути лічильник kWh на 0?')) return;
-  if(!confirm('Ви впевнені? Дані буде втрачено!')) return;
-  var r=await fetch('/energy/reset',{method:'POST'});
-  if(r.ok){
-    document.getElementById('rstBtn').innerText='Скинуто!';
-    setTimeout(function(){document.getElementById('rstBtn').innerText='🔄 Скинути лічильник kWh';},2000);
-  }
-}
-
-initCharts();
-setInterval(upd,2000); upd();
-setInterval(loadPowerData,120000);
-</script>)rawliteral";
-
+    html += getNavFooter();
+    html += getUkraineMarquee();
     html += getHtmlFooter();
     server.send(200, "text/html", html);
 }
