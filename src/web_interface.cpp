@@ -28,6 +28,7 @@
 #include <NetBIOS.h>
 #include <Update.h>
 #include <esp_task_wdt.h>
+#include <esp_ota_ops.h>
 #include <vector>
 #include <algorithm>
 
@@ -53,17 +54,14 @@ bool checkAuth() {
 // ============================================================================
 
 bool checkCSRF() {
-    // Для GET запитів не перевіряємо
     if (server.method() != HTTP_POST) {
         return true;
     }
 
-    // Якщо є Referer header, перевіряємо його
     if (server.hasHeader("Referer")) {
         String referer = server.header("Referer");
         String host = server.hostHeader();
 
-        // Перевіряємо що Referer містить наш хост
         if (referer.indexOf(host) == -1 &&
             referer.indexOf(WiFi.localIP().toString()) == -1 &&
             referer.indexOf("klimat.local") == -1) {
@@ -71,7 +69,6 @@ bool checkCSRF() {
             return false;
         }
     } else {
-        // Якщо Referer відсутній, логуємо попередження але дозволяємо
         Serial.println("⚠️ CSRF: Відсутній Referer header (дозволено для форм)");
     }
 
@@ -87,13 +84,11 @@ void initWiFi() {
     WiFi.disconnect(true);
     delay(100);
 
-    // Скануємо мережі
     int n = WiFi.scanNetworks();
 
     bool connected = false;
     String connectedSSID = "";
 
-    // Збираємо список відомих мереж (з Preferences та KNOWN_NETWORKS)
     struct NetworkCred {
         String ssid;
         String password;
@@ -130,7 +125,6 @@ void initWiFi() {
         }
     }
 
-    // Збираємо список доступних відомих мереж
     struct AvailableNetwork {
         String ssid;
         String password;
@@ -148,24 +142,20 @@ void initWiFi() {
         }
     }
 
-    // Сортуємо по сигналу
     std::sort(availableNetworks.begin(), availableNetworks.end(), [](const AvailableNetwork& a, const AvailableNetwork& b) {
         return a.rssi > b.rssi;
     });
 
-    // Пробуємо підключитись до мереж в порядку кращого сигналу
     for (const auto& net : availableNetworks) {
         WiFi.disconnect(true);
         delay(100);
 
-        // Налаштування статичної IP якщо увімкнено
         if (config.useStaticIP) {
             IPAddress ip, gateway, subnet, dns;
             if (ip.fromString(config.staticIP) &&
                 gateway.fromString(config.gateway) &&
                 subnet.fromString(config.subnet) &&
                 dns.fromString(config.dns)) {
-                // Перевірка підмережі
                 if ((ip & subnet) == (gateway & subnet)) {
                     WiFi.config(ip, gateway, subnet, dns);
                     Serial.printf("📍 Статична IP: %s\n", config.staticIP.c_str());
@@ -189,7 +179,6 @@ void initWiFi() {
 
             delay(1000);
 
-            // Зберігаємо успішні налаштування
             preferences.begin("wifi", false);
             preferences.putString("ssid", net.ssid);
             preferences.putString("password", net.password);
@@ -201,7 +190,6 @@ void initWiFi() {
         }
     }
 
-    // Якщо підключились - показуємо інформацію
     if (connected) {
         delay(500);
         Serial.flush();
@@ -218,10 +206,8 @@ void initWiFi() {
 
         Serial.printf("║  📱 IP адреса:    http://%-28s║\n", WiFi.localIP().toString().c_str());
 
-        // Встановлюємо hostname
         WiFi.setHostname("klimat");
 
-        // NetBIOS - працює на Windows краще за mDNS
         Serial.print("║  🔧 NetBIOS запуск...");
         if (NBNS.begin("klimat")) {
             Serial.println("                           ✅ ║");
@@ -230,7 +216,6 @@ void initWiFi() {
             Serial.println("                           ❌ ║");
         }
 
-        // mDNS - для Mac/iOS/Linux
         Serial.print("║  🔧 mDNS запуск...");
         if (MDNS.begin("klimat")) {
             delay(100);
@@ -253,7 +238,6 @@ void initWiFi() {
             Serial.println("⚠️  Слабкий сигнал Wi-Fi!");
         }
     } else {
-        // Якщо не вдалося підключитись - запускаємо точку доступу
         Serial.println("\n❌ Не вдалося підключитись ні до однієї відомої мережі");
         Serial.println("Запускаємо точку доступу...");
 
@@ -268,7 +252,6 @@ void initWiFi() {
         Serial.println("   Пароль: 12345678");
     }
 
-    // Перевіряємо підключення
     if (WiFi.status() == WL_CONNECTED) {
         if (WiFi.localIP() != IPAddress(0,0,0,0)) {
             Serial.println("✅ Локальна мережа доступна");
@@ -286,43 +269,33 @@ void initWiFi() {
         }
     }
 
-    // ============================================================================
-    // НАЛАШТУВАННЯ РОУТІВ ВЕБ-СЕРВЕРА
-    // ============================================================================
-
-    // Головні сторінки
+    // Роути
     server.on("/", HTTP_GET, handleRoot);
     server.on("/status", HTTP_GET, handleStatus);
     server.on("/control", HTTP_GET, handleControlPage);
     server.on("/command", HTTP_POST, handleWebCommand);
 
-    // Налаштування
     server.on("/settings", HTTP_GET, handleSettingsPage);
     server.on("/settings", HTTP_POST, handleSaveSettings);
 
-    // WiFi налаштування
     server.on("/wifi-settings", HTTP_GET, handleWiFiSettingsPage);
     server.on("/save-wifi", HTTP_POST, handleSaveWiFiSettings);
     server.on("/scan-wifi", HTTP_GET, handleScanWiFi);
     server.on("/wifi", HTTP_GET, handleWiFiPage);
     server.on("/saveNetwork", HTTP_POST, handleSaveNetworkSettings);
 
-    // Допомога
     server.on("/help", HTTP_GET, handleHelpPage);
     server.on("/debug", HTTP_GET, handleDebugPage);
 
-    // Історія та графіки
     server.on("/history", HTTP_GET, handleHistoryPage);
     server.on("/history/data", HTTP_GET, handleHistoryData);
     server.on("/history/stats", HTTP_GET, handleHistoryStats);
     server.on("/history/export", HTTP_GET, handleHistoryExport);
     server.on("/history/clear-logs", HTTP_POST, handleHistoryClearLogs);
 
-    // Серво калібрування
     server.on("/servo", HTTP_GET, handleServoPage);
     server.on("/servo/api", HTTP_POST, handleServoAPI);
 
-    // Енергоконтролер
     server.on("/energy", HTTP_GET, handleEnergyPage);
     server.on("/energy/api", HTTP_GET, handleEnergyAPI);
     server.on("/energy/history", HTTP_GET, handleEnergyHistory);
@@ -330,7 +303,6 @@ void initWiFi() {
     server.on("/energy/reset", HTTP_POST, handleEnergyReset);
     server.on("/energy/power", HTTP_GET, handleEnergyPowerData);
 
-    // Освітлення
     server.on("/light", HTTP_GET, handleLightPage);
     server.on("/light/save", HTTP_POST, handleLightSave);
     server.on("/light/manual", HTTP_POST, handleLightManual);
@@ -338,7 +310,6 @@ void initWiFi() {
     server.on("/light/toggle", HTTP_POST, handleLightToggle);
     server.on("/light/preset", HTTP_GET, handleLightPreset);
 
-    // OTA та Backup
     server.on("/ota", HTTP_GET, handleOTAPage);
     server.on("/api/ota/status", HTTP_GET, handleOTAStatus);
     server.on("/api/ota/password", HTTP_POST, handleOTAPasswordChange);
@@ -349,7 +320,6 @@ void initWiFi() {
     server.on("/api/config/import", HTTP_POST, handleConfigImport);
     server.on("/api/factory-reset", HTTP_POST, handleFactoryReset);
 
-    // Проста Web OTA Upload сторінка
     server.on("/update", HTTP_GET, []() {
         String html = "<!DOCTYPE html><html><head>";
         html += "<meta charset='UTF-8'>";
@@ -394,10 +364,8 @@ void initWiFi() {
         server.send(200, "text/html", html);
     });
 
-    // Web OTA Upload handler
     server.on("/update", HTTP_POST, handleOTAUploadResult, handleOTAUpload);
 
-    // Проста форма без JavaScript для діагностики
     server.on("/update-simple", HTTP_GET, []() {
         String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Simple OTA</title></head><body>";
         html += "<h1>Simple OTA Upload</h1>";
@@ -414,7 +382,6 @@ void initWiFi() {
 
     server.begin();
     Serial.println("  Web OTA доступний на /update");
-
 }
 
 // ============================================================================
@@ -519,7 +486,6 @@ String getUkraineMarquee() {
 // OTA ТА BACKUP HANDLERS
 // ============================================================================
 
-// Сторінка OTA та Backup
 void handleOTAPage() {
     if (!checkAuth()) return;
 
@@ -528,7 +494,6 @@ void handleOTAPage() {
 
     html += "<div class='container'>";
 
-    // Інформація про версію
     html += "<div class='card'>";
     html += "<h2>Інформація про систему</h2>";
     html += "<table style='width:100%'>";
@@ -539,18 +504,15 @@ void handleOTAPage() {
     html += "</table>";
     html += "</div>";
 
-    // OTA оновлення
     html += "<div class='card'>";
     html += "<h2>Оновлення прошивки (OTA)</h2>";
 
-    // Web Upload форма
     html += "<h3>Завантаження файлу</h3>";
     html += "<form id='otaForm' method='POST' action='/update' enctype='multipart/form-data'>";
     html += "<input type='file' name='update' accept='.bin' required style='margin-bottom:10px;'><br>";
     html += "<button type='submit' class='btn' onclick='return confirmOTA()'>Завантажити прошивку</button>";
     html += "</form>";
 
-    // Progress bar
     html += "<div id='progress' style='display:none; margin-top:20px;'>";
     html += "<div style='background:#333; border-radius:10px; overflow:hidden;'>";
     html += "<div id='progressBar' style='width:0%; height:30px; background:linear-gradient(90deg,#4CAF50,#8BC34A); transition:width 0.3s;'></div>";
@@ -558,7 +520,6 @@ void handleOTAPage() {
     html += "<p id='progressText' style='text-align:center; margin-top:10px;'>0%</p>";
     html += "</div>";
 
-    // OTA пароль
     html += "<h3 style='margin-top:30px;'>OTA пароль</h3>";
     html += "<p style='font-size:14px;color:#888;'>Поточний пароль для Arduino IDE OTA: <code>" + getOTAPassword() + "</code></p>";
     html += "<input type='password' id='newOtaPassword' placeholder='Новий пароль (мін. 4 символи)'>";
@@ -566,11 +527,9 @@ void handleOTAPage() {
 
     html += "</div>";
 
-    // Backup конфігурації
     html += "<div class='card'>";
     html += "<h2>Backup конфігурації</h2>";
 
-    // Статус backup
     BackupStatus backupStatus = getBackupStatus();
     if (backupStatus.exists) {
         html += "<p style='color:#4CAF50;'>Останній backup: ";
@@ -594,28 +553,20 @@ void handleOTAPage() {
     html += "</div>";
     html += "</div>";
 
-    // Factory Reset
     html += "<div class='card' style='border:2px solid #ff4444;'>";
     html += "<h2 style='color:#ff4444;'>Factory Reset</h2>";
     html += "<p style='color:#888;'>Скидання ВСІХ налаштувань до заводських. Ця дія незворотня!</p>";
     html += "<button class='btn' onclick='factoryReset()' style='background:#ff4444;'>Скинути до заводських</button>";
     html += "</div>";
 
-    html += "</div>"; // container
+    html += "</div>";
 
-    // JavaScript
     html += "<script>";
 
-    // Підтвердження OTA
     html += "function confirmOTA() {";
-    html += "  return confirm('УВАГА!\\n\\n";
-    html += "1. Переконайтесь у стабільному живленні\\n";
-    html += "2. НЕ вимикайте ESP32 під час оновлення\\n";
-    html += "3. Backup буде створено автоматично\\n\\n";
-    html += "Продовжити?');";
+    html += "  return confirm('УВАГА!\\n\\n1. Переконайтесь у стабільному живленні\\n2. НЕ вимикайте ESP32 під час оновлення\\n3. Backup буде створено автоматично\\n\\nПродовжити?');";
     html += "}";
 
-    // Progress bar для upload
     html += "document.getElementById('otaForm').onsubmit = function(e) {";
     html += "  if (!confirmOTA()) { e.preventDefault(); return false; }";
     html += "  e.preventDefault();";
@@ -643,7 +594,6 @@ void handleOTAPage() {
     html += "  xhr.send(formData);";
     html += "};";
 
-    // Зміна OTA паролю
     html += "function changeOtaPassword() {";
     html += "  var newPass = document.getElementById('newOtaPassword').value;";
     html += "  if (newPass.length < 4) { alert('Пароль повинен бути мінімум 4 символи'); return; }";
@@ -657,7 +607,6 @@ void handleOTAPage() {
     html += "  });";
     html += "}";
 
-    // Backup функції
     html += "function createBackup() {";
     html += "  fetch('/api/backup/create', {method: 'POST'})";
     html += "    .then(r => r.json())";
@@ -720,7 +669,6 @@ void handleOTAPage() {
     server.send(200, "text/html", html);
 }
 
-// API: OTA статус
 void handleOTAStatus() {
     if (!checkAuth()) return;
 
@@ -738,7 +686,6 @@ void handleOTAStatus() {
     server.send(200, "application/json", json);
 }
 
-// API: Зміна OTA паролю
 void handleOTAPasswordChange() {
     if (!checkAuth()) return;
 
@@ -760,7 +707,6 @@ void handleOTAPasswordChange() {
     }
 }
 
-// API: Створити Backup
 void handleBackupCreate() {
     if (!checkAuth()) return;
 
@@ -771,18 +717,15 @@ void handleBackupCreate() {
     }
 }
 
-// API: Відновити Backup
 void handleBackupRestore() {
     if (!checkAuth()) return;
 
-    // Відправляємо відповідь перед restart
     server.send(200, "application/json", "{\"success\":true,\"message\":\"Відновлення... Система перезавантажиться.\"}");
 
     delay(1000);
-    restoreBackup();  // Ця функція робить restart
+    restoreBackup();
 }
 
-// API: Статус Backup
 void handleBackupStatus() {
     if (!checkAuth()) return;
 
@@ -800,7 +743,6 @@ void handleBackupStatus() {
     server.send(200, "application/json", json);
 }
 
-// API: Export Config
 void handleConfigExport() {
     if (!checkAuth()) return;
 
@@ -808,7 +750,6 @@ void handleConfigExport() {
     server.send(200, "application/json", json);
 }
 
-// API: Import Config
 void handleConfigImport() {
     if (!checkAuth()) return;
 
@@ -821,17 +762,15 @@ void handleConfigImport() {
     }
 }
 
-// API: Factory Reset
 void handleFactoryReset() {
     if (!checkAuth()) return;
 
     server.send(200, "application/json", "{\"success\":true,\"message\":\"Factory reset... Система перезавантажиться.\"}");
 
     delay(2000);
-    factoryResetComplete();  // Ця функція робить restart
+    factoryResetComplete();
 }
 
-// Web OTA Upload - результат
 void handleOTAUploadResult() {
     bool success = !Update.hasError();
     String message = success ? "OK" : Update.errorString();
@@ -846,25 +785,19 @@ void handleOTAUploadResult() {
     }
 }
 
-// Web OTA Upload - обробка файлу
 void handleOTAUpload() {
     HTTPUpload& upload = server.upload();
 
     if (upload.status == UPLOAD_FILE_START) {
         Serial.printf("\n📥 Web OTA Upload: %s\n", upload.filename.c_str());
 
-        // Перевірка автентифікації
         if (!checkAuth()) {
             return;
         }
 
-        // Позначаємо що OTA активна
         setOTAInProgress(true);
-
-        // Вимикаємо Task WDT для поточної задачі
         esp_task_wdt_delete(NULL);
 
-        // Автоматичний backup ДО призупинення задач!
         Serial.println("\n📦 Автоматичний backup поточної конфігурації...");
         if (createBackup("Auto backup before Web OTA")) {
             Serial.println("✅ Backup створено - конфіг збережено");
@@ -872,14 +805,13 @@ void handleOTAUpload() {
             Serial.println("⚠️  Попередження: Backup не створено, але OTA продовжується");
         }
 
-        // Зупиняємо критичні операції
         pauseCriticalTasks();
-
-        // Затримка для стабілізації
         delay(200);
         yield();
 
-        // UPDATE_SIZE_UNKNOWN дозволяє Update.end() самому визначити кінець
+        Update.abort();
+
+        // Починаємо з UPDATE_SIZE_UNKNOWN щоб Update сам прийняв будь-який розмір прошивки
         Serial.printf("📊 Free sketch space: %u bytes\n", ESP.getFreeSketchSpace());
 
         if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
@@ -892,7 +824,6 @@ void handleOTAUpload() {
         Serial.printf("📥 OTA Started: %s\n", upload.filename.c_str());
     }
     else if (upload.status == UPLOAD_FILE_WRITE) {
-        // Записуємо чанк з повторними спробами
         size_t written = 0;
         int retries = 3;
 
@@ -914,7 +845,6 @@ void handleOTAUpload() {
             Update.printError(Serial);
         }
 
-        // Даємо час системі кожні 64KB
         static size_t lastYield = 0;
         if (upload.totalSize - lastYield > 65536) {
             lastYield = upload.totalSize;
@@ -926,21 +856,9 @@ void handleOTAUpload() {
         size_t writtenSize = Update.progress();
         Serial.printf("📊 Total: %u bytes, written: %u bytes\n", totalSize, writtenSize);
 
-        // Перевірка чи весь файл записано
-        if (writtenSize < totalSize) {
-            Serial.printf("⚠️ Incomplete write: expected %u, got %u\n", totalSize, writtenSize);
-        }
-
-        // Невелика затримка перед фіналізацією
         delay(100);
 
-        // Якщо не все записано - дозаписуємо що залишилось
-        if (writtenSize < totalSize) {
-            Serial.println("⚠️ Спроба дозаписати останні байти...");
-            // Update вже має всі дані, просто фіналізуємо
-        }
-
-        // evenIfRemaining=true - завершити навіть якщо розмір не співпав
+        // Встановлюємо точний розмір отриманого файлу перед активацією
         if (Update.end(true)) {
             Serial.println("✅ OTA Success!");
             setOTAInProgress(false);
@@ -968,22 +886,18 @@ void handleOTAUpload() {
 
 #include <esp_task_wdt.h>
 
-// Watchdog timeout: 60 секунд
 #define WEB_WATCHDOG_TIMEOUT_S  60
 
 void webTask(void *parameter) {
     Serial.println("✅ Веб-завдання запущено");
 
-    // Ініціалізація Task Watchdog для цього таску
-    esp_task_wdt_init(WEB_WATCHDOG_TIMEOUT_S, true);  // true = reboot on timeout
-    esp_task_wdt_add(NULL);  // Додати поточний таск до watchdog
+    esp_task_wdt_init(WEB_WATCHDOG_TIMEOUT_S, true);
+    esp_task_wdt_add(NULL);
 
     Serial.printf("🐕 Watchdog активовано: %d сек timeout\n", WEB_WATCHDOG_TIMEOUT_S);
 
     while (1) {
-        // Скидаємо watchdog - показуємо що таск живий
         esp_task_wdt_reset();
-
         server.handleClient();
         vTaskDelay(pdMS_TO_TICKS(10));
     }

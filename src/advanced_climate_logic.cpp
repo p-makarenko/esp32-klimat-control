@@ -780,14 +780,17 @@ bool isHeatingSeasonActive() {
 // АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ
 // ============================================================================
 
+// ============================================================================
+// АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ (ВИПРАВЛЕНА ЛОГІКА)
+// ============================================================================
+
 void smartHeatingControl() {
     if (!config.heatingEnabled) return;
 
     // Перевірка сезону опалення
     if (!isHeatingSeasonActive()) {
-        // Неопалювальний сезон і режим охолодження вимкнено
         setPumpPercent(0);
-        setFanPercent(config.fanMinPercent); // Мінімальна вентиляція
+        setFanPercent(0); // 💡 Повністю вимикаємо поза сезоном
         return;
     }
 
@@ -801,7 +804,6 @@ void smartHeatingControl() {
 
     float tempRoom = 0, tempCarrier = 0, humidity = 0;
     bool roomValid = false, carrierValid = false, bmeValid = false;
-    float tempBME = 0;
 
     if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
         tempRoom = sensorData.tempRoom;
@@ -810,37 +812,15 @@ void smartHeatingControl() {
         roomValid = sensorData.roomValid;
         carrierValid = sensorData.carrierValid;
         bmeValid = sensorData.bmeValid;
-        tempBME = sensorData.tempBME;
         xSemaphoreGive(getSensorMutex());
     }
 
     // Перевірка валідності датчиків кімнати
-    bool roomTempAvailable = false;
-
-    if (roomValid) {
-        roomTempAvailable = true;
-    } else if (bmeValid) {
-        // Якщо основний датчик кімнати несправний - використовуємо BME280 як резервний
+    if (!roomValid && bmeValid) {
         tempRoom = getAdjustedBmeTemperature();
-        roomTempAvailable = true;
-
-        static unsigned long lastBmeWarning = 0;
-        if (now - lastBmeWarning > 60000) {  // Повідомлення раз на хвилину
-            Serial.println("⚠️ Використовую BME280 як резервний датчик кімнати");
-            lastBmeWarning = now;
-        }
-    } else {
-        // Обидва датчики кімнати несправні - система не може працювати
-        static unsigned long lastErrorWarning = 0;
-        if (now - lastErrorWarning > 10000) {  // Повідомлення раз на 10 секунд
-            Serial.println("🚨 КРИТИЧНА ПОМИЛКА: ВСІ ДАТЧИКИ КІМНАТИ НЕСПРАВНІ!");
-            Serial.println("   Система зупинена до відновлення датчиків");
-            lastErrorWarning = now;
-        }
-
-        // Зупиняємо всі виконавчі механізми для безпеки
+    } else if (!roomValid && !bmeValid) {
         setPumpPercent(0);
-        setFanPercent(config.fanMinPercent);  // Мінімальна циркуляція для запобігання застою
+        setFanPercent(0); // 💡 Повністю вимикаємо при аварії датчиків
         return;
     }
 
@@ -857,7 +837,6 @@ void smartHeatingControl() {
             heatingState.forceMode = false;
             setPumpPercent(100);
             setFanPercent(100);
-            Serial.println("⚠ АВАРІЙНИЙ РЕЖИМ: КРИТИЧНО НИЗЬКА ТЕМПЕРАТУРА!");
             return;
         }
 
@@ -866,77 +845,62 @@ void smartHeatingControl() {
             heatingState.emergencyMode = false;
             setPumpPercent(80);
             setFanPercent(80);
-            Serial.println("‼ ФОРСОВАНИЙ РЕЖИМ: НИЗЬКА ТЕМПЕРАТУРА!");
             return;
         }
 
-        // Якщо температура нормальна - скидаємо спеціальні режими
         if (heatingState.forceMode || heatingState.emergencyMode) {
             heatingState.forceMode = false;
             heatingState.emergencyMode = false;
-            Serial.println("✓ Повернення до нормального АВТО режиму");
         }
     }
     
-    // ШТАТНИЙ РЕЖИМ: Насос завжди вимкнений (0%), працює лише вентилятор
-    // Ціль - плавно підтримувати температуру навколо середнього значення діапазону [tempMin; tempMax]
-
-    // Насос ЗАВЖДИ 0% в штатному режимі (працює лише при аваріях)
-    // ⚠️ У аварійному режимі насос залишається на 100% (не вмикаємо його на 0%)
+    // Насос 0% у штатному режимі
     if (!heatingState.emergencyMode) {
       setPumpPercent(0);
     }
 
-    // Розрахунок цільової температури (середина діапазону)
-    float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
-    float tempDiff = targetTemp - tempRoom;  // Позитивне = потрібен обігрів
-    float halfRange = (config.tempMax - config.tempMin) / 2.0f;
+    // ------------------------------------------------------------------------
+    // ✅ ОСНОВНЕ ВИПРАВЛЕННЯ ЛОГІКИ ВЕНТИЛЯТОРА:
+    // ------------------------------------------------------------------------
+    int fanPower = 0;
 
-    // Вентилятор керує обігрівом через теплоносій - ПЛАВНА регуляція
-    int fanPower;
-
-    if (tempRoom < config.tempMin) {
-        // Температура нижче мінімуму - максимальний обігрів
+    if (tempRoom >= config.tempMax) {
+        // 1. Температура в нормі або вища за максимум — ОБОГРІВ НЕ ПОТРІБЕН (0%)
+        fanPower = 0;
+    } else if (tempRoom <= config.tempMin) {
+        // 2. Температура нижче мінімуму — МАКСИМАЛЬНИЙ ОБІГРІВ
         fanPower = config.fanMaxPercent;
-    } else if (tempRoom > config.tempMax) {
-        // Температура вище максимуму - мінімальна циркуляція
-        fanPower = config.fanMinPercent;
     } else {
-        // Температура в межах діапазону - плавна регуляція до середнього значення
-        // Чим далі від середини вниз - тим більше потужність
-        // Чим далі від середини вгору - тим менше потужність
+        // 3. Плавне регулювання у діапазоні [tempMin ... tempMax]
+        float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
+        float tempDiff = targetTemp - tempRoom; 
+        float halfRange = (config.tempMax - config.tempMin) / 2.0f;
 
         if (halfRange > 0.1f) {
-            // Нормалізуємо відхилення від середини до діапазону [-1; +1]
-            // tempDiff > 0 означає tempRoom < targetTemp (потрібен обігрів)
-            // tempDiff < 0 означає tempRoom > targetTemp (не потрібен обігрів)
-            float normalizedDiff = tempDiff / halfRange;  // від -1 до +1
-            normalizedDiff = constrain(normalizedDiff, -1.0f, 1.0f);
-
-            // Перетворюємо в потужність вентилятора:
-            // normalizedDiff = +1 (tempRoom = tempMin) -> fanMaxPercent
-            // normalizedDiff =  0 (tempRoom = targetTemp) -> середня потужність
-            // normalizedDiff = -1 (tempRoom = tempMax) -> fanMinPercent
+            float normalizedDiff = constrain(tempDiff / halfRange, -1.0f, 1.0f);
             int midFan = (config.fanMinPercent + config.fanMaxPercent) / 2;
             int fanRange = (config.fanMaxPercent - config.fanMinPercent) / 2;
 
             fanPower = midFan + (int)(normalizedDiff * fanRange);
         } else {
-            // Занадто вузький діапазон - використовуємо середню потужність
             fanPower = (config.fanMinPercent + config.fanMaxPercent) / 2;
+        }
+
+        // 💡 Застосовуємо fanMinPercent тільки коли дійсно потрібен обігрів
+        if (fanPower > 0 && fanPower < config.fanMinPercent) {
+            fanPower = config.fanMinPercent;
         }
     }
 
-    fanPower = constrain(fanPower, config.fanMinPercent, config.fanMaxPercent);
+    fanPower = constrain(fanPower, 0, config.fanMaxPercent);
     setFanPercent(fanPower);
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C (ціль %.1f°C, діапазон %.1f-%.1f°C), T_тепл=%.1f°C, Вентилятор=%d%%\n",
-                     getFormattedTime().c_str(), tempRoom, targetTemp, config.tempMin, config.tempMax, tempCarrier, fanPower);
+        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C, Вентилятор=%d%%\n",
+                     getFormattedTime().c_str(), tempRoom, fanPower);
         lastPowerUpdate = now;
     }
 }
-
 // ============================================================================
 // РЕЖИМ ОХОЛОДЖЕННЯ (ЛІТО: ХОЛОДНА ВОДА В ТЕПЛОНОСІЇ)
 // ============================================================================

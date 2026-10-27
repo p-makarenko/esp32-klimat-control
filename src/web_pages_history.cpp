@@ -3,7 +3,6 @@
 // ============================================================================
 // Рефакторинг за методом "Скептичного Архітектора"
 // Модуль: Історія даних (handleHistoryPage, handleHistoryData, handleHistoryStats, handleHistoryExport)
-// Критика Крок 2: Покращено touch events для графіків
 // ============================================================================
 
 #include <WebServer.h>
@@ -61,8 +60,8 @@ void handleHistoryPage() {
 
     html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; padding-top: 10px; border-top: 1px solid #eee;'>";
     html += "<div><strong>📁 Джерело даних:</strong> ";
-    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (6 год)</label>";
-    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' checked onchange='switchDataSource()'> 💾 Пристрій (доба / архів)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' onchange='switchDataSource()'> 📊 RAM (останні 6 год)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
     html += "</div>";
@@ -232,7 +231,11 @@ void handleHistoryPage() {
     html += "document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));";
     html += "const tabBtn = document.getElementById('tab' + period.charAt(0).toUpperCase() + period.slice(1));";
     html += "if (tabBtn) tabBtn.classList.add('active');";
-    html += "const today = new Date().toISOString().split('T')[0];";
+    html += "const now = new Date();";
+    html += "const year = now.getFullYear();";
+    html += "const month = String(now.getMonth() + 1).padStart(2, '0');";
+    html += "const day = String(now.getDate()).padStart(2, '0');";
+    html += "const today = year + '-' + month + '-' + day;";
     html += "let start = today;";
     html += "if (period === 'day') {";
     html += "document.getElementById('startDate').value = today;";
@@ -240,12 +243,16 @@ void handleHistoryPage() {
     html += "document.getElementById('dateSelector').style.display = 'none';";
     html += "const src = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "if (src === 'ram') { loadRAMData(); return; }";
+    html += "else if (src === 'spiffs') { loadArchiveData('', ''); return; }";
     html += "} else if (period === 'week') {";
-    html += "start = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];";
+    html += "const d = new Date(Date.now() - 7*24*60*60*1000);";
+    html += "start = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');";
     html += "} else if (period === 'month') {";
-    html += "start = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];";
+    html += "const d = new Date(Date.now() - 30*24*60*60*1000);";
+    html += "start = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');";
     html += "} else if (period === 'year') {";
-    html += "start = new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0];";
+    html += "const d = new Date(Date.now() - 365*24*60*60*1000);";
+    html += "start = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');";
     html += "} else if (period === 'custom') {";
     html += "document.getElementById('dateSelector').style.display = 'block';";
     html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
@@ -269,7 +276,8 @@ void handleHistoryPage() {
     html += "if (source === 'ram') {";
     html += "selectPeriod('day');";
     html += "} else {";
-    html += "const today = new Date().toISOString().split('T')[0];";
+    html += "const now = new Date();";
+    html += "const today = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');";
     html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
     html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
     html += "dateSelector.style.display = 'block';";
@@ -300,18 +308,29 @@ void handleHistoryPage() {
     html += ".then(response => response.json())";
     html += ".then(result => {";
     html += "let data = result.data || [];";
-    html += "data = data.filter(r => r.timestamp > 1000000000);";
     html += "data.sort((a, b) => a.timestamp - b.timestamp);";
+    html += "if (data.length === 0) {";
+    html += "if (status) status.textContent = '⚠️ Немає даних в RAM';";
+    html += "return;";
+    html += "}";
     html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
     html += "data.forEach(record => {";
-    html += "const date = new Date(record.timestamp * 1000);";
-    html += "const day = String(date.getDate()).padStart(2, '0');";
-    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
-    html += "const year = date.getFullYear();";
-    html += "const hours = String(date.getHours()).padStart(2, '0');";
-    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "labels.push(hours + ':' + minutes);";
-    html += "fullDates.push(day + '.' + month + '.' + year + ' ' + hours + ':' + minutes);";
+    html += "let dateStr = '', hoursStr = '';";
+    html += "if (record.timestamp > 1000000000) {";
+    html += "  const date = new Date(record.timestamp * 1000);";
+    html += "  const day = String(date.getDate()).padStart(2, '0');";
+    html += "  const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "  const year = date.getFullYear();";
+    html += "  const hours = String(date.getHours()).padStart(2, '0');";
+    html += "  const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "  hoursStr = hours + ':' + minutes;";
+    html += "  dateStr = day + '.' + month + '.' + year + ' ' + hoursStr;";
+    html += "} else {";
+    html += "  hoursStr = '+' + Math.floor(record.timestamp / 60) + 'm';";
+    html += "  dateStr = 'Час до NTP: ' + hoursStr;";
+    html += "}";
+    html += "labels.push(hoursStr);";
+    html += "fullDates.push(dateStr);";
     html += "tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
     html += "hum.push(record.humidity); co2.push(record.co2Level || 0);";
     html += "});";
@@ -325,47 +344,77 @@ void handleHistoryPage() {
     html += "});";
     html += "}";
 
-    // Завантаження архіву SPIFFS
+    // Завантаження архіву SPIFFS (з fallback на RAM якщо SPIFFS ще порожній)
     html += "function loadArchiveData(startDate, endDate) {";
     html += "const status = document.getElementById('loadStatus');";
     html += "const btn = document.getElementById('loadBtn');";
-    html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
     html += "if (btn) btn.disabled = true;";
-    html += "if (status) status.textContent = '⏳ Завантаження SPIFFS...';";
-    html += "fetch(`/history/data?source=spiffs&start=${startDate}&end=${endDate}&format=json`)";
+    html += "if (status) status.textContent = '⏳ Завантаження даних...';";
+    html += "let url = '/history/data?source=spiffs&format=json';";
+    html += "if (startDate && endDate) { url += `&start=${startDate}&end=${endDate}`; }";
+    html += "fetch(url)";
     html += ".then(response => response.json())";
     html += ".then(result => {";
     html += "let data = result.data || [];";
-    html += "data = data.filter(r => r.timestamp > 1000000000);";
     html += "data.sort((a, b) => a.timestamp - b.timestamp);";
     html += "if (data.length === 0) {";
-    html += "if (status) status.textContent = '⚠️ Немає даних за період';";
-    html += "if (btn) btn.disabled = false;";
-    html += "return;";
+    html += "  // Якщо на SPIFFS даних за день ще немає (наприклад, після старту), підтягуємо оперативні з RAM";
+    html += "  fetch('/history/data?source=ram&format=json')";
+    html += "    .then(r => r.json())";
+    html += "    .then(ramRes => {";
+    html += "      let ramData = ramRes.data || [];";
+    html += "      ramData.sort((a, b) => a.timestamp - b.timestamp);";
+    html += "      if (ramData.length === 0) {";
+    html += "        if (status) status.textContent = '⚠️ Немає даних за період';";
+    html += "        if (btn) btn.disabled = false;";
+    html += "        return;";
+    html += "      }";
+    html += "      renderChartRecords(ramData, 'RAM (останній період)');";
+    html += "      if (btn) btn.disabled = false;";
+    html += "    })";
+    html += "    .catch(() => {";
+    html += "      if (status) status.textContent = '⚠️ Немає даних за період';";
+    html += "      if (btn) btn.disabled = false;";
+    html += "    });";
+    html += "  return;";
     html += "}";
-    html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
-    html += "data.forEach(record => {";
-    html += "const date = new Date(record.timestamp * 1000);";
-    html += "const day = String(date.getDate()).padStart(2, '0');";
-    html += "const month = String(date.getMonth() + 1).padStart(2, '0');";
-    html += "const year = date.getFullYear();";
-    html += "const hours = String(date.getHours()).padStart(2, '0');";
-    html += "const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "labels.push(day + '.' + month + ' ' + hours + ':' + minutes);";
-    html += "fullDates.push(day + '.' + month + '.' + year + ' ' + hours + ':' + minutes);";
-    html += "tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
-    html += "hum.push(record.humidity); co2.push(record.co2Level || 0);";
-    html += "});";
-    html += "window.chartFullDates = fullDates;";
-    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
-    html += "if (status) status.textContent = '✅ ' + data.length + ' записів';";
+    html += "renderChartRecords(data, 'Пристрій');";
     html += "if (btn) btn.disabled = false;";
     html += "})";
     html += ".catch(error => {";
     html += "console.error('Помилка:', error);";
-    html += "if (status) status.textContent = '❌ Помилка читання архіву';";
+    html += "if (status) status.textContent = '❌ Помилка читання даних';";
     html += "if (btn) btn.disabled = false;";
     html += "});";
+    html += "}";
+
+    // Функція відображення точок на графіках
+    html += "function renderChartRecords(records, srcName) {";
+    html += "const status = document.getElementById('loadStatus');";
+    html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
+    html += "records.forEach(record => {";
+    html += "  let dateStr = '', shortLabel = '';";
+    html += "  if (record.timestamp > 1000000000) {";
+    html += "    const date = new Date(record.timestamp * 1000);";
+    html += "    const day = String(date.getDate()).padStart(2, '0');";
+    html += "    const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "    const year = date.getFullYear();";
+    html += "    const hours = String(date.getHours()).padStart(2, '0');";
+    html += "    const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "    shortLabel = day + '.' + month + ' ' + hours + ':' + minutes;";
+    html += "    dateStr = day + '.' + month + '.' + year + ' ' + hours + ':' + minutes;";
+    html += "  } else {";
+    html += "    shortLabel = '+' + Math.floor(record.timestamp / 60) + 'm';";
+    html += "    dateStr = 'Час до NTP: ' + shortLabel;";
+    html += "  }";
+    html += "  labels.push(shortLabel);";
+    html += "  fullDates.push(dateStr);";
+    html += "  tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
+    html += "  hum.push(record.humidity); co2.push(record.co2Level || 0);";
+    html += "});";
+    html += "window.chartFullDates = fullDates;";
+    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
+    html += "if (status) status.textContent = '✅ ' + records.length + ' записів (' + srcName + ')';";
     html += "}";
 
     // Завантаження Google Sheets
@@ -407,7 +456,7 @@ void handleHistoryPage() {
     html += "});";
     html += "window.chartFullDates = fullDates;";
     html += "updateCharts(labels, tc, tr, tb, hum, co2);";
-    html += "if (status) status.textContent = '✅ ' + rows.length + ' записів';";
+    html += "if (status) status.textContent = '✅ ' + rows.length + ' записів (Sheets)';";
     html += "})";
     html += ".catch(err => {";
     html += "clearTimeout(timeoutId);";
@@ -422,7 +471,7 @@ void handleHistoryPage() {
     html += "});";
     html += "}";
 
-    // Старт
+    // Старт: ініціалізуємо графіки та відразу завантажуємо поточні дані
     html += "initCharts();";
     html += "selectPeriod('day');";
 
@@ -472,18 +521,16 @@ void handleHistoryData() {
                     csvChunk.reserve(chunkCount * 80);
 
                     for (uint16_t i = 0; i < chunkCount; i++) {
-                        if (chunk[i].timestamp > 0) {
-                            csvChunk += String(chunk[i].timestamp) + ",";
-                            csvChunk += String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
-                            csvChunk += String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
-                            csvChunk += String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
-                            csvChunk += String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
-                            csvChunk += String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
-                            csvChunk += String(chunk[i].pumpPower) + ",";
-                            csvChunk += String(chunk[i].fanPower) + ",";
-                            csvChunk += String(chunk[i].extractorPower) + ",";
-                            csvChunk += String(chunk[i].mode) + "\n";
-                        }
+                        csvChunk += String(chunk[i].timestamp) + ",";
+                        csvChunk += String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
+                        csvChunk += String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
+                        csvChunk += String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
+                        csvChunk += String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
+                        csvChunk += String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
+                        csvChunk += String(chunk[i].pumpPower) + ",";
+                        csvChunk += String(chunk[i].fanPower) + ",";
+                        csvChunk += String(chunk[i].extractorPower) + ",";
+                        csvChunk += String(chunk[i].mode) + "\n";
                     }
                     server.sendContent(csvChunk);
                     yield();
@@ -509,22 +556,20 @@ void handleHistoryData() {
                     jsonChunk.reserve(chunkCount * 120);
 
                     for (uint16_t i = 0; i < chunkCount; i++) {
-                        if (chunk[i].timestamp > 0) {
-                            if (!firstRecord) jsonChunk += ",";
-                            jsonChunk += "{";
-                            jsonChunk += "\"timestamp\":" + String(chunk[i].timestamp) + ",";
-                            jsonChunk += "\"tempCarrier\":" + String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
-                            jsonChunk += "\"tempRoom\":" + String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
-                            jsonChunk += "\"tempBME\":" + String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
-                            jsonChunk += "\"humidity\":" + String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
-                            jsonChunk += "\"co2Level\":" + String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
-                            jsonChunk += "\"pumpPower\":" + String(chunk[i].pumpPower) + ",";
-                            jsonChunk += "\"fanPower\":" + String(chunk[i].fanPower) + ",";
-                            jsonChunk += "\"extractorPower\":" + String(chunk[i].extractorPower) + ",";
-                            jsonChunk += "\"mode\":" + String(chunk[i].mode);
-                            jsonChunk += "}";
-                            firstRecord = false;
-                        }
+                        if (!firstRecord) jsonChunk += ",";
+                        jsonChunk += "{";
+                        jsonChunk += "\"timestamp\":" + String(chunk[i].timestamp) + ",";
+                        jsonChunk += "\"tempCarrier\":" + String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
+                        jsonChunk += "\"tempRoom\":" + String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
+                        jsonChunk += "\"tempBME\":" + String(isnan(chunk[i].tempBME) ? 0.0f : chunk[i].tempBME, 1) + ",";
+                        jsonChunk += "\"humidity\":" + String(isnan(chunk[i].humidity) ? 0.0f : chunk[i].humidity, 1) + ",";
+                        jsonChunk += "\"co2Level\":" + String(isnan(chunk[i].co2Level) ? 0.0f : chunk[i].co2Level, 0) + ",";
+                        jsonChunk += "\"pumpPower\":" + String(chunk[i].pumpPower) + ",";
+                        jsonChunk += "\"fanPower\":" + String(chunk[i].fanPower) + ",";
+                        jsonChunk += "\"extractorPower\":" + String(chunk[i].extractorPower) + ",";
+                        jsonChunk += "\"mode\":" + String(chunk[i].mode);
+                        jsonChunk += "}";
+                        firstRecord = false;
                     }
                     server.sendContent(jsonChunk);
                     yield();
@@ -536,11 +581,6 @@ void handleHistoryData() {
         }
 
     } else if (source == "spiffs") {
-        if (startDate.length() == 0 || endDate.length() == 0) {
-            server.send(400, "application/json", "{\"error\":\"Потрібні параметри start та end\"}");
-            return;
-        }
-
         String data;
 
         Serial.printf("📥 SPIFFS read request: %s to %s (format: %s)\n",

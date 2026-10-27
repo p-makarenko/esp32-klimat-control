@@ -58,15 +58,11 @@ bool initDataLogger() {
                 loggerStats.spiffsTotalBytes - loggerStats.spiffsUsedBytes,
                 (loggerStats.spiffsTotalBytes - loggerStats.spiffsUsedBytes) / 1024.0 / 1024.0);
 
-  // SPIFFS не підтримує директорії - пропускаємо mkdir
-  // Шлях /logs/current.csv створюється автоматично при відкритті файлу
-
   // Перевіряємо поточний файл
   if (SPIFFS.exists(LOG_CURRENT_FILE)) {
     File file = SPIFFS.open(LOG_CURRENT_FILE, "r");
     if (file) {
       loggerStats.currentFileSize = file.size();
-      // Перевіряємо чи файл не пошкоджений (перший байт не має бути 0xFF)
       bool corrupted = false;
       if (file.size() > 0) {
         uint8_t firstByte = file.read();
@@ -90,7 +86,7 @@ bool initDataLogger() {
       }
     }
   } else {
-    // Створюємо новий файл БЕЗ заголовка (економія 50% місця)
+    // Створюємо новий файл
     File file = SPIFFS.open(LOG_CURRENT_FILE, "w");
     if (file) {
       file.close();
@@ -111,7 +107,6 @@ bool initDataLogger() {
 
       if (fileName.indexOf("archive_") >= 0) {
         loggerStats.archiveFilesCount++;
-        // Приблизний підрахунок записів (~80 байт на запис)
         loggerStats.totalRecordsSPIFFS += fileSize / 80;
         Serial.printf("  📁 %s (%u bytes)\n", fileName.c_str(), fileSize);
       } else if (fileName == LOG_CURRENT_FILE || fileName.indexOf("current") >= 0) {
@@ -129,9 +124,7 @@ bool initDataLogger() {
   Serial.printf("✓ Знайдено %d архівів, ~%u записів в SPIFFS\n",
                 loggerStats.archiveFilesCount, loggerStats.totalRecordsSPIFFS);
 
-  // Ініціалізація лічильників (НЕ обнуляємо totalRecordsSPIFFS - вже підраховано!)
   loggerStats.totalRecordsRAM = 0;
-  // loggerStats.totalRecordsSPIFFS зберігає підраховане значення
   loggerStats.lastLogTimeRAM = 0;
   loggerStats.lastLogTimeSPIFFS = 0;
 
@@ -149,9 +142,6 @@ bool initDataLogger() {
 
 void logDataToRAM() {
   unsigned long currentTs = getCurrentTimestamp();
-  if (currentTs < 1000000000) {
-    return; // Пропускаємо некоректні 1970 timestamp до синхронізації NTP
-  }
 
   DataRecord record;
   record.timestamp = currentTs;
@@ -188,63 +178,6 @@ void logDataToRAM() {
 void aggregateAndSave() {
   if (aggregationBufferIndex == 0) return;
 
-  // Створюємо агрегований запис
-  AggregatedRecord aggRecord;
-  aggRecord.timestamp = aggregationBuffer[0].timestamp;  // Початок інтервалу
-
-  // Ініціалізація мін/макс значень
-  aggRecord.minTempCarrier = aggregationBuffer[0].tempCarrier;
-  aggRecord.maxTempCarrier = aggregationBuffer[0].tempCarrier;
-  aggRecord.minTempRoom = aggregationBuffer[0].tempRoom;
-  aggRecord.maxTempRoom = aggregationBuffer[0].tempRoom;
-
-  // Обнуляємо суми
-  float sumTempCarrier = 0, sumTempRoom = 0, sumTempBME = 0, sumHumidity = 0;
-  uint32_t sumPump = 0, sumFan = 0, sumExtractor = 0;
-  uint8_t modeCount[4] = {0, 0, 0, 0};  // AUTO, MANUAL, FORCE, EMERGENCY
-
-  // Агрегуємо дані
-  for (uint8_t i = 0; i < aggregationBufferIndex; i++) {
-    DataRecord& rec = aggregationBuffer[i];
-
-    sumTempCarrier += rec.tempCarrier;
-    sumTempRoom += rec.tempRoom;
-    sumTempBME += rec.tempBME;
-    sumHumidity += rec.humidity;
-    sumPump += rec.pumpPower;
-    sumFan += rec.fanPower;
-    sumExtractor += rec.extractorPower;
-
-    // Мін/макс
-    if (rec.tempCarrier < aggRecord.minTempCarrier) aggRecord.minTempCarrier = rec.tempCarrier;
-    if (rec.tempCarrier > aggRecord.maxTempCarrier) aggRecord.maxTempCarrier = rec.tempCarrier;
-    if (rec.tempRoom < aggRecord.minTempRoom) aggRecord.minTempRoom = rec.tempRoom;
-    if (rec.tempRoom > aggRecord.maxTempRoom) aggRecord.maxTempRoom = rec.tempRoom;
-
-    // Підрахунок режимів
-    if (rec.mode < 4) modeCount[rec.mode]++;
-  }
-
-  // Обчислюємо середні
-  uint8_t count = aggregationBufferIndex;
-  aggRecord.avgTempCarrier = sumTempCarrier / count;
-  aggRecord.avgTempRoom = sumTempRoom / count;
-  aggRecord.avgTempBME = sumTempBME / count;
-  aggRecord.avgHumidity = sumHumidity / count;
-  aggRecord.avgPumpPower = sumPump / count;
-  aggRecord.avgFanPower = sumFan / count;
-  aggRecord.avgExtractorPower = sumExtractor / count;
-
-  // Домінуючий режим
-  aggRecord.mode = 0;
-  uint8_t maxCount = modeCount[0];
-  for (uint8_t i = 1; i < 4; i++) {
-    if (modeCount[i] > maxCount) {
-      maxCount = modeCount[i];
-      aggRecord.mode = i;
-    }
-  }
-
   // Зберігаємо у SPIFFS
   logDataToSPIFFS();
 }
@@ -252,56 +185,44 @@ void aggregateAndSave() {
 void logDataToSPIFFS() {
   if (aggregationBufferIndex == 0) return;
 
-  // НЕ записувати в SPIFFS якщо OTA активна (конфлікт з flash)
+  // НЕ записувати в SPIFFS якщо OTA активна
   if (isOTAInProgress()) {
     Serial.println("⏸️ [SPIFFS] Пропущено запис - OTA активна");
     return;
   }
 
   Serial.printf("💾 [SPIFFS] Writing %d aggregated records...\n", aggregationBufferIndex);
-
-  // Скидаємо watchdog перед файловою операцією
   yield();
 
-  // Відкриваємо файл для дозапису (a = append, створює або дописує в кінець)
+  // Надійне відкриття: якщо файл існує, пробуємо "a", якщо не відкрився - пробуємо "r+" зі seek(end)
   File file = SPIFFS.open(LOG_CURRENT_FILE, "a");
   if (!file) {
-    Serial.printf("❌ [SPIFFS] Failed to open file for append. Used: %u / %u bytes\n",
+    if (SPIFFS.exists(LOG_CURRENT_FILE)) {
+      file = SPIFFS.open(LOG_CURRENT_FILE, "r+");
+      if (file) {
+        file.seek(file.size());
+      }
+    } else {
+      file = SPIFFS.open(LOG_CURRENT_FILE, "w");
+    }
+  }
+
+  if (!file) {
+    Serial.printf("❌ [SPIFFS] Failed to open file for append/write. Used: %u / %u bytes\n",
                   SPIFFS.usedBytes(), SPIFFS.totalBytes());
 
-    // Спроба відновлення: очистити старі логи
-    static uint8_t failCount = 0;
-    failCount++;
-    if (failCount >= 3) {
-      Serial.println("⚠️ [SPIFFS] 3 помилки поспіль - видаляю ВСІ архіви...");
-
-      // Агресивне очищення: видаляємо ВСІ архівні файли
-      File root = SPIFFS.open("/");
-      if (root) {
-        File f = root.openNextFile();
-        uint8_t deleted = 0;
-        while (f) {
-          String fname = f.name();
-          f.close();
-          if (fname.indexOf("archive_") >= 0) {
-            SPIFFS.remove(fname);
-            deleted++;
-          }
-          f = root.openNextFile();
-        }
-        root.close();
-        Serial.printf("✅ [SPIFFS] Видалено %d архівів. Вільно: %u bytes\n",
-                      deleted, SPIFFS.totalBytes() - SPIFFS.usedBytes());
-      }
-
-      failCount = 0;
+    size_t total = SPIFFS.totalBytes();
+    size_t used = SPIFFS.usedBytes();
+    if (total > 0 && ((used * 100) / total) > 85) {
+      Serial.println("⚠️ [SPIFFS] Пам'ять заповнена >85% - видаляємо лише один найстаріший архів");
+      rotateLogFiles();
     }
-    aggregationBufferIndex = 0; // ВАЖЛИВО: скидаємо буфер щоб уникнути overflow!
+
+    aggregationBufferIndex = 0;
     return;
   }
 
   size_t sizeBefore = file.size();
-  Serial.printf("✓ [SPIFFS] File opened for append, size before: %u bytes\n", sizeBefore);
 
   // Агрегуємо дані перед записом
   AggregatedRecord aggRecord;
@@ -340,7 +261,6 @@ void logDataToSPIFFS() {
   line += String(sumExtractor / count) + ",";
   line += String(aggregationBuffer[0].mode);
 
-  // Записуємо у файл (режим 'a' автоматично дописує в кінець)
   size_t written = file.print(line + "\n");
   file.close();
 
@@ -384,7 +304,7 @@ bool readRAMData(DataRecord* buffer, uint16_t* count) {
   return true;
 }
 
-// Читання частини даних з RAM у хронологічному порядку (chunked read для економії пам'яті)
+// Читання частини даних з RAM у хронологічному порядку (chunked read)
 bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
   if (!buffer) return false;
 
@@ -416,7 +336,6 @@ void parseCSVFileToJson(File& file, JsonArray& dataArray, unsigned long startTim
   int lineCount = 0;
 
   while (file.available()) {
-    // Скидаємо watchdog кожні 20 рядків
     if (++lineCount % 20 == 0) {
       yield();
     }
@@ -430,10 +349,13 @@ void parseCSVFileToJson(File& file, JsonArray& dataArray, unsigned long startTim
 
         unsigned long timestamp = strtoul(buffer, NULL, 10);
 
-        if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+        // Якщо вказано конкретний діапазон (startTimestamp > 0) - фільтруємо
+        // Якщо startTimestamp == 0 - читаємо весь вміст файлу
+        bool inRange = (startTimestamp == 0) || (timestamp >= startTimestamp && timestamp <= endTimestamp);
+
+        if (inRange) {
           JsonObject record = dataArray.add<JsonObject>();
 
-          // Розбиваємо CSV на поля
           char tempBuf[256];
           strcpy(tempBuf, buffer);
           char* field = strtok(tempBuf, ",");
@@ -466,13 +388,8 @@ void parseCSVFileToJson(File& file, JsonArray& dataArray, unsigned long startTim
 }
 
 bool readSPIFFSData(const char* startDate, const char* endDate, String& jsonData) {
-  unsigned long startTimestamp = stringToTimestamp(startDate, false);
-  unsigned long endTimestamp = stringToTimestamp(endDate, true);
-
-  if (startTimestamp == 0 || endTimestamp == 0) {
-    jsonData = "{\"data\":[]}";
-    return true;
-  }
+  unsigned long startTimestamp = (startDate && strlen(startDate) > 0) ? stringToTimestamp(startDate, false) : 0;
+  unsigned long endTimestamp = (endDate && strlen(endDate) > 0) ? stringToTimestamp(endDate, true) : 0;
 
   JsonDocument doc;
   JsonArray dataArray = doc["data"].to<JsonArray>();
@@ -511,7 +428,6 @@ static void parseCSVFileToString(File& file, String& csvData,
   int lineCount = 0;
 
   while (file.available()) {
-    // Скидаємо watchdog кожні 20 рядків
     if (++lineCount % 20 == 0) {
       yield();
     }
@@ -524,7 +440,8 @@ static void parseCSVFileToString(File& file, String& csvData,
         buffer[bufIdx] = '\0';
         unsigned long timestamp = strtoul(buffer, NULL, 10);
 
-        if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+        bool inRange = (startTimestamp == 0) || (timestamp >= startTimestamp && timestamp <= endTimestamp);
+        if (inRange) {
           csvData += buffer;
           csvData += "\n";
         }
@@ -539,8 +456,8 @@ static void parseCSVFileToString(File& file, String& csvData,
 }
 
 bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvData) {
-  unsigned long startTimestamp = stringToTimestamp(startDate, false);  // початок дня
-  unsigned long endTimestamp = stringToTimestamp(endDate, true);       // кінець дня
+  unsigned long startTimestamp = (startDate && strlen(startDate) > 0) ? stringToTimestamp(startDate, false) : 0;
+  unsigned long endTimestamp = (endDate && strlen(endDate) > 0) ? stringToTimestamp(endDate, true) : 0;
 
   csvData = "timestamp,tempCarrier,tempRoom,tempBME,humidity,co2Level,pumpPower,fanPower,extractorPower,mode\n";
 
@@ -576,42 +493,55 @@ bool readSPIFFSDataCSV(const char* startDate, const char* endDate, String& csvDa
 void rotateLogFiles() {
   Serial.println("🔄 Ротація лог-файлів...");
 
-  // Видаляємо найстаріший архів якщо перевищено ліміт
+  File countRoot = SPIFFS.open("/");
+  uint8_t count = 0;
+  if (countRoot) {
+    File f = countRoot.openNextFile();
+    while (f) {
+      String fn = f.name();
+      if (fn.indexOf("archive_") >= 0) count++;
+      f.close();
+      f = countRoot.openNextFile();
+    }
+    countRoot.close();
+  }
+  loggerStats.archiveFilesCount = count;
+
   if (loggerStats.archiveFilesCount >= LOG_MAX_FILES) {
-    // Знаходимо найстаріший файл
     String oldestFile = "";
     unsigned long oldestTime = ULONG_MAX;
 
     File root = SPIFFS.open("/");
-    File file = root.openNextFile();
-    while (file) {
-      String fileName = file.name();
-      if (fileName.indexOf("archive_") >= 0) {
-        time_t fileTime = file.getLastWrite();
-        if (fileTime < oldestTime) {
-          oldestTime = fileTime;
-          oldestFile = fileName;
+    if (root) {
+      File file = root.openNextFile();
+      while (file) {
+        String fileName = file.name();
+        if (fileName.indexOf("archive_") >= 0) {
+          time_t fileTime = file.getLastWrite();
+          if (fileTime < oldestTime) {
+            oldestTime = fileTime;
+            oldestFile = fileName;
+          }
         }
+        file.close();
+        file = root.openNextFile();
       }
-      file = root.openNextFile();
+      root.close();
     }
 
     if (oldestFile.length() > 0) {
       SPIFFS.remove(oldestFile);
       Serial.printf("  Видалено старий архів: %s\n", oldestFile.c_str());
-      loggerStats.archiveFilesCount--;
+      if (loggerStats.archiveFilesCount > 0) loggerStats.archiveFilesCount--;
     }
   }
 
-  // Створюємо ім'я архівного файлу з поточною датою
   String archiveName = String(LOG_ARCHIVE_PREFIX) + String(getCurrentTimestamp()) + ".csv";
 
-  // Перейменовуємо поточний файл в архівний
   if (SPIFFS.rename(LOG_CURRENT_FILE, archiveName.c_str())) {
     Serial.printf("  Створено архів: %s\n", archiveName.c_str());
     loggerStats.archiveFilesCount++;
 
-    // Створюємо новий поточний файл БЕЗ заголовка
     File file = SPIFFS.open(LOG_CURRENT_FILE, "w");
     if (file) {
       file.close();
@@ -626,66 +556,54 @@ void rotateLogFiles() {
 void cleanOldLogs() {
   Serial.println("🧹 Очищення старих логів...");
 
-  // Перевірка критичного заповнення SPIFFS (>90%)
   size_t totalBytes = SPIFFS.totalBytes();
   size_t usedBytes = SPIFFS.usedBytes();
+  if (totalBytes == 0) return;
   float usagePercent = (float)usedBytes / totalBytes * 100;
 
   if (usagePercent > 90.0) {
-    Serial.printf("⚠️  SPIFFS критично заповнений: %.1f%% - видаляю ВСІ архіви!\n", usagePercent);
-
-    File root = SPIFFS.open("/");
-    File file = root.openNextFile();
-    uint8_t deletedCount = 0;
-    while (file) {
-      String fileName = file.name();
-      if (fileName.indexOf("archive_") >= 0) {
-        file.close();
-        SPIFFS.remove(fileName);
-        Serial.printf("  Видалено: %s\n", fileName.c_str());
-        deletedCount++;
-      }
-      file = root.openNextFile();
-    }
-    Serial.printf("✓ Видалено %d архівів (критичне очищення)\n", deletedCount);
-    loggerStats.archiveFilesCount = 0;
+    Serial.printf("⚠️  SPIFFS критично заповнений: %.1f%% - видаляю найстаріший архів\n", usagePercent);
+    rotateLogFiles();
     return;
   }
 
-  // Звичайне очищення: видаляємо тільки старі файли
   unsigned long cutoffTime = getCurrentTimestamp() - (LOG_RETENTION_DAYS * 24 * 60 * 60);
   uint8_t deletedCount = 0;
 
   File root = SPIFFS.open("/");
-  File file = root.openNextFile();
-  while (file) {
-    String fileName = file.name();
-    if (fileName.indexOf("archive_") >= 0) {
-      // Витягуємо timestamp з імені файлу (формат: /archive_TIMESTAMP.csv)
-      int startIdx = fileName.indexOf("archive_") + 8;  // після "archive_"
-      int endIdx = fileName.indexOf(".csv");
-      String timestampStr = fileName.substring(startIdx, endIdx);
-      unsigned long fileTimestamp = timestampStr.toInt();
+  if (root) {
+    File file = root.openNextFile();
+    while (file) {
+      String fileName = file.name();
+      if (fileName.indexOf("archive_") >= 0) {
+        int startIdx = fileName.indexOf("archive_") + 8;
+        int endIdx = fileName.indexOf(".csv");
+        String timestampStr = fileName.substring(startIdx, endIdx);
+        unsigned long fileTimestamp = timestampStr.toInt();
 
-      if (fileTimestamp < cutoffTime) {
-        file.close();
-        SPIFFS.remove(fileName);
-        Serial.printf("  Видалено: %s\n", fileName.c_str());
-        deletedCount++;
+        if (fileTimestamp > 0 && fileTimestamp < cutoffTime) {
+          file.close();
+          SPIFFS.remove(fileName);
+          Serial.printf("  Видалено: %s\n", fileName.c_str());
+          deletedCount++;
+        }
       }
+      file.close();
+      file = root.openNextFile();
     }
-    file = root.openNextFile();
+    root.close();
   }
 
   Serial.printf("✓ Видалено %d старих файлів\n", deletedCount);
-  loggerStats.archiveFilesCount -= deletedCount;
+  if (loggerStats.archiveFilesCount >= deletedCount) {
+    loggerStats.archiveFilesCount -= deletedCount;
+  } else {
+    loggerStats.archiveFilesCount = 0;
+  }
 }
 
 bool formatSPIFFS() {
-  // ВИМКНЕНО: форматування SPIFFS конфліктує з web server та призводить до краху
-  // Замість цього використовуйте deleteOldArchives() або перезавантажте ESP32
   Serial.println("⚠️  formatSPIFFS() ВИМКНЕНО - використовуйте Factory Reset або перезавантаження");
-  Serial.println("💡 Спочатку спробуйте: deleteOldArchives() для очищення місця");
   return false;
 }
 
@@ -710,10 +628,8 @@ String exportToJSON(const char* startDate, const char* endDate) {
 // ============================================================================
 
 LoggerStats getLoggerStats() {
-  // Оновлюємо інформацію про SPIFFS
   loggerStats.spiffsUsedBytes = SPIFFS.usedBytes();
   loggerStats.spiffsTotalBytes = SPIFFS.totalBytes();
-
   return loggerStats;
 }
 
@@ -744,7 +660,6 @@ void printLoggerInfo() {
 // ============================================================================
 
 unsigned long getCurrentTimestamp() {
-  // Отримуємо поточний Unix timestamp
   time_t now;
   time(&now);
   return (unsigned long)now;
@@ -761,26 +676,22 @@ String timestampToString(unsigned long timestamp) {
 }
 
 unsigned long stringToTimestamp(const char* dateStr, bool endOfDay) {
-  // Парсимо рядок формату "YYYY-MM-DD" або "YYYY-MM-DD HH:MM:SS"
   struct tm timeinfo = {0};
 
-  // Спроба спочатку парсити з часом
   int parsed = sscanf(dateStr, "%d-%d-%d %d:%d:%d",
              &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday,
              &timeinfo.tm_hour, &timeinfo.tm_min, &timeinfo.tm_sec);
 
-  // Якщо не вдалось парсити час, спробуємо тільки дату
   if (parsed < 3) {
     parsed = sscanf(dateStr, "%d-%d-%d",
                &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday);
   }
 
   if (parsed >= 3) {
-    timeinfo.tm_year -= 1900;  // tm_year = роки з 1900
-    timeinfo.tm_mon -= 1;       // tm_mon = 0-11
-    timeinfo.tm_isdst = -1;     // Автовизначення DST
+    timeinfo.tm_year -= 1900;
+    timeinfo.tm_mon -= 1;
+    timeinfo.tm_isdst = -1;
 
-    // Якщо тільки дата без часу і потрібен кінець дня
     if (parsed == 3 && endOfDay) {
       timeinfo.tm_hour = 23;
       timeinfo.tm_min = 59;
@@ -794,7 +705,7 @@ unsigned long stringToTimestamp(const char* dateStr, bool endOfDay) {
 }
 
 // ============================================================================
-// FRERTOS ТАСК
+// FREERTOS ТАСК
 // ============================================================================
 
 void dataLoggerTask(void *parameter) {
@@ -803,7 +714,7 @@ void dataLoggerTask(void *parameter) {
   unsigned long lastRAMLog = 0;
   unsigned long lastSPIFFSLog = 0;
   unsigned long lastCleanup = 0;
-  const unsigned long CLEANUP_INTERVAL = 24UL * 60UL * 60UL * 1000UL;  // 24 години
+  const unsigned long CLEANUP_INTERVAL = 24UL * 60UL * 60UL * 1000UL;
 
   while (1) {
     unsigned long now = millis();
@@ -816,6 +727,7 @@ void dataLoggerTask(void *parameter) {
 
     // Резервний запис в SPIFFS за налаштованим інтервалом
     unsigned long spiffsInterval = (unsigned long)config.spiffsLogInterval * 60000UL;
+    if (spiffsInterval == 0) spiffsInterval = 300000UL;
     if (now - lastSPIFFSLog >= spiffsInterval) {
       if (aggregationBufferIndex > 0) {
         logDataToSPIFFS();
@@ -829,7 +741,6 @@ void dataLoggerTask(void *parameter) {
       lastCleanup = now;
     }
 
-    // Затримка
-    vTaskDelay(pdMS_TO_TICKS(1000));  // Перевірка кожну секунду
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }

@@ -13,6 +13,7 @@
 #define SCD30_I2C_SCL     5     // SCD30 SCL
 #define PUMP_PWM_PIN      21    // Насос (PWM)
 #define FAN_PWM_PIN       38    // Вентилятор обігріву (PWM)
+#define HEATER_FAN_RELAY_PIN 7  // Реле мотора 220В вентилятора обігріву
 #define EXTRACTOR_PIN     12    // Витяжка (PWM)
 #define SERVO_PIN         14    // Сервопривод вентиляції
 #define VENT_SWITCH_PIN   13    // Механічний вимикач вентиляції (HIGH = відкрити)

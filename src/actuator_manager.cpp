@@ -49,6 +49,9 @@ void initGPIO() {
   pinMode(HUMIDIFIER_PIN, OUTPUT);
   digitalWrite(HUMIDIFIER_PIN, LOW);
   
+  pinMode(HEATER_FAN_RELAY_PIN, OUTPUT);
+  digitalWrite(HEATER_FAN_RELAY_PIN, HIGH); // Оптичне реле з активним LOW: HIGH = вимкнено
+  
   // Читаємо стан вимикача
   bool switchState = digitalRead(VENT_SWITCH_PIN);
   ventState.switchState = switchState;
@@ -72,6 +75,9 @@ void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower
     ledcWrite(PUMP_CHANNEL, pumpPower);
     ledcWrite(FAN_CHANNEL, fanPower);
     ledcWrite(EXTRACTOR_CHANNEL, extractorPower);
+    
+    // Реле мотора 220В: увімкнено (LOW), якщо вентилятор обігріву працює (>0)
+    digitalWrite(HEATER_FAN_RELAY_PIN, (fanPower > 77) ? LOW : HIGH);
     
     xSemaphoreGive(getHeatingMutex());
   }
@@ -181,38 +187,40 @@ void pumpStartupRamp(uint8_t targetPercent) {
   Serial.printf("  ✓ Насос встановлено на %d%%\n", targetPercent);
 }
 
+
 void setFanPercent(uint8_t percent) {
   uint8_t originalPercent = percent;
   
-  // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
+  // 1. Тільки в автоматичному режимі застосовуємо обмеження з config
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
-    // В авто режимі: мінімум з налаштувань при НЕНУЛЬОВОМУ значенні
+    // В авто режимі: якщо відсоток більше 0, але менше мінімуму — підтягуємо до fanMinPercent
+    // Якщо percent == 0, ця умова НЕ спрацює і вентилятор залишиться ВИМКНЕНИМ (0%)
     if (percent > 0 && percent < config.fanMinPercent) {
       percent = config.fanMinPercent;
     }
-    // Максимум з налаштувань
+    // Обмеження максимуму
     if (percent > config.fanMaxPercent) {
       percent = config.fanMaxPercent;
     }
   } else {
-    // У ручному/форсажному/аварійному режимі: БУДЬ-ЯКЕ значення, включаючи 0%
+    // У ручному/форсажному/аварійному режимах — будь-яке значення від 0 до 100%
     percent = constrain(percent, 0, 100);
   }
   
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
   
-  // Serial.printf("[DEBUG] setFanPercent: %d%% -> %d%% -> PWM=%d\n", originalPercent, percent, pwmValue);
-  
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.fanPower = pwmValue;
     ledcWrite(FAN_CHANNEL, pwmValue);
+    
+    // 2. Реле мотора (пін 7): вмикається (LOW) строго від 30% (PWM >= 77)
+    digitalWrite(HEATER_FAN_RELAY_PIN, (pwmValue >= 77) ? LOW : HIGH);
+    
     xSemaphoreGive(getHeatingMutex());
   }
 
-  // Перевіряємо ефективність вентилятора після зміни потужності
   checkFanMaxPowerEfficiency();
 }
-
 // Валідація температури перед активацією насоса
 bool isPumpActivationAllowed(float currentTemp) {
   // Насос включається тільки якщо температура вище мінімальної безпечної
