@@ -1,4 +1,3 @@
-
 #include "system_core.h"
 #include "sensor_manager.h"
 #include "actuator_manager.h"
@@ -7,7 +6,7 @@
 #include "advanced_climate_logic.h"
 #include <time.h>
 
-// РћРіРѕР»РѕС€РµРЅРЅСЏ С„СѓРЅРєС†С–Р№ Р·Р°РґР°С‡
+// Оголошення функцій задач
 extern void sensorTask(void *parameter);
 extern void heatingTask(void *parameter);
 extern void ventilationTask(void *parameter);
@@ -15,41 +14,42 @@ extern void webTask(void *parameter);
 extern void timeTask(void *parameter);
 extern void advancedLogicTask(void *parameter);
 
-// Р“Р»РѕР±Р°Р»СЊРЅС– РѕР±'С”РєС‚Рё
+// Глобальні об'єкти
 Preferences preferences;
 WebServer server(80);
 
-// РњКјСЋС‚РµРєСЃРё РґР»СЏ СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С—
+// М'ютекси для синхронізації
 SemaphoreHandle_t sensorMutex;
 SemaphoreHandle_t configMutex;
 SemaphoreHandle_t heatingMutex;
 SemaphoreHandle_t historyMutex;
 SemaphoreHandle_t timeMutex;
 
-// РЎС‚Р°С‚РёС‡РЅС– Р·РјС–РЅРЅС– (С–РЅРєР°РїСЃСѓР»СЊРѕРІР°РЅС– РІ С†СЊРѕРјСѓ С„Р°Р№Р»С–)
+// Статичні змінні (інкапсульовані в цьому файлі)
 static unsigned long _lastStatusPrint = 0;
 static unsigned long _lastSerialCheck = 0;
 static unsigned long _lastTrendCheck = 0;
 static unsigned long _lastHistorySave = 0;
 static unsigned long _lastExtractorCheck = 0;
 
-// Р—РјС–РЅРЅС– РґР»СЏ С‡Р°СЃСѓ
+// Змінні для часу
 time_t currentTime = 0;
 struct tm timeInfo;
 static bool timeSynced = false;
 static unsigned long _lastTimeSync = 0;
 
-// Р‘СѓС„РµСЂРё РґР»СЏ С‚СЂРµРЅРґСѓ
-float tempTrendBuffer[TREND_WINDOW_SIZE];  // Р—РјС–РЅРµРЅРѕ Р· static РЅР° РіР»РѕР±Р°Р»СЊРЅСѓ
-int trendIndex = 0;  // Р—РјС–РЅРµРЅРѕ Р· static РЅР° РіР»РѕР±Р°Р»СЊРЅСѓ
+// Буфери для тренду
+float tempTrendBuffer[TREND_WINDOW_SIZE];
+int trendIndex = 0;
 static bool trendBufferFilled = false;
 
-// Р”РѕРґР°РЅРѕ: Р·РјС–РЅРЅС– РґР»СЏ Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
+// Змінні для аварійного режиму
 static unsigned long _emergencyStartTime = 0;
 static float _emergencyStartTempCarrier = 0;
 static float _emergencyStartTempRoom = 0;
+
 // ============================================================================
-// Р“Р•РўРўР•Р Р РўРђ РЎР•РўРўР•Р Р
+// ГЕТТЕРИ ТА СЕТТЕРИ
 // ============================================================================
 
 unsigned long getLastStatusPrint() {
@@ -100,7 +100,6 @@ void setLastTimeSync(unsigned long time) {
     _lastTimeSync = time;
 }
 
-// Р”РѕРґР°РЅРѕ: РіРµС‚С‚РµСЂРё/СЃРµС‚С‚РµСЂРё РґР»СЏ Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
 unsigned long getEmergencyStartTime() {
     return _emergencyStartTime;
 }
@@ -126,32 +125,28 @@ void setEmergencyStartTempRoom(float temp) {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р РћР‘РћРўР Р— Р§РђРЎРћРњ
+// ФУНКЦІЇ ДЛЯ РОБОТИ З ЧАСОМ
 // ============================================================================
 
 void initTime() {
-  Serial.println("РЎРїСЂРѕР±СѓС”РјРѕ СЃРёРЅС…СЂРѕРЅС–Р·СѓРІР°С‚Рё С‡Р°СЃ...");
+  Serial.println("Спробуємо синхронізувати час...");
   
-  // РСЃРїРѕР»СЊР·СѓРµРј РЅРµСЃРєРѕР»СЊРєРѕ NTP СЃРµСЂРІРµСЂРѕРІ РґР»СЏ РЅР°РґРµР¶РЅРѕСЃС‚Рё
   const char* ntpServers[] = {
-    "pool.ntp.org",           // РћСЃРЅРѕРІРЅРѕР№ РїСѓР»
-    "time.google.com",        // Google (РѕС‡РµРЅСЊ С‚РѕС‡РЅС‹Р№)
-    "time.windows.com",       // Microsoft
-    "ntp.ubuntu.com",         // Ubuntu
-    "0.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 1
-    "1.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 2
-    "2.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 3
-    "3.ua.pool.ntp.org"       // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 4
+    "pool.ntp.org",
+    "time.google.com",
+    "time.windows.com",
+    "ntp.ubuntu.com",
+    "0.ua.pool.ntp.org",
+    "1.ua.pool.ntp.org",
+    "2.ua.pool.ntp.org",
+    "3.ua.pool.ntp.org"
   };
   
-  // GMT+2 РґР»СЏ РЈРєСЂР°РёРЅС‹, Р±РµР· Р»РµС‚РЅРµРіРѕ РІСЂРµРјРµРЅРё (Р·РёРјР°)
-  // Р•СЃР»Рё СЃРµР№С‡Р°СЃ Р»РµС‚РЅРµРµ РІСЂРµРјСЏ - РёР·РјРµРЅРё РЅР° 3*3600
-  configTime(2 * 3600, 0, 
-    ntpServers[0], ntpServers[1], ntpServers[2]);
+  configTime(2 * 3600, 0, ntpServers[0], ntpServers[1], ntpServers[2]);
   
-  Serial.print("РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р· NTP СЃРµСЂРІРµСЂР°РјРё...");
+  Serial.print("Синхронізація з NTP серверами...");
   
-  int maxAttempts = 30;  // 30 СЃРµРєСѓРЅРґ РѕР¶РёРґР°РЅРёСЏ
+  int maxAttempts = 30;
   bool ntpSuccess = false;
   
   for (int i = 0; i < maxAttempts; i++) {
@@ -160,21 +155,19 @@ void initTime() {
       _lastTimeSync = millis();
       time(&currentTime);
       
-      Serial.println("\nвњ“ Р§Р°СЃ СЃРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ С‡РµСЂРµР· NTP!");
-      Serial.printf("РЎРµСЂРІРµСЂ: %s\n", ntpServers[0]);
-      Serial.printf("РћС‚СЂРёРјР°РЅРѕ: %d-%02d-%02d %02d:%02d:%02d\n",
+      Serial.println("\n✓ Час синхронізовано через NTP!");
+      Serial.printf("Сервер: %s\n", ntpServers[0]);
+      Serial.printf("Отримано: %d-%02d-%02d %02d:%02d:%02d\n",
                     timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday,
                     timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
       
-      // РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РІСЂРµРјСЏ Р°РґРµРєРІР°С‚РЅРѕРµ (РЅРµ РІ РїСЂРѕС€Р»РѕРј РІРµРєРµ)
       if (timeInfo.tm_year + 1900 >= 2024) {
-        Serial.println("вњ“ Р§Р°СЃ РІР°Р»С–РґРЅРёР№ (РїС–СЃР»СЏ 2024 СЂРѕРєСѓ)");
+        Serial.println("✓ Час валідний (після 2024 року)");
         ntpSuccess = true;
         break;
       } else {
-        Serial.println("вљ  NTP РїРѕРІРµСЂРЅСѓРІ СЃС‚Р°СЂРµ С‡Р°СЃ, РїСЂРѕР±СѓС”РјРѕ С–РЅС€РёР№ СЃРµСЂРІРµСЂ...");
+        Serial.println("⚠️ NTP повернув старе значення часу, пробуємо інший сервер...");
         
-        // РџСЂРѕР±СѓРµРј СЃР»РµРґСѓСЋС‰РёР№ СЃРµСЂРІРµСЂ
         static int serverIndex = 1;
         configTime(2 * 3600, 0, 
           ntpServers[serverIndex % 8], 
@@ -187,23 +180,21 @@ void initTime() {
     delay(1000);
     Serial.print(".");
     
-    // РљР°Р¶РґС‹Рµ 10 СЃРµРєСѓРЅРґ РјРµРЅСЏРµРј СЃРµСЂРІРµСЂ
     if (i > 0 && i % 10 == 0) {
-      Serial.printf("\nРЎРїСЂРѕР±Р° %d/30, РјС–РЅСЏСЋ СЃРµСЂРІРµСЂ...\n", i);
+      Serial.printf("\nСпроба %d/30, міняю сервер...\n", i);
     }
   }
   
   if (!ntpSuccess) {
-    Serial.println("\nвљ  Р’СЃС– NTP СЃРµСЂРІРµСЂРё РЅРµ РІС–РґРїРѕРІС–РґР°СЋС‚СЊ");
+    Serial.println("\n⚠️ Всі NTP сервери не відповідають");
     
-    // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РїСЂРёРјРµСЂРЅРѕРµ РІСЂРµРјСЏ РІСЂСѓС‡РЅСѓСЋ
     struct tm tm;
-    tm.tm_year = 2024 - 1900;   // 2024 РіРѕРґ
-    tm.tm_mon = 2 - 1;          // Р¤РµРІСЂР°Р»СЊ (РµСЃР»Рё СЃРµР№С‡Р°СЃ С„РµРІСЂР°Р»СЊ)
-    tm.tm_mday = 18;            // 18 С‡РёСЃР»Рѕ
-    tm.tm_hour = 14;            // 14 С‡Р°СЃРѕРІ
-    tm.tm_min = 0;              // 0 РјРёРЅСѓС‚
-    tm.tm_sec = 0;              // 0 СЃРµРєСѓРЅРґ
+    tm.tm_year = 2024 - 1900;
+    tm.tm_mon = 2 - 1;
+    tm.tm_mday = 18;
+    tm.tm_hour = 14;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
     tm.tm_isdst = -1;
     
     time_t t = mktime(&tm);
@@ -214,8 +205,8 @@ void initTime() {
     localtime_r(&currentTime, &timeInfo);
     timeSynced = true;
     
-    Serial.printf("вњ“ Р›РѕРєР°Р»СЊРЅРёР№ С‡Р°СЃ РІСЃС‚Р°РЅРѕРІР»РµРЅРѕ: %s\n", getTimeString().c_str());
-    Serial.println("в„№ Р’РёРєРѕСЂРёСЃС‚Р°Р№С‚Рµ РІРµР±-С–РЅС‚РµСЂС„РµР№СЃ (/settime) РґР»СЏ С‚РѕС‡РЅРѕРіРѕ С‡Р°СЃСѓ");
+    Serial.printf("✓ Локальний час встановлено: %s\n", getTimeString().c_str());
+    Serial.println("ℹ️ Використайте веб-інтерфейс (/settime) для точного часу");
   }
 }
 
@@ -230,14 +221,14 @@ void syncTime() {
       if (xSemaphoreTake(timeMutex, portMAX_DELAY)) {
         struct tm timeinfo;
         localtime_r(&currentTime, &timeinfo);
-        timeinfo.tm_isdst = -1; // РђРІС‚РѕРІРёР·РЅР°С‡РµРЅРЅСЏ Р»С–С‚РЅСЊРѕРіРѕ С‡Р°СЃСѓ
+        timeinfo.tm_isdst = -1;
         time_t adjustedTime = mktime(&timeinfo);
         struct timeval tv = {adjustedTime, 0};
         settimeofday(&tv, nullptr);
         xSemaphoreGive(timeMutex);
       }
       
-      Serial.println("вњ“ Р§Р°СЃ РѕРЅРѕРІР»РµРЅРѕ");
+      Serial.println("✓ Час оновлено");
     }
   }
 }
@@ -247,7 +238,6 @@ String getFormattedTime() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -261,7 +251,7 @@ String getFormattedTime() {
     xSemaphoreGive(timeMutex);
     return String(timeStr);
   }
-  return "РџРѕРјРёР»РєР°";
+  return "Помилка";
 }
 
 String getDateString() {
@@ -269,7 +259,6 @@ String getDateString() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -279,7 +268,7 @@ String getDateString() {
     xSemaphoreGive(timeMutex);
     return String(dateStr);
   }
-  return "РџРѕРјРёР»РєР° РґР°С‚Рё";
+  return "Помилка дати";
 }
 
 String getTimeString() {
@@ -287,7 +276,6 @@ String getTimeString() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -297,15 +285,17 @@ String getTimeString() {
     xSemaphoreGive(timeMutex);
     return String(timeStr);
   }
-  return "РџРѕРјРёР»РєР° С‡Р°СЃСѓ";
+  return "Помилка часу";
 }
+
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ РљРћРќР¤Р†Р“РЈР РђР¦Р†Р‡
+// ФУНКЦІЇ КОНФІГУРАЦІЇ
 // ============================================================================
 
 void loadConfiguration() {
   preferences.begin("climate", false);
   
+  config.pumpDisabled = preferences.getBool("pumpDisabled", false);
   config.tempMin = preferences.getFloat("tempMin", TEMP_MIN_THRESHOLD);
   config.tempMax = preferences.getFloat("tempMax", TEMP_MAX_THRESHOLD);
   config.tempVentMin = preferences.getFloat("tempVentMin", TEMP_VENT_MIN);
@@ -317,15 +307,14 @@ void loadConfiguration() {
   config.manualVentControl = preferences.getBool("manualVent", false);
   config.use24hFormat = preferences.getBool("use24h", true);
   
-  // Р”РѕРґР°РЅРѕ: РѕР±РјРµР¶РµРЅРЅСЏ РїСЂРёСЃС‚СЂРѕС—РІ
+  // Обмеження пристроїв
   config.pumpMinPercent = preferences.getUChar("pumpMin", PUMP_MIN_DEFAULT);
   config.pumpMaxPercent = preferences.getUChar("pumpMax", PUMP_MAX_DEFAULT);
   config.fanMaxPercent = preferences.getUChar("fanMax", FAN_MAX_DEFAULT);
   config.extractorMinPercent = preferences.getUChar("extractorMin", EXTRACTOR_MIN_DEFAULT);
   config.extractorMaxPercent = preferences.getUChar("extractorMax", EXTRACTOR_MAX_DEFAULT);
   
-  
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
+  // Налаштування вологості
   config.humidityConfig.minHumidity = preferences.getFloat("humMin", HUM_MIN_DEFAULT);
   config.humidityConfig.maxHumidity = preferences.getFloat("humMax", HUM_MAX_DEFAULT);
   config.humidityConfig.tempCoefficient = preferences.getFloat("humCoeff", HUM_TEMP_COEFF);
@@ -335,7 +324,7 @@ void loadConfiguration() {
   config.humidityConfig.hysteresis = preferences.getUChar("humHyst", 3);
   config.humidityConfig.adaptiveMode = preferences.getBool("humAdapt", true);
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
+  // Налаштування адаптивного обігріву
   config.a_adaptive_min = preferences.getUChar("aAdaptMin", 30);
   config.a_adaptive_max = preferences.getUChar("aAdaptMax", 45);
   config.a_normal_range_min = preferences.getUChar("aNormMin", 30);
@@ -347,7 +336,7 @@ void loadConfiguration() {
   config.adaptive_temp_step = preferences.getUChar("tempStep", 1);
   config.adaptive_hum_step = preferences.getUChar("humStep", 1);
   
-  // РўР°Р№РјРµСЂ РІРёС‚СЏР¶РєРё
+  // Таймер витяжки
   config.extractorTimer.enabled = preferences.getBool("extTimer", false);
   config.extractorTimer.onMinutes = preferences.getUShort("extOnMin", 30);
   config.extractorTimer.offMinutes = preferences.getUShort("extOffMin", 30);
@@ -360,22 +349,23 @@ void loadConfiguration() {
   
   preferences.end();
   
-  // Р†РЅС–С†С–Р°Р»С–Р·Р°С†С–СЏ Р±СѓС„РµСЂС–РІ
+  // Ініціалізація буферів
   for (int i = 0; i < TREND_WINDOW_SIZE; i++) {
     tempTrendBuffer[i] = 0.0f;
   }
   
-  // РЎРєРёРґР°РЅРЅСЏ Р°РІР°СЂС–Р№РЅРёС… Р·РјС–РЅРЅРёС…
+  // Скидання аварійних змінних
   _emergencyStartTime = 0;
   _emergencyStartTempCarrier = 0;
   _emergencyStartTempRoom = 0;
   
-  Serial.println("=== РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р°РІР°РЅС‚Р°Р¶РµРЅРѕ ===");
+  Serial.println("=== Налаштування завантажено ===");
 }
 
 void saveConfiguration() {
   preferences.begin("climate", false);
   
+  preferences.putBool("pumpDisabled", config.pumpDisabled);
   preferences.putFloat("tempMin", config.tempMin);
   preferences.putFloat("tempMax", config.tempMax);
   preferences.putFloat("tempVentMin", config.tempVentMin);
@@ -387,14 +377,14 @@ void saveConfiguration() {
   preferences.putBool("manualVent", config.manualVentControl);
   preferences.putBool("use24h", config.use24hFormat);
   
-  // Р”РѕРґР°РЅРѕ: РѕР±РјРµР¶РµРЅРЅСЏ РїСЂРёСЃС‚СЂРѕС—РІ
+  // Обмеження пристроїв
   preferences.putUChar("pumpMin", config.pumpMinPercent);
   preferences.putUChar("pumpMax", config.pumpMaxPercent);
   preferences.putUChar("fanMax", config.fanMaxPercent);
   preferences.putUChar("extractorMin", config.extractorMinPercent);
   preferences.putUChar("extractorMax", config.extractorMaxPercent);
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
+  // Налаштування вологості
   preferences.putFloat("humMin", config.humidityConfig.minHumidity);
   preferences.putFloat("humMax", config.humidityConfig.maxHumidity);
   preferences.putFloat("humCoeff", config.humidityConfig.tempCoefficient);
@@ -404,7 +394,7 @@ void saveConfiguration() {
   preferences.putUChar("humHyst", config.humidityConfig.hysteresis);
   preferences.putBool("humAdapt", config.humidityConfig.adaptiveMode);
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
+  // Налаштування адаптивного обігріву
   preferences.putUChar("aAdaptMin", config.a_adaptive_min);
   preferences.putUChar("aAdaptMax", config.a_adaptive_max);
   preferences.putUChar("aNormMin", config.a_normal_range_min);
@@ -416,7 +406,7 @@ void saveConfiguration() {
   preferences.putUChar("tempStep", config.adaptive_temp_step);
   preferences.putUChar("humStep", config.adaptive_hum_step);
   
-  // РўР°Р№РјРµСЂ РІРёС‚СЏР¶РєРё
+  // Таймер витяжки
   preferences.putBool("extTimer", config.extractorTimer.enabled);
   preferences.putUShort("extOnMin", config.extractorTimer.onMinutes);
   preferences.putUShort("extOffMin", config.extractorTimer.offMinutes);
@@ -426,11 +416,11 @@ void saveConfiguration() {
   
   preferences.end();
   
-  Serial.println("вњ“ РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р±РµСЂРµР¶РµРЅРѕ");
+  Serial.println("✓ Налаштування збережено");
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р†РќР†Р¦Р†РђР›Р†Р—РђР¦Р†Р‡
+// ФУНКЦІЇ ІНІЦІАЛІЗАЦІЇ
 // ============================================================================
 
 void initMutexes() {
@@ -443,14 +433,13 @@ void initMutexes() {
   if (sensorMutex == NULL || configMutex == NULL || 
       heatingMutex == NULL || historyMutex == NULL || 
       timeMutex == NULL) {
-    Serial.println("вљ  РџРѕРјРёР»РєР° СЃС‚РІРѕСЂРµРЅРЅСЏ РјКјСЋС‚РµРєСЃС–РІ!");
+    Serial.println("⚠️ Помилка створення м'ютексів!");
   } else {
-    Serial.println("вњ“ РњКјСЋС‚РµРєСЃРё СЃС‚РІРѕСЂРµРЅС–");
+    Serial.println("✓ М'ютекси створені");
   }
 }
 
 void createTasks() {
-  // РЎС‚РІРѕСЂРµРЅРЅСЏ Р·Р°РґР°С‡ FreeRTOS
   TaskHandle_t sensorTaskHandle = NULL;
   TaskHandle_t heatingTaskHandle = NULL;
   TaskHandle_t ventTaskHandle = NULL;
@@ -459,73 +448,71 @@ void createTasks() {
   TaskHandle_t advancedLogicTaskHandle = NULL;
   
   xTaskCreatePinnedToCore(
-    sensorTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "SensorTask",      // РќР°Р·РІР°
-    8192,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
-    2,                 // РџСЂС–РѕСЂРёС‚РµС‚
-    &sensorTaskHandle, // Handle
-    0                  // РЇРґСЂРѕ
+    sensorTask,
+    "SensorTask",
+    8192,
+    NULL,
+    2,
+    &sensorTaskHandle,
+    0
   );
   
   xTaskCreatePinnedToCore(
-    heatingTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "HeatingTask",      // РќР°Р·РІР°
-    8192,               // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,               // РџР°СЂР°РјРµС‚СЂРё
-    3,                  // РџСЂС–РѕСЂРёС‚РµС‚ (РІРёС‰Рµ Р·Р° SensorTask)
-    &heatingTaskHandle, // Handle
-    1                   // РЇРґСЂРѕ
+    heatingTask,
+    "HeatingTask",
+    8192,
+    NULL,
+    3,
+    &heatingTaskHandle,
+    1
   );
   
   xTaskCreatePinnedToCore(
-    ventilationTask,    // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "VentilationTask",  // РќР°Р·РІР°
-    4096,               // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,               // РџР°СЂР°РјРµС‚СЂРё
-    1,                  // РџСЂС–РѕСЂРёС‚РµС‚
-    &ventTaskHandle,    // Handle
-    1                   // РЇРґСЂРѕ
+    ventilationTask,
+    "VentilationTask",
+    4096,
+    NULL,
+    1,
+    &ventTaskHandle,
+    1
   );
   
   xTaskCreatePinnedToCore(
-    webTask,           // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "WebTask",         // РќР°Р·РІР°
-    8192,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
-    1,                 // РџСЂС–РѕСЂРёС‚РµС‚
-    &webTaskHandle,    // Handle
-    0                  // РЇРґСЂРѕ
+    webTask,
+    "WebTask",
+    8192,
+    NULL,
+    1,
+    &webTaskHandle,
+    0
   );
   
   xTaskCreatePinnedToCore(
-    timeTask,          // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "TimeTask",        // РќР°Р·РІР°
-    4096,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
-    1,                 // РџСЂС–РѕСЂРёС‚РµС‚
-    &timeTaskHandle,   // Handle
-    0                  // РЇРґСЂРѕ
+    timeTask,
+    "TimeTask",
+    4096,
+    NULL,
+    1,
+    &timeTaskHandle,
+    0
   );
   
   xTaskCreatePinnedToCore(
-    advancedLogicTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "AdvLogicTask",           // РќР°Р·РІР°
-    16384,                    // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,                     // РџР°СЂР°РјРµС‚СЂРё
-    3,                        // РџСЂС–РѕСЂРёС‚РµС‚ (РІРёСЃРѕРєРёР№)
-    &advancedLogicTaskHandle, // Handle
-    1                         // РЇРґСЂРѕ
+    advancedLogicTask,
+    "AdvLogicTask",
+    16384,
+    NULL,
+    3,
+    &advancedLogicTaskHandle,
+    1
   );
   
-  Serial.println("вњ“ Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");
-  
-  // Р”Р°С”РјРѕ С‡Р°СЃ Р·Р°РґР°С‡Р°Рј Р·Р°РїСѓСЃС‚РёС‚РёСЃСЏ
+  Serial.println("✓ Задачі FreeRTOS створені");
   delay(100);
 }
 
 // ============================================================================
-// Р”РћРџРћРњР†Р–РќР† Р¤РЈРќРљР¦Р†Р‡
+// ДОПОМІЖНІ ФУНКЦІЇ
 // ============================================================================
 
 bool isTimeSynced() {
@@ -546,7 +533,7 @@ void updateTimeInfo() {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ РўР Р•РќР”РЈ РўР•РњРџР•Р РђРўРЈР Р
+// ФУНКЦІЇ ДЛЯ ТРЕНДУ ТЕМПЕРАТУРИ
 // ============================================================================
 
 float* getTempTrendBufferPtr() {
@@ -570,7 +557,7 @@ void setTrendBufferFilled(bool filled) {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р”РћРЎРўРЈРџРЈ Р”Рћ Рњ'Р®РўР•РљРЎР†Р’
+// ФУНКЦІЇ ДЛЯ ДОСТУПУ ДO М'ЮТЕКСІВ
 // ============================================================================
 
 SemaphoreHandle_t getSensorMutex() {
@@ -594,7 +581,7 @@ SemaphoreHandle_t getTimeMutex() {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р”РћРЎРўРЈРџРЈ Р”Рћ Р§РђРЎРЈ
+// ФУНКЦІЇ ДЛЯ ДОСТУПУ ДО ЧАСУ
 // ============================================================================
 
 time_t getCurrentTime() {
@@ -605,11 +592,10 @@ void setCurrentTime(time_t t) {
     currentTime = t;
 }
 
-// Р”РѕРґР°РЅРѕ: С„СѓРЅРєС†С–СЏ РґР»СЏ РїРµСЂРµРІС–СЂРєРё Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
 void checkEmergencyTimeout() {
     if (heatingState.emergencyMode && getEmergencyStartTime() > 0) {
         unsigned long now = millis();
-        if (now - getEmergencyStartTime() > 120000) { // 2 С…РІРёР»РёРЅРё = 120000 РјСЃ
+        if (now - getEmergencyStartTime() > 120000) { // 2 хвилини
             float tempCarrierDiff = sensorData.tempCarrier - getEmergencyStartTempCarrier();
             float tempRoomDiff = sensorData.tempRoom - getEmergencyStartTempRoom();
             
@@ -618,8 +604,8 @@ void checkEmergencyTimeout() {
                 digitalWrite(HUMIDIFIER_PIN, LOW);
                 heatingState.emergencyMode = false;
                 
-                Serial.println("рџљЁ РђР’РђР РР™РќРР™ Р Р•Р–РРњ: РІРёРјРєРЅРµРЅРѕ С‡РµСЂРµР· РІС–РґСЃСѓС‚РЅС–СЃС‚СЊ РїСЂРѕРіСЂС–РІСѓ!");
-                Serial.printf("  Р—Р±С–Р»СЊС€РµРЅРЅСЏ С‚РµРјРїРµСЂР°С‚СѓСЂРё: С‚РµРїР»РѕРЅРѕСЃС–Р№ +%.1fВ°C, РєС–РјРЅР°С‚Р° +%.1fВ°C\n", 
+                Serial.println("🚨 АВАРІЙНИЙ РЕЖИМ: вимкнено через відсутність прогріву!");
+                Serial.printf("  Збільшення температури: теплоносій +%.1f°C, кімната +%.1f°C\n", 
                               tempCarrierDiff, tempRoomDiff);
                 
                 setEmergencyStartTime(0);
@@ -633,4 +619,3 @@ void checkEmergencyTimeout() {
         }
     }
 }
-

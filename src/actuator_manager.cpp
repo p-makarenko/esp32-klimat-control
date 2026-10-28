@@ -1,10 +1,10 @@
-
 #include "actuator_manager.h"
 #include "system_core.h"
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include "advanced_climate_logic.h"
 #include "utility_functions.h"
+
 Servo ventServo;
 
 void initPWM() {
@@ -23,12 +23,11 @@ void initPWM() {
 }
 
 void initServo() {
-  ESP32PWM::allocateTimer(3);  // Виділяємо таймер 3 для серво, щоб не конфліктувати з PWM каналами 0,1,2
+  ESP32PWM::allocateTimer(3);
   ventServo.setPeriodHertz(50);
   
   pinMode(VENT_SWITCH_PIN, INPUT_PULLUP);
   ventState.switchState = digitalRead(VENT_SWITCH_PIN);
-  // LOW = ВНИЗ = ЗАКРИТО, HIGH = ВГОРУ = ВІДКРИТО
   ventState.open = (ventState.switchState == HIGH);
   ventState.currentAngle = ventState.open ? config.servoOpenAngle : config.servoClosedAngle;
   ventState.moving = false;
@@ -50,9 +49,8 @@ void initGPIO() {
   digitalWrite(HUMIDIFIER_PIN, LOW);
   
   pinMode(HEATER_FAN_RELAY_PIN, OUTPUT);
-  digitalWrite(HEATER_FAN_RELAY_PIN, HIGH); // Оптичне реле з активним LOW: HIGH = вимкнено
+  digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);
   
-  // Читаємо стан вимикача
   bool switchState = digitalRead(VENT_SWITCH_PIN);
   ventState.switchState = switchState;
   ventState.open = (switchState == HIGH);
@@ -65,45 +63,68 @@ void initGPIO() {
                 ventState.open ? "ВІДКРИТО" : "ЗАКРИТО", ventState.currentAngle);
 }
 
-void setHeatingPower(uint8_t pumpPower, uint8_t fanPower, uint8_t extractorPower) {
-  if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
-    // ВСЕ мінімуми видаляємо з цієї функції - вони вже застосовані у setXPercent()
-    heatingState.pumpPower = pumpPower;
-    heatingState.fanPower = fanPower;
-    heatingState.extractorPower = extractorPower;
+void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorPercent) {
+    // 1. Повне блокування насоса
+    if (config.pumpDisabled) {
+        pumpPercent = 0;
+    } else if (pumpPercent > 0) {
+        pumpPercent = constrain(pumpPercent, config.pumpMinPercent, config.pumpMaxPercent);
+    }
     
-    ledcWrite(PUMP_CHANNEL, pumpPower);
-    ledcWrite(FAN_CHANNEL, fanPower);
-    ledcWrite(EXTRACTOR_CHANNEL, extractorPower);
-    
-    // Реле мотора 220В: увімкнено (LOW), якщо вентилятор обігріву працює (>0)
-    digitalWrite(HEATER_FAN_RELAY_PIN, (fanPower > 77) ? LOW : HIGH);
-    
-    xSemaphoreGive(getHeatingMutex());
-  }
-}
+    // 2. Повне блокування вентилятора обігріву (якщо галочка ВИМКНЕНА)
+    if (!config.heaterFanRelayEnabled) {
+        fanPercent = 0; // Скидаємо ШІМ у 0%
+    } else if (fanPercent > 0) {
+        fanPercent = constrain(fanPercent, config.fanMinPercent, config.fanMaxPercent);
+    }
 
-void setPumpPercent(uint8_t percent) {
+    // 3. Обмеження для витяжки
+    if (extractorPercent > 0) {
+        extractorPercent = constrain(extractorPercent, config.extractorMinPercent, config.extractorMaxPercent);
+    }
+
+    // 4. Керування реле 220В вентилятора обігріву (Pin 7)
+    if (fanPercent > 0 && config.heaterFanRelayEnabled) {
+        digitalWrite(HEATER_FAN_RELAY_PIN, LOW);
+    } else {
+        digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);
+    }
+
+    // Переведення відсотків у PWM (0-255)
+    uint32_t pumpDuty = map(pumpPercent, 0, 100, 0, 255);
+    uint32_t fanDuty = map(fanPercent, 0, 100, 0, 255);
+    uint32_t extractorDuty = map(extractorPercent, 0, 100, 0, 255);
+
+    // Запис у PWM канали
+    ledcWrite(PUMP_CHANNEL, pumpDuty);
+    ledcWrite(FAN_CHANNEL, fanDuty);
+    ledcWrite(EXTRACTOR_CHANNEL, extractorDuty);
+}void setPumpPercent(uint8_t percent) {
+  // ⛔ Якщо насос повністю вимкнено у налаштуваннях — завжди 0%
+  if (config.pumpDisabled) {
+    if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+      heatingState.pumpPower = 0;
+      ledcWrite(PUMP_CHANNEL, 0);
+      xSemaphoreGive(getHeatingMutex());
+    }
+    return;
+  }
+
   uint8_t originalPercent = percent;
 
   // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
-    // В авто режимі: мінімум з налаштувань при НЕНУЛЬОВОМУ значенні
     if (percent > 0 && percent < config.pumpMinPercent) {
       percent = config.pumpMinPercent;
     }
-    // Максимум з налаштувань
     if (percent > config.pumpMaxPercent) {
       percent = config.pumpMaxPercent;
     }
   } else {
-    // У ручному/форсажному/аварійному режимі: БУДЬ-ЯКЕ значення, включаючи 0%
     percent = constrain(percent, 0, 100);
   }
 
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
-
-  // Serial.printf("[DEBUG] setPumpPercent: %d%% -> %d%% -> PWM=%d\n", originalPercent, percent, pwmValue);
 
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.pumpPower = pwmValue;
@@ -113,39 +134,32 @@ void setPumpPercent(uint8_t percent) {
 }
 
 void pumpStartupRamp(uint8_t targetPercent) {
-  // У ручному режимі - без плавного розгону, просто встановлюємо
   if (heatingState.manualMode) {
     setPumpPercent(targetPercent);
     return;
   }
 
-  // Якщо ціль >= 50%, плавний розгон не потрібен
   if (targetPercent >= 50 || targetPercent == 0) {
     setPumpPercent(targetPercent);
     return;
   }
 
-  // АВТОМАТИЧНИЙ РЕЖИМ: Для цілей < 50% застосовуємо плавний розгон через 50%
   Serial.printf("🔄 Плавний розгон насоса до %d%%...\n", targetPercent);
 
-  // Етап 1: Розгон на 50% за 3 секунди (плавно)
   const uint8_t rampPercent = 50;
   const uint16_t rampDurationMs = 3000;
   const uint16_t stepDurationMs = 50;
   const uint8_t totalSteps = rampDurationMs / stepDurationMs;
 
-  // Отримуємо поточний стан насоса
   uint8_t currentPumpPower = 0;
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     currentPumpPower = map(heatingState.pumpPower, 0, 255, 0, 100);
     xSemaphoreGive(getHeatingMutex());
   }
 
-  // Розгін з поточного стану до 50%
   for (uint8_t step = 0; step <= totalSteps; step++) {
     uint8_t percent = map(step, 0, totalSteps, currentPumpPower, rampPercent);
 
-    // Прямий запис PWM без виклику setPumpPercent (уникаємо рекурсії мінімумів)
     uint8_t pwmValue = map(percent, 0, 100, 0, 255);
     if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
       heatingState.pumpPower = pwmValue;
@@ -160,18 +174,15 @@ void pumpStartupRamp(uint8_t targetPercent) {
 
   Serial.printf("  ✓ Досягнуто 50%% після розгону\n");
 
-  // Етап 2: Робота на 50% протягом 1 секунди
   delay(1000);
   Serial.printf("  ✓ Робота на 50%% протягом 1 сек\n");
 
-  // Етап 3: Плавне зниження до цільового рівня за 1 секунду
   const uint16_t downDurationMs = 1000;
   const uint8_t downSteps = downDurationMs / stepDurationMs;
 
   for (uint8_t step = 0; step <= downSteps; step++) {
     uint8_t percent = map(step, 0, downSteps, rampPercent, targetPercent);
 
-    // Прямий запис PWM
     uint8_t pwmValue = map(percent, 0, 100, 0, 255);
     if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
       heatingState.pumpPower = pwmValue;
@@ -187,23 +198,17 @@ void pumpStartupRamp(uint8_t targetPercent) {
   Serial.printf("  ✓ Насос встановлено на %d%%\n", targetPercent);
 }
 
-
 void setFanPercent(uint8_t percent) {
   uint8_t originalPercent = percent;
   
-  // 1. Тільки в автоматичному режимі застосовуємо обмеження з config
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
-    // В авто режимі: якщо відсоток більше 0, але менше мінімуму — підтягуємо до fanMinPercent
-    // Якщо percent == 0, ця умова НЕ спрацює і вентилятор залишиться ВИМКНЕНИМ (0%)
     if (percent > 0 && percent < config.fanMinPercent) {
       percent = config.fanMinPercent;
     }
-    // Обмеження максимуму
     if (percent > config.fanMaxPercent) {
       percent = config.fanMaxPercent;
     }
   } else {
-    // У ручному/форсажному/аварійному режимах — будь-яке значення від 0 до 100%
     percent = constrain(percent, 0, 100);
   }
   
@@ -211,56 +216,38 @@ void setFanPercent(uint8_t percent) {
   
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.fanPower = pwmValue;
+    
+    // 1. Звичайний ШІМ вентилятора обігріву (працює штатно)
     ledcWrite(FAN_CHANNEL, pwmValue);
-    
-    // 2. Реле мотора (пін 7): вмикається (LOW) строго від 30% (PWM >= 77)
-    digitalWrite(HEATER_FAN_RELAY_PIN, (pwmValue >= 77) ? LOW : HIGH);
-    
+
+    // 2. Реле 220В (Pin 7) — слухається ТІЛЬКИ своєї галочки
+    if (percent > 0 && config.heaterFanRelayEnabled) {
+      digitalWrite(HEATER_FAN_RELAY_PIN, LOW);   // Увімкнути 220В (LOW)
+    } else {
+      digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);  // Вимкнути 220В (HIGH)
+    }
+
     xSemaphoreGive(getHeatingMutex());
   }
 
   checkFanMaxPowerEfficiency();
 }
-// Валідація температури перед активацією насоса
-bool isPumpActivationAllowed(float currentTemp) {
-  // Насос включається тільки якщо температура вище мінімальної безпечної
-  const float MIN_SAFE_TEMP = 5.0;  // 5°C - мінімум для циркуляції
-
-  if (currentTemp < MIN_SAFE_TEMP) {
-    Serial.printf("⚠ БЛОКУВАННЯ: Температура занадто низька (%.1f°C < %f°C)\n",
-                  currentTemp, MIN_SAFE_TEMP);
-    return false;
-  }
-
-  // У аварійному режимі (<18°C) дозволяємо включення незалежно від мінімуму
-  if (currentTemp < 18.0 && heatingState.emergencyMode) {
-    return true;
-  }
-
-  return true;
-}
 
 void setExtractorPercent(uint8_t percent) {
   uint8_t originalPercent = percent;
 
-  // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
-    // В авто режимі: мінімум з налаштувань при НЕНУЛЬОВОМУ значенні
     if (percent > 0 && percent < config.extractorMinPercent) {
       percent = config.extractorMinPercent;
     }
-    // Максимум з налаштувань
     if (percent > config.extractorMaxPercent) {
       percent = config.extractorMaxPercent;
     }
   } else {
-    // У ручному/форсажному/аварійному режимі: БУДЬ-ЯКЕ значення, включаючи 0%
     percent = constrain(percent, 0, 100);
   }
 
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
-
-  // Serial.printf("[DEBUG] setExtractorPercent: %d%% -> %d%% -> PWM=%d\n", originalPercent, percent, pwmValue);
 
   if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
     heatingState.extractorPower = pwmValue;
@@ -270,15 +257,11 @@ void setExtractorPercent(uint8_t percent) {
 }
 
 void moveServoSmooth(int targetAngle) {
-  // КРИТИЧНИЙ ЗАХИСТ: Серво рухається ТІЛЬКИ через механічний вимикач!
-  // Виняток: режим калібрування (для налаштування кутів)
   if (!ventState.moving && !ventState.calibrationMode) {
     Serial.println("⚠ БЛОКОВАНО: Серво рухається ТІЛЬКИ через механічний вимикач або режим калібрування!");
     return;
   }
 
-  // Дозволяємо рух у режимі калібрування БЕЗ механічного вимикача
-  // Дозволяємо рух при вмиканні флага moving (через вентиляційний вимикач)
   if (targetAngle == ventState.currentAngle) {
     ventState.open = (targetAngle == config.servoOpenAngle);
     ventState.moving = false;
@@ -308,12 +291,10 @@ void moveServoSmooth(int targetAngle) {
   ventState.servoAttached = false;
   ventState.moving = false;
 
-  // В режимі калібрування НЕ перевіряємо вимикач - користувач керує вручну
   if (ventState.calibrationMode) {
     return;
   }
 
-  // Перевіряємо чи не змінився вимикач під час руху (тільки НЕ в режимі калібрування)
   bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
   if (currentSwitchState != ventState.switchState) {
     Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
@@ -327,15 +308,13 @@ void moveServoSmooth(int targetAngle) {
 
 void controlVentilation() {
   if (ventState.calibrationMode) {
-    return;  // Пропускаємо в режимі калібрування
+    return;
   }
   
-  // Якщо серво вже рухається, чекаємо завершення
   if (ventState.moving) {
     return;
   }
   
-  // Захист від брязкоту контактів (Debounce)
   static uint32_t lastDebounceTime = 0;
   static int lastRawState = -1;
   int rawState = digitalRead(VENT_SWITCH_PIN);
@@ -347,12 +326,9 @@ void controlVentilation() {
   
   if ((millis() - lastDebounceTime) >= 50) {
     int stableSwitchState = rawState;
-    // LOW = вимикач ВНИЗ = ЗАКРИТО
-    // HIGH = вимикач ВГОРУ = ВІДКРИТО
     int expectedAngle = (stableSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
     bool expectedOpen = (stableSwitchState == HIGH);
 
-    // Перевіряємо як зміну положення перемикача, так і розсинхронізацію кута заслонки
     if (stableSwitchState != ventState.switchState || ventState.currentAngle != expectedAngle || ventState.open != expectedOpen) {
       Serial.printf("🔄 Синхронізація заслонки: перемикач=%s, поточний кут=%d°, цільовий=%d° (%s)\n",
                     stableSwitchState == HIGH ? "ВГОРУ(ВІДКРИТИ)" : "ВНИЗ(ЗАКРИТИ)",
@@ -377,13 +353,11 @@ void controlHumidifier(float humidity, float tempRoom) {
   
   unsigned long now = millis();
   
-  // Перевірка на мінімальний інтервал
   if (!humidifierState.active && 
       now - humidifierState.lastCycle < config.humidityConfig.minInterval) {
     return;
   }
   
-  // Логіка вмикання/вимикання
   if (!humidifierState.active && humidity < adaptiveHumMin) {
     digitalWrite(HUMIDIFIER_PIN, HIGH);
     humidifierState.active = true;
@@ -442,7 +416,6 @@ void ventilationTask(void *parameter) {
   Serial.println("✓ Задачу вентиляції запущено");
 
   while (1) {
-    // В режимі калібрування пропускаємо обробку вимикача
     if (!ventState.calibrationMode && !config.manualVentControl) {
       controlVentilation();
     }
@@ -450,5 +423,3 @@ void ventilationTask(void *parameter) {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
-
-

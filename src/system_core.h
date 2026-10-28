@@ -31,6 +31,7 @@ struct HumidityConfig {
   float tempCoefficient;
   bool enabled;
   uint32_t minInterval;
+  uint32_t maxRunTime;
   uint8_t hysteresis;
   bool adaptiveMode;
 };
@@ -74,9 +75,11 @@ struct SystemConfig {
   float tempVentMin;
   float tempVentMax;
   bool heatingEnabled;
+  bool heaterFanRelayEnabled;   // Прапорець дозволу роботи реле 220В вентилятора (Pin 7)
   bool seasonalHeatingDisable;  // Автоматичне відключення обігріву в теплі місяці
   bool coolingMode;              // Режим охолодження (літо: холодна вода в теплоносії)
   bool humidifierEnabled;
+  bool pumpDisabled = false; // Повне блокування/вимкнення насосу
   uint32_t statusPeriod;
   uint8_t fanMinPercent;
   uint8_t fanMaxPercent;
@@ -86,6 +89,16 @@ struct SystemConfig {
   uint8_t extractorMaxPercent;
   bool manualVentControl;
   bool use24hFormat;
+
+  // Налаштування адаптивного обігріву
+  uint8_t a_adaptive_min;
+  uint8_t a_adaptive_max;
+  uint8_t a_normal_range_min;
+  uint8_t a_normal_range_max;
+  uint8_t b_start_percent;
+  uint16_t trend_window_seconds;
+  float temp_drop_threshold;
+  uint32_t heating_check_interval;
   
   // Калібрування серво
   int servoClosedAngle;
@@ -114,7 +127,6 @@ struct SystemConfig {
   uint16_t adaptive_activation_time_min;
   uint16_t adaptive_recovery_time_min;
 
-
   ExtractorTimer extractorTimer;
   PlantFanTimer  plantFanTimer;
   BreezeConfig   breezeConfig;
@@ -136,7 +148,6 @@ struct SystemConfig {
   float tempCriticalLow;       // Поріг для ФОРСАЖУ - критично низька температура (°C, default 20.0)
   float tempEmergencyLow;      // Поріг для АВАРІЇ - аварійна температура (°C, default 18.0)
 };
-
 struct HeatingState {
   bool active;
   uint8_t pumpPower;
@@ -184,7 +195,6 @@ struct VentilationState {
   bool switchState;
   bool moving;
   bool calibrationMode;  // Режим калібрування - ігнорує вимикач
-  
 };
 
 struct HumidifierState {
@@ -231,6 +241,13 @@ extern time_t currentTime;
 extern struct tm timeInfo;
 extern bool enableStatusOutput;
 
+// Буфери для тренду температури
+#ifndef TREND_WINDOW_SIZE
+#define TREND_WINDOW_SIZE 300
+#endif
+extern float tempTrendBuffer[TREND_WINDOW_SIZE];
+extern int trendIndex;
+
 // Прототипи функцій
 void loadConfiguration();
 void saveConfiguration();
@@ -244,6 +261,12 @@ String getTimeString();
 String getFormattedTime();
 String getDateString();
 
+// Геттери та сеттери для тренду
+float* getTempTrendBufferPtr();
+int getTrendIndexValue();
+void setTrendIndex(int index);
+bool isTrendBufferFilled();
+void setTrendBufferFilled(bool filled);
 
 // Геттери та сеттери для часових змінних
 unsigned long getLastStatusPrint();
@@ -287,7 +310,6 @@ void setCurrentTime(time_t t);
 
 // Прототипи задач FreeRTOS
 void timeTask(void *parameter);
-// Прототип задачі розширеної логіки
 void advancedLogicTask(void *parameter);
 
 // Глобальні TaskHandle для OTA (призупинення задач)

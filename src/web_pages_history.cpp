@@ -144,7 +144,7 @@ void handleHistoryPage() {
     html += "let currentPeriod = 'day';";
     html += "const SHEETS_URL = '" + String(GOOGLE_SCRIPT_URL) + "';";
 
-    // Конфігурація zoom з оптимізованими threshold для touch
+    // Конфігурація zoom
     html += "const zoomConfig = {";
     html += "  zoom: {";
     html += "    wheel: { enabled: true, speed: 0.1 },";
@@ -177,7 +177,7 @@ void handleHistoryPage() {
     html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
     html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
     html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
-    html += "label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '°C'; }";
+    html += "label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) : '0.0') + '°C'; }";
     html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: '°C' } } }";
     html += "}});";
@@ -189,7 +189,7 @@ void handleHistoryPage() {
     html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
     html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
     html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
-    html += "label: function(ctx) { return ctx.parsed.y.toFixed(1) + '%'; }";
+    html += "label: function(ctx) { return (ctx.parsed.y !== null ? ctx.parsed.y.toFixed(1) : '0.0') + '%'; }";
     html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: '%' } } }";
     html += "}});";
@@ -201,7 +201,7 @@ void handleHistoryPage() {
     html += "responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },";
     html += "plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: {";
     html += "title: function(ctx) { return (window.chartFullDates && window.chartFullDates[ctx[0].dataIndex]) ? window.chartFullDates[ctx[0].dataIndex] : ctx[0].label; },";
-    html += "label: function(ctx) { return ctx.parsed.y.toFixed(0) + ' ppm'; }";
+    html += "label: function(ctx) { return (ctx.parsed.y !== null ? ctx.parsed.y.toFixed(0) : '0') + ' ppm'; }";
     html += "}}, zoom: zoomConfig },";
     html += "scales: { y: { beginAtZero: false, title: { display: true, text: 'ppm' } } }";
     html += "}});";
@@ -313,30 +313,7 @@ void handleHistoryPage() {
     html += "if (status) status.textContent = '⚠️ Немає даних в RAM';";
     html += "return;";
     html += "}";
-    html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
-    html += "data.forEach(record => {";
-    html += "let dateStr = '', hoursStr = '';";
-    html += "if (record.timestamp > 1000000000) {";
-    html += "  const date = new Date(record.timestamp * 1000);";
-    html += "  const day = String(date.getDate()).padStart(2, '0');";
-    html += "  const month = String(date.getMonth() + 1).padStart(2, '0');";
-    html += "  const year = date.getFullYear();";
-    html += "  const hours = String(date.getHours()).padStart(2, '0');";
-    html += "  const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "  hoursStr = hours + ':' + minutes;";
-    html += "  dateStr = day + '.' + month + '.' + year + ' ' + hoursStr;";
-    html += "} else {";
-    html += "  hoursStr = '+' + Math.floor(record.timestamp / 60) + 'm';";
-    html += "  dateStr = 'Час до NTP: ' + hoursStr;";
-    html += "}";
-    html += "labels.push(hoursStr);";
-    html += "fullDates.push(dateStr);";
-    html += "tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
-    html += "hum.push(record.humidity); co2.push(record.co2Level || 0);";
-    html += "});";
-    html += "window.chartFullDates = fullDates;";
-    html += "updateCharts(labels, tc, tr, tb, hum, co2);";
-    html += "if (status) status.textContent = '✅ ' + data.length + ' записів';";
+    html += "renderChartRecords(data, 'RAM');";
     html += "})";
     html += ".catch(error => {";
     html += "console.error('Помилка:', error);";
@@ -358,7 +335,6 @@ void handleHistoryPage() {
     html += "let data = result.data || [];";
     html += "data.sort((a, b) => a.timestamp - b.timestamp);";
     html += "if (data.length === 0) {";
-    html += "  // Якщо на SPIFFS даних за день ще немає (наприклад, після старту), підтягуємо оперативні з RAM";
     html += "  fetch('/history/data?source=ram&format=json')";
     html += "    .then(r => r.json())";
     html += "    .then(ramRes => {";
@@ -388,29 +364,38 @@ void handleHistoryPage() {
     html += "});";
     html += "}";
 
-    // Функція відображення точок на графіках
+    // Розумне формування точок графіків (УСУВАЄ КОНФЛІКТ TIMESTAMP І ВІДНОСНОГО ЧАСУ)
     html += "function renderChartRecords(records, srcName) {";
     html += "const status = document.getElementById('loadStatus');";
     html += "const labels = [], fullDates = [], tc = [], tr = [], tb = [], hum = [], co2 = [];";
-    html += "records.forEach(record => {";
-    html += "  let dateStr = '', shortLabel = '';";
-    html += "  if (record.timestamp > 1000000000) {";
-    html += "    const date = new Date(record.timestamp * 1000);";
-    html += "    const day = String(date.getDate()).padStart(2, '0');";
-    html += "    const month = String(date.getMonth() + 1).padStart(2, '0');";
-    html += "    const year = date.getFullYear();";
-    html += "    const hours = String(date.getHours()).padStart(2, '0');";
-    html += "    const minutes = String(date.getMinutes()).padStart(2, '0');";
-    html += "    shortLabel = day + '.' + month + ' ' + hours + ':' + minutes;";
-    html += "    dateStr = day + '.' + month + '.' + year + ' ' + hours + ':' + minutes;";
-    html += "  } else {";
-    html += "    shortLabel = '+' + Math.floor(record.timestamp / 60) + 'm';";
-    html += "    dateStr = 'Час до NTP: ' + shortLabel;";
+    html += "let lastValidTs = Math.floor(Date.now() / 1000);";
+    html += "for (let i = records.length - 1; i >= 0; i--) {";
+    html += "  if (records[i].timestamp > 1000000000) {";
+    html += "    lastValidTs = records[i].timestamp;";
+    html += "    break;";
     html += "  }";
+    html += "}";
+    html += "records.forEach((record, index) => {";
+    html += "  let effectiveTs = record.timestamp;";
+    html += "  if (effectiveTs <= 1000000000) {";
+    html += "    const offsetSec = (records.length - 1 - index) * 60;";
+    html += "    effectiveTs = lastValidTs - offsetSec;";
+    html += "  }";
+    html += "  const date = new Date(effectiveTs * 1000);";
+    html += "  const day = String(date.getDate()).padStart(2, '0');";
+    html += "  const month = String(date.getMonth() + 1).padStart(2, '0');";
+    html += "  const year = date.getFullYear();";
+    html += "  const hours = String(date.getHours()).padStart(2, '0');";
+    html += "  const minutes = String(date.getMinutes()).padStart(2, '0');";
+    html += "  const shortLabel = hours + ':' + minutes;";
+    html += "  const dateStr = day + '.' + month + '.' + year + ' ' + shortLabel;";
     html += "  labels.push(shortLabel);";
     html += "  fullDates.push(dateStr);";
-    html += "  tc.push(record.tempCarrier); tr.push(record.tempRoom); tb.push(record.tempBME);";
-    html += "  hum.push(record.humidity); co2.push(record.co2Level || 0);";
+    html += "  tc.push(Number.isNaN(record.tempCarrier) ? 0 : record.tempCarrier);";
+    html += "  tr.push(Number.isNaN(record.tempRoom) ? 0 : record.tempRoom);";
+    html += "  tb.push(Number.isNaN(record.tempBME) ? 0 : record.tempBME);";
+    html += "  hum.push(Number.isNaN(record.humidity) ? 0 : record.humidity);";
+    html += "  co2.push(Number.isNaN(record.co2Level) ? 0 : record.co2Level);";
     html += "});";
     html += "window.chartFullDates = fullDates;";
     html += "updateCharts(labels, tc, tr, tb, hum, co2);";
@@ -423,7 +408,7 @@ void handleHistoryPage() {
     html += "const btn = document.getElementById('loadBtn');";
     html += "if (!startDate || !endDate) { alert('Оберіть дати!'); return; }";
     html += "if (btn) btn.disabled = true;";
-    html += "  if (status) status.textContent = '⏳ Завантаження Sheets...';";
+    html += "if (status) status.textContent = '⏳ Завантаження Sheets...';";
     html += "const controller = new AbortController();";
     html += "const timeoutId = setTimeout(() => controller.abort(), 35000);";
     html += "const url = SHEETS_URL + '?action=read&from=' + startDate + '&to=' + endDate;";

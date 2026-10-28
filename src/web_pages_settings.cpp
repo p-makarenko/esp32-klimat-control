@@ -117,10 +117,12 @@ void handleSettingsPage() {
     html += "</div>";
     html += "</div>"; // tab0
 
-    // TAB 1: ПРИСТРОЇ
+   // TAB 1: ПРИСТРОЇ
     html += "<div class='tab-content' id='tab1'>";
     html += "<div class='section'>";
     html += "<h3>🔧 ОБМЕЖЕННЯ ПРИСТРОЇВ (автоматичний режим)</h3>";
+    
+    // Блок насоса
     html += "<div class='form-group'>";
     html += "<label>Мінімум насоса (%):</label>";
     html += "<input type='number' name='pumpMin' value='" + String(config.pumpMinPercent) + "' min='0' max='100'>";
@@ -130,6 +132,12 @@ void handleSettingsPage() {
     html += "<input type='number' name='pumpMax' value='" + String(config.pumpMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='pumpDisabled' " + String(config.pumpDisabled ? "checked" : "") + "> ⛔ Повністю вимкнути насос (Блокування)</label>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>При увімкненні насос буде повністю заблоковано (0%) у всіх режимах</small>";
+    html += "</div>";
+
+    // Блок вентилятора обігріву
+    html += "<div class='form-group' style='margin-top: 25px;'>";
     html += "<label>Мінімум вентилятора обігріву (%):</label>";
     html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
     html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальна швидкість для стабільної роботи вентилятора</small>";
@@ -138,7 +146,15 @@ void handleSettingsPage() {
     html += "<label>Максимум вентилятора обігріву (%):</label>";
     html += "<input type='number' name='fanMax' value='" + String(config.fanMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
+    
+    // Нова галочка реле 220В вентилятора
     html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='heaterFanRelay' " + String(config.heaterFanRelayEnabled ? "checked" : "") + "> 🔌 Увімкнути живлення 220В вентилятора (Реле Pin 7)</label>";
+    html += "<small style='color: #666; display: block; margin-top: 5px;'>При знятті галочки реле вентилятора буде заблоковано в STAN OFF</small>";
+    html += "</div>";
+
+    // Блок витяжки
+    html += "<div class='form-group' style='margin-top: 25px;'>";
     html += "<label>Мінімум витяжки (%):</label>";
     html += "<input type='number' name='extractorMin' value='" + String(config.extractorMinPercent) + "' min='0' max='100'>";
     html += "</div>";
@@ -146,6 +162,7 @@ void handleSettingsPage() {
     html += "<label>Максимум витяжки (%):</label>";
     html += "<input type='number' name='extractorMax' value='" + String(config.extractorMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
+
     html += "</div>";
     html += "</div>"; // tab1
 
@@ -730,294 +747,105 @@ void handleSettingsPage() {
 
     server.send(200, "text/html", html);
 }
-
 // ============================================================================
 // ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ
 // ============================================================================
 
 void handleSaveSettings() {
-    if (!checkAuth()) return;
+    if (!checkAuth() || !checkCSRF()) return;
 
-    // БЕЗПЕКА: Перевірка CSRF
-    if (!checkCSRF()) {
-        server.send(403, "text/plain", "❌ CSRF: Заборонено");
-        return;
-    }
+    if (xSemaphoreTake(getConfigMutex(), pdMS_TO_TICKS(1000)) == pdTRUE) {
+        
+        // 1. ЧЕКБОКСИ (Галочки)
+        config.pumpDisabled = server.hasArg("pumpDisabled");
+        config.heaterFanRelayEnabled = server.hasArg("heaterFanRelay"); 
+        config.coolingMode = server.hasArg("coolingMode");
+        config.seasonalHeatingDisable = server.hasArg("seasonalDisable");
+        config.autoStatusEnabled = server.hasArg("autoStatus");
+        config.use24hFormat = server.hasArg("use24h");
+        config.manualVentControl = server.hasArg("manualVent");
+        config.useStaticIP = server.hasArg("use_static_ip");
+        config.useAuth = server.hasArg("use_auth");
+        config.extractorTimer.enabled = server.hasArg("extEnabled");
+        config.plantFanTimer.enabled = server.hasArg("plfEnabled");
+        config.plantFanTimer.breezeEnabled = server.hasArg("plfBreeze");
 
-    // ВАЛІДАЦІЯ: Температура
-    if (server.hasArg("tempMin")) {
-        float tempMin = server.arg("tempMin").toFloat();
-        if (tempMin < 10.0 || tempMin > 40.0) {
-            server.send(400, "text/plain", "❌ Мін. температура має бути від 10 до 40°C");
-            return;
-        }
-        config.tempMin = tempMin;
-    }
-    if (server.hasArg("tempMax")) {
-        float tempMax = server.arg("tempMax").toFloat();
-        if (tempMax < 10.0 || tempMax > 40.0) {
-            server.send(400, "text/plain", "❌ Макс. температура має бути від 10 до 40°C");
-            return;
-        }
-        if (tempMax <= config.tempMin) {
-            server.send(400, "text/plain", "❌ Макс. температура має бути більшою за мін.");
-            return;
-        }
-        config.tempMax = tempMax;
-    }
+        // 2. ТЕМПЕРАТУРА ТА ВОЛОГІСТЬ
+        if (server.hasArg("tempMin")) config.tempMin = server.arg("tempMin").toFloat();
+        if (server.hasArg("tempMax")) config.tempMax = server.arg("tempMax").toFloat();
+        if (server.hasArg("humMin"))  config.humidityConfig.minHumidity = server.arg("humMin").toFloat();
+        if (server.hasArg("humMax"))  config.humidityConfig.maxHumidity = server.arg("humMax").toFloat();
+        if (server.hasArg("humHyst")) config.humidityConfig.hysteresis = server.arg("humHyst").toInt();
 
-    // Датчик SCD30
-    if (server.hasArg("scd30Interval")) {
-        uint16_t interval = server.arg("scd30Interval").toInt();
-        if (interval >= 2 && interval <= 1800) {
-            setSCD30MeasurementInterval(interval);
-            config.scd30MeasurementInterval = interval;  // Зберігаємо у конфіг
-        }
-    }
+        // 3. ОБМЕЖЕННЯ ПРИСТРОЇВ (ШІМ %)
+        if (server.hasArg("pumpMin"))      config.pumpMinPercent = constrain(server.arg("pumpMin").toInt(), 0, 100);
+        if (server.hasArg("pumpMax"))      config.pumpMaxPercent = constrain(server.arg("pumpMax").toInt(), 0, 100);
+        if (server.hasArg("fanMin"))       config.fanMinPercent = constrain(server.arg("fanMin").toInt(), 0, 30);
+        if (server.hasArg("fanMax"))       config.fanMaxPercent = constrain(server.arg("fanMax").toInt(), 0, 100);
+        if (server.hasArg("extractorMin")) config.extractorMinPercent = constrain(server.arg("extractorMin").toInt(), 0, 100);
+        if (server.hasArg("extractorMax")) config.extractorMaxPercent = constrain(server.arg("extractorMax").toInt(), 0, 100);
 
-    // Вологість
-    if (server.hasArg("humMin")) {
-        config.humidityConfig.minHumidity = server.arg("humMin").toFloat();
-    }
-    if (server.hasArg("humMax")) {
-        config.humidityConfig.maxHumidity = server.arg("humMax").toFloat();
-    }
-    if (server.hasArg("humHyst")) {
-        config.humidityConfig.hysteresis = server.arg("humHyst").toInt();
-    }
+        // 4. ПОРОГИ ФОРСАЖУ ТА АВАРІЇ
+        if (server.hasArg("tempCriticalLow"))  config.tempCriticalLow = server.arg("tempCriticalLow").toFloat();
+        if (server.hasArg("tempEmergencyLow")) config.tempEmergencyLow = server.arg("tempEmergencyLow").toFloat();
 
-    // Пристрої
-    if (server.hasArg("pumpMin")) {
-        config.pumpMinPercent = server.arg("pumpMin").toInt();
-    }
-    if (server.hasArg("pumpMax")) {
-        config.pumpMaxPercent = server.arg("pumpMax").toInt();
-    }
-    if (server.hasArg("fanMax")) {
-        config.fanMaxPercent = server.arg("fanMax").toInt();
-    }
-    if (server.hasArg("extractorMin")) {
-        config.extractorMinPercent = server.arg("extractorMin").toInt();
-    }
-    if (server.hasArg("extractorMax")) {
-        config.extractorMaxPercent = server.arg("extractorMax").toInt();
-    }
-    if (server.hasArg("fanMin")) {
-        config.fanMinPercent = server.arg("fanMin").toInt();
-    }
+        // 5. ДАТЧИКИ ТА СИСТЕМА
+        if (server.hasArg("scd30Interval")) config.scd30MeasurementInterval = server.arg("scd30Interval").toInt();
+        if (server.hasArg("statusPeriod"))  config.statusPeriod = server.arg("statusPeriod").toInt() * 1000;
 
-    // Таймер витяжки
-    if (server.hasArg("extOnMin")) {
-        config.extractorTimer.onMinutes = server.arg("extOnMin").toInt();
-    }
-    if (server.hasArg("extOnSec")) {
-        config.extractorTimer.onSeconds = server.arg("extOnSec").toInt();
-    }
-    if (server.hasArg("extOffMin")) {
-        config.extractorTimer.offMinutes = server.arg("extOffMin").toInt();
-    }
-    if (server.hasArg("extOffSec")) {
-        config.extractorTimer.offSeconds = server.arg("extOffSec").toInt();
-    }
-    if (server.hasArg("extPower")) {
-        config.extractorTimer.powerPercent = server.arg("extPower").toInt();
-    }
-    config.extractorTimer.enabled = server.hasArg("extEnabled");
+        // 6. СЕРВОПРИВОД
+        if (server.hasArg("servoClosed")) config.servoClosedAngle = server.arg("servoClosed").toInt();
+        if (server.hasArg("servoOpen"))   config.servoOpenAngle = server.arg("servoOpen").toInt();
+        if (server.hasArg("servoSpeed"))  config.servoSpeed = server.arg("servoSpeed").toInt();
 
-    // Вентилятор рослин
-    config.plantFanTimer.enabled       = server.hasArg("plfEnabled");
-    config.plantFanTimer.breezeEnabled = server.hasArg("plfBreeze");
-    if (server.hasArg("plfOnMin")) {
-        config.plantFanTimer.onMinutes = constrain(server.arg("plfOnMin").toInt(), 0, 240);
-    }
-    if (server.hasArg("plfOnSec")) {
-        config.plantFanTimer.onSeconds = constrain(server.arg("plfOnSec").toInt(), 0, 59);
-    }
-    if (server.hasArg("plfOffMin")) {
-        config.plantFanTimer.offMinutes = constrain(server.arg("plfOffMin").toInt(), 0, 240);
-    }
-    if (server.hasArg("plfOffSec")) {
-        config.plantFanTimer.offSeconds = constrain(server.arg("plfOffSec").toInt(), 0, 59);
-    }
-    if (server.hasArg("plfPower")) {
-        config.plantFanTimer.powerPercent = constrain(server.arg("plfPower").toInt(), 10, 100);
-    }
-    if (server.hasArg("plfMinStart")) {
-        config.plantFanTimer.minStartPercent = constrain(server.arg("plfMinStart").toInt(), 1, 90);
-    }
-    if (server.hasArg("brzBaseMin")) {
-        config.breezeConfig.baseSpeedMin = constrain(server.arg("brzBaseMin").toInt(), 5, 80);
-    }
-    if (server.hasArg("brzBaseMax")) {
-        config.breezeConfig.baseSpeedMax = constrain(server.arg("brzBaseMax").toInt(), 10, 100);
-    }
-    if (server.hasArg("brzBoost")) {
-        config.breezeConfig.gustBoost = constrain(server.arg("brzBoost").toInt(), 5, 60);
-    }
-    if (server.hasArg("brzGstMin")) {
-        config.breezeConfig.gustMinSec = constrain(server.arg("brzGstMin").toInt(), 1, 30);
-    }
-    if (server.hasArg("brzGstMax")) {
-        config.breezeConfig.gustMaxSec = constrain(server.arg("brzGstMax").toInt(), 2, 60);
-    }
-    if (server.hasArg("brzCalmMin")) {
-        config.breezeConfig.calmMinSec = constrain(server.arg("brzCalmMin").toInt(), 2, 120);
-    }
-    if (server.hasArg("brzCalmMax")) {
-        config.breezeConfig.calmMaxSec = constrain(server.arg("brzCalmMax").toInt(), 5, 300);
-    }
-    // Зберігаємо окремо в namespace "plant_fan"
-    extern void plantFanSave();
-    extern void plantFanResetBreeze();
-    plantFanSave();
-    plantFanResetBreeze();  // Застосувати нові параметри вітру негайно
+        // 7. ТАЙМЕР ВИТЯЖКИ
+        if (server.hasArg("extOnMin"))  config.extractorTimer.onMinutes = server.arg("extOnMin").toInt();
+        if (server.hasArg("extOnSec"))  config.extractorTimer.onSeconds = server.arg("extOnSec").toInt();
+        if (server.hasArg("extOffMin")) config.extractorTimer.offMinutes = server.arg("extOffMin").toInt();
+        if (server.hasArg("extOffSec")) config.extractorTimer.offSeconds = server.arg("extOffSec").toInt();
+        if (server.hasArg("extPower"))  config.extractorTimer.powerPercent = server.arg("extPower").toInt();
 
-    // Серво
-    if (server.hasArg("servoSpeed")) {
-        config.servoSpeed = constrain(server.arg("servoSpeed").toInt(), 5, 50);
-    }
-    if (server.hasArg("statusPeriod")) {
-        config.statusPeriod = server.arg("statusPeriod").toInt() * 1000UL;
-    }
+        // 8. ТАЙМЕР ТА ВІТЕР РОСЛИН
+        if (server.hasArg("plfOnMin"))    config.plantFanTimer.onMinutes = server.arg("plfOnMin").toInt();
+        if (server.hasArg("plfOnSec"))    config.plantFanTimer.onSeconds = server.arg("plfOnSec").toInt();
+        if (server.hasArg("plfOffMin"))   config.plantFanTimer.offMinutes = server.arg("plfOffMin").toInt();
+        if (server.hasArg("plfOffSec"))   config.plantFanTimer.offSeconds = server.arg("plfOffSec").toInt();
+        if (server.hasArg("plfPower"))    config.plantFanTimer.powerPercent = server.arg("plfPower").toInt();
+        if (server.hasArg("plfMinStart")) config.plantFanTimer.minStartPercent = server.arg("plfMinStart").toInt();
 
-    // Системні налаштування
-    config.autoStatusEnabled = server.hasArg("autoStatus");
-    config.use24hFormat = server.hasArg("use24h");
-    config.manualVentControl = server.hasArg("manualVent");
+        if (server.hasArg("brzBaseMin")) config.breezeConfig.baseSpeedMin = server.arg("brzBaseMin").toInt();
+        if (server.hasArg("brzBaseMax")) config.breezeConfig.baseSpeedMax = server.arg("brzBaseMax").toInt();
+        if (server.hasArg("brzBoost"))   config.breezeConfig.gustBoost = server.arg("brzBoost").toInt();
+        if (server.hasArg("brzGstMin"))  config.breezeConfig.gustMinSec = server.arg("brzGstMin").toInt();
+        if (server.hasArg("brzGstMax"))  config.breezeConfig.gustMaxSec = server.arg("brzGstMax").toInt();
+        if (server.hasArg("brzCalmMin")) config.breezeConfig.calmMinSec = server.arg("brzCalmMin").toInt();
+        if (server.hasArg("brzCalmMax")) config.breezeConfig.calmMaxSec = server.arg("brzCalmMax").toInt();
 
-    // Розширені параметри
-    if (server.hasArg("adaptiveActTime")) {
-        config.adaptive_activation_time_min = constrain(server.arg("adaptiveActTime").toInt(), 1, 240);
-    }
-    if (server.hasArg("adaptiveRecTime")) {
-        config.adaptive_recovery_time_min = constrain(server.arg("adaptiveRecTime").toInt(), 1, 240);
-    }
-    if (server.hasArg("adaptiveTempStep")) {
-        config.adaptive_temp_step = constrain(server.arg("adaptiveTempStep").toInt(), 1, 20);
-    }
-    if (server.hasArg("adaptiveHumStep")) {
-        config.adaptive_hum_step = constrain(server.arg("adaptiveHumStep").toInt(), 1, 20);
-    }
+        // 9. СИНХРОНІЗАЦІЯ ТА SPIFFS
+        if (server.hasArg("spiffsLogInterval"))  config.spiffsLogInterval = server.arg("spiffsLogInterval").toInt();
+        if (server.hasArg("sheetsSyncInterval")) config.sheetsSyncIntervalMin = server.arg("sheetsSyncInterval").toInt();
+        if (server.hasArg("logTempThreshold"))   config.logTempThreshold = server.arg("logTempThreshold").toFloat();
 
-    // Калібрування серво
-    if (server.hasArg("servoClosed")) {
-        config.servoClosedAngle = constrain(server.arg("servoClosed").toInt(), 0, 180);
-    }
-    if (server.hasArg("servoOpen")) {
-        config.servoOpenAngle = constrain(server.arg("servoOpen").toInt(), 0, 180);
-    }
+        // 10. МЕРЕЖА ТА АВТЕНТИФІКАЦІЯ
+        if (server.hasArg("static_ip")) config.staticIP = server.arg("static_ip");
+        if (server.hasArg("gateway"))   config.gateway = server.arg("gateway");
+        if (server.hasArg("subnet"))    config.subnet = server.arg("subnet");
+        if (server.hasArg("dns"))       config.dns = server.arg("dns");
 
-    // Сезонні режими
-    config.coolingMode = server.hasArg("coolingMode");
-    config.seasonalHeatingDisable = server.hasArg("seasonalDisable");
-
-    // Інтервал запису в SPIFFS
-    if (server.hasArg("spiffsLogInterval")) {
-        config.spiffsLogInterval = constrain(server.arg("spiffsLogInterval").toInt(), 1, 60);
-    }
-
-    // Інтервал відправки в Google Sheets (хвилини)
-    if (server.hasArg("sheetsSyncInterval")) {
-        config.sheetsSyncIntervalMin = constrain(server.arg("sheetsSyncInterval").toInt(), 1, 1440);
-    }
-
-    // Поріг логування для Google Sheets
-    if (server.hasArg("logTempThreshold")) {
-        config.logTempThreshold = constrain(server.arg("logTempThreshold").toFloat(), 0.0f, 5.0f);
-    }
-
-    // Пороги для режимів форсаж та аварія
-    if (server.hasArg("tempCriticalLow")) {
-        config.tempCriticalLow = server.arg("tempCriticalLow").toFloat();
-    }
-    if (server.hasArg("tempEmergencyLow")) {
-        config.tempEmergencyLow = server.arg("tempEmergencyLow").toFloat();
-    }
-
-    // WiFi налаштування
-    bool wifiChanged = false;
-    Preferences prefs;
-
-    if (server.hasArg("wifi_ssid") && server.arg("wifi_ssid").length() > 0) {
-        String newSSID = server.arg("wifi_ssid");
-        if (newSSID != WiFi.SSID()) {
-            prefs.begin("wifi", false);
-            prefs.putString("ssid", newSSID);
-            prefs.end();
-            wifiChanged = true;
-        }
-    }
-    if (server.hasArg("wifi_password") && server.arg("wifi_password").length() > 0) {
-        String newPassword = server.arg("wifi_password");
-        prefs.begin("wifi", false);
-        prefs.putString("password", newPassword);
-        prefs.end();
-        wifiChanged = true;
-    }
-
-    // Статична IP
-    if (server.hasArg("use_static_ip")) {
-        config.useStaticIP = true;
-        if (server.hasArg("static_ip")) {
-            config.staticIP = server.arg("static_ip");
-        }
-        if (server.hasArg("gateway")) {
-            config.gateway = server.arg("gateway");
-        }
-        if (server.hasArg("subnet")) {
-            config.subnet = server.arg("subnet");
-        }
-        if (server.hasArg("dns")) {
-            config.dns = server.arg("dns");
-        }
-        wifiChanged = true;
-    } else {
-        if (config.useStaticIP) {
-            config.useStaticIP = false;
-            wifiChanged = true;
-        }
-    }
-
-    // Автентифікація
-    if (server.hasArg("use_auth")) {
-        config.useAuth = true;
         if (server.hasArg("auth_user") && server.arg("auth_user").length() > 0) {
             config.authLogin = server.arg("auth_user");
         }
         if (server.hasArg("auth_pass") && server.arg("auth_pass").length() > 0) {
             config.authPassword = server.arg("auth_pass");
         }
-    } else {
-        config.useAuth = false;
+
+        // Збереження конфігурації в Flash
+        saveConfiguration();
+
+        xSemaphoreGive(getConfigMutex());
     }
 
-    saveConfiguration();
-
-    String html = getHtmlHead("Налаштування збережені");
-
-    if (wifiChanged) {
-        html += "<meta http-equiv='refresh' content='3;url=/'>";
-    } else {
-        html += "<meta http-equiv='refresh' content='2;url=/settings'>";
-    }
-
-    html += "<div class='container' style='text-align: center; padding: 50px;'>";
-    html += "<h1>✅ Налаштування успішно збережені!</h1>";
-    if (wifiChanged) {
-        html += "<p><strong>⚠️ WiFi налаштування змінено! Пристрій перезавантажується...</strong></p>";
-        html += "<p>Після перезавантаження підключіться до нової мережі та перейдіть за адресою пристрою.</p>";
-    } else {
-        html += "<p>Перенаправлення назад на сторінку налаштувань...</p>";
-    }
-    html += "</div>";
-    html += getUkraineMarquee();
-    html += getHtmlFooter();
-
-    server.send(200, "text/html", html);
-
-    // Якщо змінились WiFi налаштування, перезавантажуємо пристрій
-    if (wifiChanged) {
-        delay(2000);
-        ESP.restart();
-    }
+    // Перенаправлення назад на сторінку налаштувань
+    server.sendHeader("Location", "/settings");
+    server.send(303);
 }

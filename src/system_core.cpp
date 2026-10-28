@@ -17,6 +17,7 @@ extern void timeTask(void *parameter);
 extern void advancedLogicTask(void *parameter);
 extern void plantFanTask(void *parameter);
 
+float tempTrendBuffer[TREND_WINDOW_SIZE];
 // Р“Р»РѕР±Р°Р»СЊРЅС– РѕР±'С”РєС‚Рё
 Preferences preferences;
 WebServer server(80);
@@ -330,51 +331,31 @@ String getTimeString() {
 void loadConfiguration() {
   preferences.begin("climate", false);
   
+  config.pumpDisabled = preferences.getBool("pumpDisabled", false);
   config.tempMin = preferences.getFloat("tempMin", TEMP_MIN_THRESHOLD);
   config.tempMax = preferences.getFloat("tempMax", TEMP_MAX_THRESHOLD);
   config.tempVentMin = preferences.getFloat("tempVentMin", TEMP_VENT_MIN);
   config.tempVentMax = preferences.getFloat("tempVentMax", TEMP_VENT_MAX);
   config.heatingEnabled = preferences.getBool("heating", true);
+  config.heaterFanRelayEnabled = preferences.getBool("htrFanRelay", HEATER_FAN_RELAY_ENABLED_DEFAULT);
   config.humidifierEnabled = preferences.getBool("humidifier", true);
   config.statusPeriod = preferences.getULong("statusPeriod", STATUS_PRINT_INTERVAL);
   config.fanMinPercent = preferences.getUChar("fanMin", 10);
   config.manualVentControl = preferences.getBool("manualVent", false);
   config.use24hFormat = preferences.getBool("use24h", true);
   
-  // Р”РѕРґР°РЅРѕ: РѕР±РјРµР¶РµРЅРЅСЏ РїСЂРёСЃС‚СЂРѕС—РІ
+  // Обмеження пристроїв
   config.pumpMinPercent = preferences.getUChar("pumpMin", PUMP_MIN_DEFAULT);
   config.pumpMaxPercent = preferences.getUChar("pumpMax", PUMP_MAX_DEFAULT);
   config.fanMaxPercent = preferences.getUChar("fanMax", FAN_MAX_DEFAULT);
   config.extractorMinPercent = preferences.getUChar("extractorMin", EXTRACTOR_MIN_DEFAULT);
   config.extractorMaxPercent = preferences.getUChar("extractorMax", EXTRACTOR_MAX_DEFAULT);
-  
+
   // Servo calibration
   config.servoClosedAngle = preferences.getInt("servoClosed", SERVO_CLOSED_ANGLE);
   config.servoOpenAngle = preferences.getInt("servoOpen", SERVO_OPEN_ANGLE);
-  config.servoSpeed = preferences.getInt("servoSpeed", 20);  // За замовчуванням 20мс
-  
-  config.autoStatusEnabled = preferences.getBool("autoStatus", false);
-  
-  // Мережеві налаштування
-  config.useStaticIP = preferences.getBool("useStaticIP", false);
-  config.staticIP = preferences.getString("staticIP", "192.168.1.100");
-  config.gateway = preferences.getString("gateway", "192.168.1.1");
-  config.subnet = preferences.getString("subnet", "255.255.255.0");
-  config.dns = preferences.getString("dns", "8.8.8.8");
-  
-  // Безпека
-  config.useAuth = preferences.getBool("useAuth", false);
-  if (preferences.isKey("authLogin")) {
-    config.authLogin = preferences.getString("authLogin", "admin");
-  } else {
-    config.authLogin = "admin";
-  }
-  if (preferences.isKey("authPass")) {
-    config.authPassword = preferences.getString("authPass", "admin");
-  } else {
-    config.authPassword = "admin";
-  }
-  
+  config.servoSpeed = preferences.getInt("servoSpeed", 15);
+  config.autoStatusEnabled = preferences.getBool("autoStatus", true);
   
   // Налаштування вологості
   config.humidityConfig.minHumidity = preferences.getFloat("humMin", HUM_MIN_DEFAULT);
@@ -382,14 +363,23 @@ void loadConfiguration() {
   config.humidityConfig.tempCoefficient = preferences.getFloat("humCoeff", HUM_TEMP_COEFF);
   config.humidityConfig.enabled = preferences.getBool("humCtrl", true);
   config.humidityConfig.minInterval = preferences.getULong("humInt", HUMIDIFIER_MIN_INTERVAL);
+  config.humidityConfig.maxRunTime = preferences.getULong("humMaxRun", HUMIDIFIER_MAX_RUN_TIME);
   config.humidityConfig.hysteresis = preferences.getUChar("humHyst", 3);
   config.humidityConfig.adaptiveMode = preferences.getBool("humAdapt", true);
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
+  // Налаштування адаптивного обігріву
+  config.a_adaptive_min = preferences.getUChar("aAdaptMin", 30);
+  config.a_adaptive_max = preferences.getUChar("aAdaptMax", 45);
+  config.a_normal_range_min = preferences.getUChar("aNormMin", 30);
+  config.a_normal_range_max = preferences.getUChar("aNormMax", 35);
+  config.b_start_percent = preferences.getUChar("bStart", 32);
+  config.trend_window_seconds = preferences.getUShort("trendWindow", 300);
+  config.temp_drop_threshold = preferences.getFloat("dropThresh", 2.0f);
+  config.heating_check_interval = preferences.getULong("heatCheck", 300000);
   config.adaptive_temp_step = preferences.getUChar("tempStep", 1);
   config.adaptive_hum_step = preferences.getUChar("humStep", 1);
   config.adaptive_activation_time_min = preferences.getUShort("adpActMin", 30);
-  config.adaptive_recovery_time_min = preferences.getUShort("adpRecMin", 10);
+  config.adaptive_recovery_time_min = preferences.getUShort("adpRecMin", 60);
   
   // Таймер витяжки
   config.extractorTimer.enabled = preferences.getBool("extTimer", false);
@@ -404,19 +394,6 @@ void loadConfiguration() {
   
   config.history_size = preferences.getUShort("historySize", 1440);
 
-  // Інтервал запису в SPIFFS
-  config.spiffsLogInterval = preferences.getUChar("spiffsLogInt", 5);
-
-  // Поріг логування за температурою кімнати
-  config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
-
-  // Інтервал відправки в Google Sheets (хвилини, навіть без зміни температури)
-  config.sheetsSyncIntervalMin = preferences.getUShort("sheetsIntMin", 15);
-
-  // Пороги для режимів форсаж та аварія
-  config.tempCriticalLow = preferences.getFloat("tempCritLow", 20.0f);
-  config.tempEmergencyLow = preferences.getFloat("tempEmergLow", 18.0f);
-
   // Сезонне відключення та режим охолодження
   config.seasonalHeatingDisable = preferences.getBool("seasonalDisable", false);
   config.coolingMode = preferences.getBool("coolingMode", false);
@@ -424,39 +401,54 @@ void loadConfiguration() {
   // SCD30 Датчик CO2
   config.scd30MeasurementInterval = preferences.getUShort("scd30Interval", 2);
 
-  // Вентилятор рослин (завантажується окремо з namespace "plant_fan" в plantFanLoad())
-  // Тут лише ініціалізація дефолтних значень на випадок першого запуску
-  config.plantFanTimer.enabled         = false;
-  config.plantFanTimer.breezeEnabled   = false;
-  config.plantFanTimer.onMinutes       = PLANT_FAN_TIMER_DEFAULT_ON;
-  config.plantFanTimer.onSeconds       = 0;
-  config.plantFanTimer.offMinutes      = PLANT_FAN_TIMER_DEFAULT_OFF;
-  config.plantFanTimer.offSeconds      = 0;
-  config.plantFanTimer.powerPercent    = PLANT_FAN_TIMER_DEFAULT_POWER;
-  config.plantFanTimer.minStartPercent = 60;
+  // Інтервал запису в SPIFFS
+  config.spiffsLogInterval = preferences.getUChar("spiffsLogInt", 5);
 
-  config.breezeConfig.baseSpeedMin = BREEZE_BASE_MIN;
-  config.breezeConfig.baseSpeedMax = BREEZE_BASE_MAX;
-  config.breezeConfig.gustBoost    = BREEZE_GUST_BOOST;
-  config.breezeConfig.gustMinSec   = BREEZE_GUST_MIN_SEC;
-  config.breezeConfig.gustMaxSec   = BREEZE_GUST_MAX_SEC;
-  config.breezeConfig.calmMinSec   = BREEZE_CALM_MIN_SEC;
-  config.breezeConfig.calmMaxSec   = BREEZE_CALM_MAX_SEC;
+  // Поріг логування даних
+  config.logTempThreshold = preferences.getFloat("logTempThresh", 0.5f);
 
+  // Інтервал відправки в Google Sheets
+  config.sheetsSyncIntervalMin = preferences.getUShort("sheetsIntMin", 15);
+
+  // Пороги для режимів форсаж та аварія
+  config.tempCriticalLow = preferences.getFloat("tempCritLow", TEMP_CRITICAL_LOW);
+  config.tempEmergencyLow = preferences.getFloat("tempEmergLow", TEMP_EMERGENCY_LOW);
+
+  // Мережеві налаштування
+  config.useStaticIP = preferences.getBool("useStaticIP", false);
+  config.staticIP = preferences.getString("staticIP", "");
+  config.gateway = preferences.getString("gateway", "");
+  config.subnet = preferences.getString("subnet", "");
+  config.dns = preferences.getString("dns", "");
+
+  // Автентифікація
+  config.useAuth = preferences.getBool("useAuth", false);
+  config.authLogin = preferences.getString("authLogin", "admin");
+  config.authPassword = preferences.getString("authPass", "admin");
+  
   preferences.end();
   
-  // РЎРєРёРґР°РЅРЅСЏ Р°РІР°СЂС–Р№РЅРёС… Р·РјС–РЅРЅРёС…
-  _emergencyStartTime = 0;
-  _emergencyStartTempCarrier = 0;
-  _emergencyStartTempRoom = 0;
+  // Ініціалізація буферів
+  for (int i = 0; i < TREND_WINDOW_SIZE; i++) {
+    tempTrendBuffer[i] = 0.0f;
+  }
   
-  // Serial.println("=== РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р·Р°РІР°РЅС‚Р°Р¶РµРЅРѕ ===");  // RUS_REMOVED
+  // Скидання аварійних змінних
+  setEmergencyStartTime(0);
+  setEmergencyStartTempCarrier(0);
+  setEmergencyStartTempRoom(0);
+  
+  Serial.println("=== Налаштування завантажено ===");
 }
 
 void saveConfiguration() {
   Serial.println("\n💾 DEBUG saveConfiguration() - ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ:");
 
   preferences.begin("climate", false);
+
+  // ⛔ Повне блокування/вимкнення насосу та реле вентилятора
+  preferences.putBool("pumpDisabled", config.pumpDisabled);
+  preferences.putBool("htrFanRelay", config.heaterFanRelayEnabled);
 
   Serial.print("   tempMin: ");
   Serial.println(config.tempMin);
@@ -474,7 +466,7 @@ void saveConfiguration() {
   preferences.putBool("manualVent", config.manualVentControl);
   preferences.putBool("use24h", config.use24hFormat);
   
-  // Р”РѕРґР°РЅРѕ: РѕР±РјРµР¶РµРЅРЅСЏ РїСЂРёСЃС‚СЂРѕС—РІ
+  // Обмеження пристроїв
   preferences.putUChar("pumpMin", config.pumpMinPercent);
   preferences.putUChar("pumpMax", config.pumpMaxPercent);
   preferences.putUChar("fanMax", config.fanMaxPercent);
@@ -488,7 +480,7 @@ void saveConfiguration() {
   
   preferences.putBool("autoStatus", config.autoStatusEnabled);
 
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ РІРѕР»РѕРіРѕСЃС‚С–
+  // Налаштування вологості
   Serial.print("   humMin: ");
   Serial.println(config.humidityConfig.minHumidity);
   Serial.print("   humMax: ");
@@ -499,10 +491,11 @@ void saveConfiguration() {
   preferences.putFloat("humCoeff", config.humidityConfig.tempCoefficient);
   preferences.putBool("humCtrl", config.humidityConfig.enabled);
   preferences.putULong("humInt", config.humidityConfig.minInterval);
+  preferences.putULong("humMaxRun", config.humidityConfig.maxRunTime);
   preferences.putUChar("humHyst", config.humidityConfig.hysteresis);
   preferences.putBool("humAdapt", config.humidityConfig.adaptiveMode);
   
-  // РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р°РґР°РїС‚РёРІРЅРѕРіРѕ РѕР±С–РіСЂС–РІСѓ
+  // Налаштування адаптивного обігріву
   preferences.putUChar("tempStep", config.adaptive_temp_step);
   preferences.putUChar("humStep", config.adaptive_hum_step);
   preferences.putUShort("adpActMin", config.adaptive_activation_time_min);
@@ -555,10 +548,6 @@ void saveConfiguration() {
   Serial.println("   ✅ Налаштування успішно збережені в NVS!\n");
 }
 
-// ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р†РќР†Р¦Р†РђР›Р†Р—РђР¦Р†Р‡
-// ============================================================================
-
 void initMutexes() {
   sensorMutex = xSemaphoreCreateMutex();
   configMutex = xSemaphoreCreateMutex();
@@ -571,72 +560,72 @@ void initMutexes() {
   if (sensorMutex == NULL || configMutex == NULL || 
       heatingMutex == NULL || historyMutex == NULL || 
       timeMutex == NULL || syncMutex == NULL || ramBufferMutex == NULL) {
-    // Serial.println("вљ  РџРѕРјРёР»РєР° СЃС‚РІРѕСЂРµРЅРЅСЏ РјКјСЋС‚РµРєСЃС–РІ!");  // RUS_REMOVED
+    // Serial.println("Помилка створення м'ютексів!");
   } else {
-    // Serial.println("вњ“ РњКјСЋС‚РµРєСЃРё СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
+    // Serial.println("М'ютекси створені");
   }
 }
 
 void createTasks() {
   // Створення задач FreeRTOS (handles глобальні для OTA)
   xTaskCreatePinnedToCore(
-    sensorTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "SensorTask",      // РќР°Р·РІР°
-    8192,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
-    2,                 // РџСЂС–РѕСЂРёС‚РµС‚
+    sensorTask,        // Функція задачі
+    "SensorTask",      // Назва
+    8192,              // Розмір стеку
+    NULL,              // Параметри
+    2,                 // Пріоритет
     &sensorTaskHandle, // Handle
-    0                  // РЇРґСЂРѕ
+    0                  // Ядро
   );
   
   xTaskCreatePinnedToCore(
-    heatingTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "HeatingTask",      // РќР°Р·РІР°
-    8192,               // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,               // РџР°СЂР°РјРµС‚СЂРё
-    3,                  // РџСЂС–РѕСЂРёС‚РµС‚ (РІРёС‰Рµ Р·Р° SensorTask)
+    heatingTask,        // Функція задачі
+    "HeatingTask",      // Назва
+    8192,               // Розмір стеку
+    NULL,               // Параметри
+    3,                  // Пріоритет (вище за SensorTask)
     &heatingTaskHandle, // Handle
-    1                   // РЇРґСЂРѕ
+    1                   // Ядро
   );
   
   xTaskCreatePinnedToCore(
-    ventilationTask,    // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "VentilationTask",  // РќР°Р·РІР°
-    4096,               // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,               // РџР°СЂР°РјРµС‚СЂРё
-    1,                  // РџСЂС–РѕСЂРёС‚РµС‚
+    ventilationTask,    // Функція задачі
+    "VentilationTask",  // Назва
+    4096,               // Розмір стеку
+    NULL,               // Параметри
+    1,                  // Пріоритет
     &ventTaskHandle,    // Handle
-    1                   // РЇРґСЂРѕ
+    1                   // Ядро
   );
   
   xTaskCreatePinnedToCore(
-    webTask,           // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "WebTask",         // РќР°Р·РІР°
-    8192,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
+    webTask,           // Функція задачі
+    "WebTask",         // Назва
+    8192,              // Розмір стеку
+    NULL,              // Параметри
     2,                 // Пріоритет (підвищено для швидкого веб)
     &webTaskHandle,    // Handle
     0                  // Ядро
   );
 
   xTaskCreatePinnedToCore(
-    timeTask,          // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "TimeTask",        // РќР°Р·РІР°
-    4096,              // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,              // РџР°СЂР°РјРµС‚СЂРё
-    1,                 // РџСЂС–РѕСЂРёС‚РµС‚
+    timeTask,          // Функція задачі
+    "TimeTask",        // Назва
+    4096,              // Розмір стеку
+    NULL,              // Параметри
+    1,                 // Пріоритет
     &timeTaskHandle,   // Handle
-    0                  // РЇРґСЂРѕ
+    0                  // Ядро
   );
   
   xTaskCreatePinnedToCore(
-    advancedLogicTask,        // Р¤СѓРЅРєС†С–СЏ Р·Р°РґР°С‡С–
-    "AdvLogicTask",           // РќР°Р·РІР°
-    16384,                    // Р РѕР·РјС–СЂ СЃС‚РµРєСѓ
-    NULL,                     // РџР°СЂР°РјРµС‚СЂРё
-    3,                        // РџСЂС–РѕСЂРёС‚РµС‚ (РІРёСЃРѕРєРёР№)
+    advancedLogicTask,        // Функція задачі
+    "AdvLogicTask",           // Назва
+    16384,                    // Розмір стеку
+    NULL,                     // Параметри
+    3,                        // Пріоритет (високий)
     &advancedLogicTaskHandle, // Handle
-    1                         // РЇРґСЂРѕ
+    1                         // Ядро
   );
 
   xTaskCreatePinnedToCore(
@@ -659,14 +648,11 @@ void createTasks() {
     1                        // Ядро 1
   );
 
-  // Serial.println("вњ" Р—Р°РґР°С‡С– FreeRTOS СЃС‚РІРѕСЂРµРЅС–");  // RUS_REMOVED
-  
-  // Р”Р°С”РјРѕ С‡Р°СЃ Р·Р°РґР°С‡Р°Рј Р·Р°РїСѓСЃС‚РёС‚РёСЃСЏ
   delay(100);
 }
 
 // ============================================================================
-// Р”РћРџРћРњР†Р–РќР† Р¤РЈРќРљР¦Р†Р‡
+// ДОПОМІЖНІ ФУНКЦІЇ
 // ============================================================================
 
 bool isTimeSynced() {
@@ -675,9 +661,7 @@ bool isTimeSynced() {
 
 void setTimeSynced(bool synced) {
   timeSynced = synced;
-}
-
-struct tm* getTimeInfo() {
+}struct tm* getTimeInfo() {
   updateTimeInfo();
   return &timeInfo;
 }

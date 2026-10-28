@@ -49,10 +49,12 @@
 // ============================================================================
 // ВОЛОГІСТЬ КОНСТАНТИ
 // ============================================================================
-#define HUM_MIN_DEFAULT        65.0f   // Базова мінімальна вологість
-#define HUM_MAX_DEFAULT        70.0f   // Базова максимальна вологість
-#define HUM_TEMP_COEFF         0.5f    // Коефіцієнт корекції %/C
-#define HUMIDIFIER_MIN_INTERVAL 30000  // Мінімальний інтервал роботи зволожувача (мс)
+#define HUM_MIN_DEFAULT            65.0f   // Базова мінімальна вологість
+#define HUM_MAX_DEFAULT            70.0f   // Базова максимальна вологість
+#define HUM_TEMP_COEFF             0.5f    // Коефіцієнт корекції %/C
+#define HUMIDIFIER_MIN_INTERVAL    30000   // Мінімальний інтервал між увімкненнями (мс)
+#define HUMIDIFIER_MAX_RUN_TIME    600000  // Максимальний час безперервної роботи (мс, 10 хвилин)
+#define HUMIDIFIER_HYSTERESIS_DEFAULT 3    // Гістерезис вологості за замовчуванням (%)
 
 // ============================================================================
 // СЕРВО КОНСТАНТИ
@@ -104,6 +106,7 @@
 #define HISTORY_BUFFER_SIZE    360     // 6 годин (360 записів) в RAM для гарантованої стабільності SSL і WebServer
 #define NTP_UPDATE_INTERVAL    3600000 // Оновлення часу NTP кожну годину
 #define EXTRACTOR_TIMER_CYCLE  3600000 // Цикл таймера витяжки (1 година)
+#define TREND_WINDOW_SIZE      300     // Вікно аналізу тренду температури
 
 // ============================================================================
 // NTP НАЛАШТУВКИ
@@ -121,6 +124,7 @@
 #define WIFI_PASSWORD "12345678"
 #define WIFI_CHANNEL       1
 #define MAX_CLIENTS        4
+
 // Структура для списку WiFi мереж
 struct WiFiCredentials {
     const char* ssid;
@@ -133,12 +137,15 @@ const WiFiCredentials KNOWN_NETWORKS[KNOWN_NETWORKS_COUNT] = {
     {"Redmi Note 14", "12345678"},
     {"Redmi Note 9", "1234567890"}
 };
-// Додано: налаштування обмежень пристроїв за замовчуванням
+
+// Налаштування обмежень пристроїв за замовчуванням
 #define PUMP_MIN_DEFAULT       30
 #define PUMP_MAX_DEFAULT       100
 #define FAN_MIN_DEFAULT        10
 #define FAN_MAX_DEFAULT        100
 #define EXTRACTOR_MIN_DEFAULT  6
 #define EXTRACTOR_MAX_DEFAULT  100
+#define HEATER_FAN_RELAY_ENABLED_DEFAULT true // Реле 220В вентилятора за замовчуванням увімкнено
+
 
 #endif

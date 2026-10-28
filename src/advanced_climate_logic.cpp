@@ -856,7 +856,11 @@ void smartHeatingControl() {
     
     // Насос 0% у штатному режимі
     if (!heatingState.emergencyMode) {
-      setPumpPercent(0);
+        if (tempCarrier < 30.0f) {
+            setPumpPercent(33);  // Циркуляція 33% при охолодженні теплоносія нижче 30°C
+        } else {
+            setPumpPercent(0);   // Вимкнено, коли теплоносій прогрітий (>= 30°C)
+        }
     }
 
     // ------------------------------------------------------------------------
