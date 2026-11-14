@@ -1,6 +1,8 @@
 #ifndef SYSTEM_CORE_H
 #define SYSTEM_CORE_H
 
+
+
 #include <Arduino.h>
 #include <Preferences.h>
 #include <WiFi.h>
@@ -321,6 +323,8 @@ extern TaskHandle_t timeTaskHandle;
 extern TaskHandle_t advancedLogicTaskHandle;
 extern TaskHandle_t dataLoggerTaskHandle;
 extern TaskHandle_t plantFanTaskHandle;
+extern TaskHandle_t dmxTaskHandle;
+extern TaskHandle_t lightSchedulerTaskHandle;
 
 // Функції призупинення/відновлення задач (для OTA)
 void suspendAllTasks();

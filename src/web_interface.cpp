@@ -570,27 +570,31 @@ void handleOTAPage() {
     html += "document.getElementById('otaForm').onsubmit = function(e) {";
     html += "  if (!confirmOTA()) { e.preventDefault(); return false; }";
     html += "  e.preventDefault();";
-    html += "  var formData = new FormData(e.target);";
+    html += "  var fileInput = document.querySelector('input[name=\"update\"]');";
+    html += "  if (!fileInput.files || !fileInput.files[0]) { alert('Оберіть файл firmware.bin!'); return false; }";
+    html += "  var file = fileInput.files[0];";
     html += "  var xhr = new XMLHttpRequest();";
     html += "  xhr.upload.onprogress = function(e) {";
     html += "    if (e.lengthComputable) {";
     html += "      var percent = Math.round((e.loaded / e.total) * 100);";
     html += "      document.getElementById('progressBar').style.width = percent + '%';";
-    html += "      document.getElementById('progressText').innerText = percent + '%';";
+    html += "      document.getElementById('progressText').innerText = percent + '% (' + Math.round(e.loaded/1024) + ' / ' + Math.round(e.total/1024) + ' KB)';";
     html += "    }";
     html += "  };";
     html += "  xhr.onload = function() {";
     html += "    if (xhr.status === 200) {";
-    html += "      document.getElementById('progressText').innerText = 'Успішно! Перезавантаження...';";
-    html += "      setTimeout(function() { location.reload(); }, 15000);";
+    html += "      document.getElementById('progressText').innerText = '✅ Успішно! Перезавантаження пристрою...';";
+    html += "      setTimeout(function() { location.reload(); }, 12000);";
     html += "    } else {";
     html += "      alert('Помилка: ' + xhr.responseText);";
     html += "      document.getElementById('progress').style.display = 'none';";
     html += "    }";
     html += "  };";
-    html += "  xhr.onerror = function() { alert('Помилка з\\'єднання'); };";
+    html += "  xhr.onerror = function() { alert('Помилка з\\'єднання під час OTA'); };";
     html += "  document.getElementById('progress').style.display = 'block';";
     html += "  xhr.open('POST', '/update');";
+    html += "  var formData = new FormData();";
+    html += "  formData.append('update', file, file.name);";
     html += "  xhr.send(formData);";
     html += "};";
 
@@ -791,13 +795,15 @@ void handleOTAUpload() {
     if (upload.status == UPLOAD_FILE_START) {
         Serial.printf("\n📥 Web OTA Upload: %s\n", upload.filename.c_str());
 
+        // Перевірка автентифікації
         if (!checkAuth()) {
             return;
         }
 
+        // Позначаємо що OTA активна
         setOTAInProgress(true);
-        esp_task_wdt_delete(NULL);
 
+        // Автоматичний backup ДО призупинення задач!
         Serial.println("\n📦 Автоматичний backup поточної конфігурації...");
         if (createBackup("Auto backup before Web OTA")) {
             Serial.println("✅ Backup створено - конфіг збережено");
@@ -805,17 +811,17 @@ void handleOTAUpload() {
             Serial.println("⚠️  Попередження: Backup не створено, але OTA продовжується");
         }
 
+        // Зупиняємо критичні операції
         pauseCriticalTasks();
-        delay(200);
-        yield();
 
-        Update.abort();
+        // Затримка для стабілізації
+        delay(100);
 
-        // Починаємо з UPDATE_SIZE_UNKNOWN щоб Update сам прийняв будь-який розмір прошивки
-        Serial.printf("📊 Free sketch space: %u bytes\n", ESP.getFreeSketchSpace());
+        // Очищаємо попередні помилки Update
+        Update.clearError();
 
         if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
-            Serial.printf("❌ Update.begin() failed: %s\n", Update.errorString());
+            Serial.println("❌ Update.begin() failed");
             Update.printError(Serial);
             setOTAInProgress(false);
             resumeCriticalTasks();
@@ -824,50 +830,24 @@ void handleOTAUpload() {
         Serial.printf("📥 OTA Started: %s\n", upload.filename.c_str());
     }
     else if (upload.status == UPLOAD_FILE_WRITE) {
-        size_t written = 0;
-        int retries = 3;
-
-        while (written < upload.currentSize && retries > 0) {
-            size_t toWrite = upload.currentSize - written;
-            size_t result = Update.write(upload.buf + written, toWrite);
-
-            if (result > 0) {
-                written += result;
-            } else {
-                retries--;
-                Serial.printf("⚠️ Write retry, remaining: %d\n", retries);
-                delay(10);
+        esp_task_wdt_reset();
+        if (!Update.hasError()) {
+            if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+                Serial.println("❌ Update.write() failed");
+                Update.printError(Serial);
             }
-        }
-
-        if (written != upload.currentSize) {
-            Serial.printf("❌ Update.write() failed: wrote %u of %u\n", written, upload.currentSize);
-            Update.printError(Serial);
-        }
-
-        static size_t lastYield = 0;
-        if (upload.totalSize - lastYield > 65536) {
-            lastYield = upload.totalSize;
-            yield();
         }
     }
     else if (upload.status == UPLOAD_FILE_END) {
-        size_t totalSize = upload.totalSize;
-        size_t writtenSize = Update.progress();
-        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", totalSize, writtenSize);
+        esp_task_wdt_reset();
+        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", upload.totalSize, Update.progress());
 
-        delay(100);
-
-        // Встановлюємо точний розмір отриманого файлу перед активацією
         if (Update.end(true)) {
             Serial.println("✅ OTA Success!");
             setOTAInProgress(false);
         } else {
-            int errCode = Update.getError();
-            Serial.printf("❌ OTA Error [%d]: %s\n", errCode, Update.errorString());
-            Serial.printf("   Written: %u / %u bytes\n", writtenSize, totalSize);
-            Serial.printf("   Remaining: %u bytes\n", Update.remaining());
-            Serial.printf("   isFinished: %d\n", Update.isFinished());
+            Serial.printf("❌ OTA Error: %s\n", Update.errorString());
+            Update.printError(Serial);
             setOTAInProgress(false);
             resumeCriticalTasks();
         }

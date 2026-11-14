@@ -60,8 +60,8 @@ void handleHistoryPage() {
 
     html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; padding-top: 10px; border-top: 1px solid #eee;'>";
     html += "<div><strong>📁 Джерело даних:</strong> ";
-    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' checked onchange='switchDataSource()'> 💾 Пристрій (доба / архів)</label>";
-    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' onchange='switchDataSource()'> 📊 RAM (останні 6 год)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останній період)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
     html += "</div>";
@@ -243,7 +243,7 @@ void handleHistoryPage() {
     html += "document.getElementById('dateSelector').style.display = 'none';";
     html += "const src = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "if (src === 'ram') { loadRAMData(); return; }";
-    html += "else if (src === 'spiffs') { loadArchiveData('', ''); return; }";
+    html += "else if (src === 'spiffs') { loadArchiveData(today, today); return; }";
     html += "} else if (period === 'week') {";
     html += "const d = new Date(Date.now() - 7*24*60*60*1000);";
     html += "start = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');";
@@ -433,11 +433,11 @@ void handleHistoryPage() {
     html += "const dt = String(r[0]);";
     html += "labels.push(dt.substring(5,16));";
     html += "fullDates.push(dt);";
-    html += "tc.push(parseFloat(r[1])||0);";
-    html += "tr.push(parseFloat(r[2])||0);";
-    html += "tb.push(parseFloat(r[3])||0);";
-    html += "hum.push(parseFloat(r[4])||0);";
-    html += "co2.push(parseFloat(r[5])||0);";
+    html += "tc.push(parseFloat(String(r[1]).replace(',', '.'))||0);";
+    html += "tr.push(parseFloat(String(r[2]).replace(',', '.'))||0);";
+    html += "tb.push(parseFloat(String(r[3]).replace(',', '.'))||0);";
+    html += "hum.push(parseFloat(String(r[4]).replace(',', '.'))||0);";
+    html += "co2.push(parseFloat(String(r[5]).replace(',', '.'))||0);";
     html += "});";
     html += "window.chartFullDates = fullDates;";
     html += "updateCharts(labels, tc, tr, tb, hum, co2);";

@@ -145,14 +145,13 @@ void updateEnergyData() {
         lastPowerRecord = now;
         time_t t;
         time(&t);
-        if (t > 1000000) {  // Час синхронізовано
-            powerBuffer[powerBufferIndex].timestamp = (uint32_t)t;
-            powerBuffer[powerBufferIndex].power   = energyData.error ? 0.0f : energyData.power;
-            powerBuffer[powerBufferIndex].voltage = energyData.error ? 0.0f : energyData.voltage;
-            powerBuffer[powerBufferIndex].current = energyData.error ? 0.0f : energyData.current;
-            powerBufferIndex = (powerBufferIndex + 1) % ENERGY_POWER_BUFFER_SIZE;
-            if (powerBufferCount < ENERGY_POWER_BUFFER_SIZE) powerBufferCount++;
-        }
+        uint32_t recordTime = (t > 1000000) ? (uint32_t)t : (uint32_t)(millis() / 1000);
+        powerBuffer[powerBufferIndex].timestamp = recordTime;
+        powerBuffer[powerBufferIndex].power   = energyData.error ? 0.0f : energyData.power;
+        powerBuffer[powerBufferIndex].voltage = energyData.error ? 0.0f : energyData.voltage;
+        powerBuffer[powerBufferIndex].current = energyData.error ? 0.0f : energyData.current;
+        powerBufferIndex = (powerBufferIndex + 1) % ENERGY_POWER_BUFFER_SIZE;
+        if (powerBufferCount < ENERGY_POWER_BUFFER_SIZE) powerBufferCount++;
     }
 
     // Запис історії kWh щогодини
@@ -236,7 +235,7 @@ void handleEnergyPowerData() {
 
     for (uint16_t i = 0; i < count; i++) {
         uint16_t idx = (startIdx + i) % ENERGY_POWER_BUFFER_SIZE;
-        if (powerBuffer[idx].timestamp < 1000000000) continue;
+        if (powerBuffer[idx].timestamp == 0) continue;
         if (!first) server.sendContent(",");
         String rec = "{\"t\":" + String(powerBuffer[idx].timestamp) +
                      ",\"p\":" + String(powerBuffer[idx].power, 1) +
@@ -543,19 +542,27 @@ void handleEnergyPage() {
     html += "    var r=await fetch('/energy/power');";
     html += "    var j=await r.json();";
     html += "    var data=j.data||[];";
-    html += "    data=data.filter(function(d){ return d && d.t > 1000000000; });";
+    html += "    data=data.filter(function(d){ return d && d.t > 0; });";
     html += "    data.sort(function(a,b){ return a.t - b.t; });";
     html += "    var labels=[], fullDates=[], power=[], voltage=[];";
     html += "    var sumKwh=0, sumW=0, maxW=0;";
     html += "    for(var i=0;i<data.length;i++){";
-    html += "      var d=new Date(data[i].t*1000);";
-    html += "      var day=('0'+d.getDate()).slice(-2);";
-    html += "      var month=('0'+(d.getMonth()+1)).slice(-2);";
-    html += "      var year=d.getFullYear();";
-    html += "      var hours=('0'+d.getHours()).slice(-2);";
-    html += "      var minutes=('0'+d.getMinutes()).slice(-2);";
-    html += "      labels.push(day+'.'+month+' '+hours+':'+minutes);";
-    html += "      fullDates.push(day+'.'+month+'.'+year+' '+hours+':'+minutes);";
+    html += "      var label='', fullDate='';";
+    html += "      if(data[i].t > 1000000000){";
+    html += "        var d=new Date(data[i].t*1000);";
+    html += "        var day=('0'+d.getDate()).slice(-2);";
+    html += "        var month=('0'+(d.getMonth()+1)).slice(-2);";
+    html += "        var year=d.getFullYear();";
+    html += "        var hours=('0'+d.getHours()).slice(-2);";
+    html += "        var minutes=('0'+d.getMinutes()).slice(-2);";
+    html += "        label = day+'.'+month+' '+hours+':'+minutes;";
+    html += "        fullDate = day+'.'+month+'.'+year+' '+hours+':'+minutes;";
+    html += "      } else {";
+    html += "        label = '+' + Math.floor(data[i].t / 60) + 'm';";
+    html += "        fullDate = 'До NTP: ' + label;";
+    html += "      }";
+    html += "      labels.push(label);";
+    html += "      fullDates.push(fullDate);";
     html += "      var p = data[i].p || 0;";
     html += "      power.push(p);";
     html += "      voltage.push(data[i].v);";
@@ -685,8 +692,8 @@ void handleEnergyPage() {
     html += "      }";
     html += "      labels.push(lbl);";
     html += "      fullDates.push(dt);";
-    html += "      var v = parseFloat(r[9])||0;";
-    html += "      var p = parseFloat(r[10])||0;";
+    html += "      var v = parseFloat(String(r[9]).replace(',', '.'))||0;";
+    html += "      var p = parseFloat(String(r[10]).replace(',', '.'))||0;";
     html += "      voltage.push(v);";
     html += "      power.push(p);";
     html += "      if(p>maxW) maxW=p;";

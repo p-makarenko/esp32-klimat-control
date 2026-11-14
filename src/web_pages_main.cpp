@@ -169,7 +169,6 @@ void handleRoot() {
     html += "</div>";
 
     html += "</div>"; // .status-grid
-
     // Командна строка
     html += "<div class='command-section'>";
     html += "<h3>💬 КОМАНДНА СТРОКА (аналогічно Serial Monitor)</h3>";
@@ -279,9 +278,9 @@ void handleRoot() {
     html += "      }";
     html += "      if (data.co2Temp !== undefined && !isNaN(data.co2Temp)) document.getElementById('co2Temp').textContent = data.co2Temp.toFixed(1) + '°C';";
     html += "      if (data.co2Humidity !== undefined && !isNaN(data.co2Humidity)) document.getElementById('co2Hum').textContent = data.co2Humidity.toFixed(1) + '%';";
-    html += "      if (data.pumpPower !== undefined) document.getElementById('pumpPower').textContent = Math.round(data.pumpPower) + '%';";
-    html += "      if (data.fanPower !== undefined) document.getElementById('fanPower').textContent = Math.round(data.fanPower) + '%';";
-    html += "      if (data.extractorPower !== undefined) document.getElementById('extractorPower').textContent = Math.round(data.extractorPower) + '%';";
+    html += "      if (data.pumpPower !== undefined) { const el = document.getElementById('pumpPower'); if (el) el.textContent = Math.round(data.pumpPower) + '%'; }";
+    html += "      if (data.fanPower !== undefined) { const el = document.getElementById('fanPower'); if (el) el.textContent = Math.round(data.fanPower) + '%'; }";
+    html += "      if (data.extractorPower !== undefined) { const el = document.getElementById('extractorPower'); if (el) el.textContent = Math.round(data.extractorPower) + '%'; }";
     html += "      if (data.mode) {";
     html += "        document.getElementById('mode').textContent = data.mode;";
     html += "        let modeIcon = '🤖';";
@@ -403,9 +402,16 @@ void handleStatus() {
     doc["co2Level"] = sensorData.co2Valid ? sensorData.co2Level : (float)NAN;
     doc["co2Temp"] = sensorData.co2Valid ? getSCD30Temperature() : (float)NAN;
     doc["co2Humidity"] = sensorData.co2Valid ? getSCD30Humidity() : (float)NAN;
-    doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
-    doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
-    doc["extractorPower"] = round(heatingState.extractorPower * 100.0 / 255.0);
+    if (xSemaphoreTake(getHeatingMutex(), pdMS_TO_TICKS(50))) {
+        doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
+        doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
+        doc["extractorPower"] = round(heatingState.extractorPower * 100.0 / 255.0);
+        xSemaphoreGive(getHeatingMutex());
+    } else {
+        doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
+        doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
+        doc["extractorPower"] = round(heatingState.extractorPower * 100.0 / 255.0);
+    }
     doc["extractorTimer"] = config.extractorTimer.enabled;
     doc["plantFanPower"] = plantFanGetCurrentPower();
     doc["plantFanOn"]    = plantFanGetTimerState();
