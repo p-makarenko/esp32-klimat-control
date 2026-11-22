@@ -58,20 +58,20 @@ void handleHistoryPage() {
     html += "<button class='tab-btn' id='tabCustom' onclick='selectPeriod(\"custom\")'>📆 Свій період</button>";
     html += "</div>";
 
-    html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; padding-top: 10px; border-top: 1px solid #eee;'>";
+    html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #eee;'>";
     html += "<div><strong>📁 Джерело даних:</strong> ";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останній період)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
+    html += "<span id='loadStatus' style='color: #555; font-size: 0.9em; font-weight: 500;'></span>";
     html += "</div>";
 
     html += "<div id='dateSelector' style='display: none; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee;'>";
     html += "<div style='display: flex; flex-wrap: wrap; gap: 10px; align-items: center;'>";
-    html += "<label>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<label>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>📥 Завантажити</button>";
-    html += "<span id='loadStatus' style='margin-left: 10px; color: #666; font-size: 0.9em;'></span>";
+    html += "<label>Від: <input type='date' id='startDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<label>До: <input type='date' id='endDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>🔄 Оновити</button>";
     html += "</div>";
     html += "</div>";
     html += "</div>";
@@ -256,20 +256,23 @@ void handleHistoryPage() {
     html += "} else if (period === 'custom') {";
     html += "document.getElementById('dateSelector').style.display = 'block';";
     html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
-    html += "document.querySelector('input[name=\"dataSource\"][value=\"spiffs\"]').checked = true;";
+    html += "document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked = true;";
     html += "}";
+    html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
+    html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
+    html += "loadDataForCurrentSelection();";
     html += "return;";
     html += "}";
     html += "document.getElementById('startDate').value = start;";
     html += "document.getElementById('endDate').value = today;";
     html += "document.getElementById('dateSelector').style.display = 'block';";
     html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
-    html += "document.querySelector('input[name=\"dataSource\"][value=\"spiffs\"]').checked = true;";
+    html += "document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked = true;";
     html += "}";
     html += "loadDataForCurrentSelection();";
     html += "}";
 
-    // Перемикання джерела даних
+    // Перемикання джерела даних (автозавантаження без додаткових кліків)
     html += "function switchDataSource() {";
     html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "const dateSelector = document.getElementById('dateSelector');";
@@ -281,12 +284,7 @@ void handleHistoryPage() {
     html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
     html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
     html += "dateSelector.style.display = 'block';";
-    html += "const status = document.getElementById('loadStatus');";
-    html += "if (source === 'sheets') {";
-    html += "  if (status) status.textContent = 'ℹ️ Оберіть дати та натисніть «Завантажити»';";
-    html += "} else {";
-    html += "  loadDataForCurrentSelection();";
-    html += "}";
+    html += "loadDataForCurrentSelection();";
     html += "}";
     html += "}";
 

@@ -381,18 +381,18 @@ void handleEnergyPage() {
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
-    html += "<div style='display: flex; gap: 12px;'>";
+    html += "<div style='display: flex; gap: 12px; align-items: center; flex-wrap: wrap;'>";
     html += "<label style='font-size: 0.9rem;'><input type='checkbox' id='chkPower' checked onchange='updateDatasets()'> ⚡ Потужність (W)</label>";
     html += "<label style='font-size: 0.9rem;'><input type='checkbox' id='chkVoltage' checked onchange='updateDatasets()'> 🔌 Напруга (V)</label>";
+    html += "<span id='loadStatus' style='color: #555; font-size: 0.9em; font-weight: 500;'></span>";
     html += "</div>";
     html += "</div>";
 
     html += "<div id='dateSelector' style='display: none; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee;'>";
     html += "<div style='display: flex; flex-wrap: wrap; gap: 10px; align-items: center;'>";
-    html += "<label>Від: <input type='date' id='startDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<label>До: <input type='date' id='endDate' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>📥 Завантажити</button>";
-    html += "<span id='loadStatus' style='margin-left: 10px; color: #666; font-size: 0.9em;'></span>";
+    html += "<label>Від: <input type='date' id='startDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<label>До: <input type='date' id='endDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>🔄 Оновити</button>";
     html += "</div>";
     html += "</div>";
     html += "</div>";
@@ -462,12 +462,13 @@ void handleEnergyPage() {
     html += "  document.getElementById('powerCanvas').ondblclick=function(){powerChart.resetZoom();};";
     html += "}";
 
+    html += "function fmtLocalDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }";
     html += "function selectPeriod(period){";
     html += "  currentPeriod=period;";
     html += "  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});";
     html += "  var tabBtn=document.getElementById('tab'+period.charAt(0).toUpperCase()+period.slice(1));";
     html += "  if(tabBtn) tabBtn.classList.add('active');";
-    html += "  var today=new Date().toISOString().split('T')[0];";
+    html += "  var today=fmtLocalDate(new Date());";
     html += "  var start=today;";
     html += "  if(period==='day'){";
     html += "    document.getElementById('startDate').value=today;";
@@ -476,20 +477,27 @@ void handleEnergyPage() {
     html += "    var src=document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "    if(src==='ram'){ loadRAMData(); return; }";
     html += "  } else if(period==='week'){";
-    html += "    start=new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];";
+    html += "    start=fmtLocalDate(new Date(Date.now()-7*24*60*60*1000));";
     html += "  } else if(period==='month'){";
-    html += "    start=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];";
+    html += "    start=fmtLocalDate(new Date(Date.now()-30*24*60*60*1000));";
     html += "  } else if(period==='year'){";
-    html += "    start=new Date(Date.now()-365*24*60*60*1000).toISOString().split('T')[0];";
+    html += "    start=fmtLocalDate(new Date(Date.now()-365*24*60*60*1000));";
     html += "  } else if(period==='custom'){";
     html += "    document.getElementById('dateSelector').style.display='block';";
-    html += "    document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "    if(document.querySelector('input[name=\"dataSource\"]:checked').value==='ram'){";
+    html += "      document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "    }";
+    html += "    if(!document.getElementById('startDate').value) document.getElementById('startDate').value=today;";
+    html += "    if(!document.getElementById('endDate').value) document.getElementById('endDate').value=today;";
+    html += "    loadDataForCurrentSelection();";
     html += "    return;";
     html += "  }";
     html += "  document.getElementById('startDate').value=start;";
     html += "  document.getElementById('endDate').value=today;";
     html += "  document.getElementById('dateSelector').style.display='block';";
-    html += "  document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "  if(document.querySelector('input[name=\"dataSource\"]:checked').value==='ram'){";
+    html += "    document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked=true;";
+    html += "  }";
     html += "  loadDataForCurrentSelection();";
     html += "}";
 
@@ -499,16 +507,11 @@ void handleEnergyPage() {
     html += "  if(source==='ram'){";
     html += "    selectPeriod('day');";
     html += "  } else {";
-    html += "    var today=new Date().toISOString().split('T')[0];";
+    html += "    var today=fmtLocalDate(new Date());";
     html += "    if(!document.getElementById('startDate').value) document.getElementById('startDate').value=today;";
     html += "    if(!document.getElementById('endDate').value) document.getElementById('endDate').value=today;";
     html += "    dateSelector.style.display='block';";
-    html += "    var status=document.getElementById('loadStatus');";
-    html += "    if(source==='sheets'){";
-    html += "      if(status) status.textContent='ℹ️ Оберіть дати та натисніть «Завантажити»';";
-    html += "    } else {";
-    html += "      loadDataForCurrentSelection();";
-    html += "    }";
+    html += "    loadDataForCurrentSelection();";
     html += "  }";
     html += "}";
 
@@ -583,7 +586,7 @@ void handleEnergyPage() {
     html += "    powerChart.update('none');";
     html += "    var avgW = data.length > 0 ? (sumW / data.length) : 0;";
     html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
-    html += "    if(status) status.textContent='✅ '+data.length+' записів';";
+    html += "    if(status) status.textContent='✅ '+data.length+' записів (RAM)';";
     html += "  }catch(e){";
     html += "    if(status) status.textContent='❌ Помилка RAM';";
     html += "  }";
@@ -640,7 +643,7 @@ void handleEnergyPage() {
     html += "    var sumKwh=(firstEnergy!==null && lastEnergy!==null && lastEnergy>=firstEnergy) ? (lastEnergy-firstEnergy) : 0;";
     html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
     html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
-    html += "    if(status) status.textContent='✅ '+labels.length+' записів';";
+    html += "    if(status) status.textContent='✅ '+labels.length+' записів (Пристрій)';";
     html += "    if(btn) btn.disabled=false;";
     html += "  })";
     html += "  .catch(function(err){";
