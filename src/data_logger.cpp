@@ -3,6 +3,9 @@
 #include "sensor_manager.h"
 #include "actuator_manager.h"
 #include "config_manager.h"
+#if ENABLE_ENERGY_MONITOR
+#include "energy_monitor.h"
+#endif
 #include <time.h>
 #include <cmath>
 #include <ArduinoJson.h>
@@ -156,6 +159,18 @@ void logDataToRAM() {
   record.fanPower = (heatingState.fanPower * 100) / 255;
   record.extractorPower = (heatingState.extractorPower * 100) / 255;
   record.mode = heatingState.emergencyMode ? 3 : (heatingState.forceMode ? 2 : (heatingState.manualMode ? 1 : 0));
+#if ENABLE_ENERGY_MONITOR
+  {
+    EnergyMeasurements em = getEnergyMeasurements();
+    record.voltage = em.error ? 0.0f : em.voltage;
+    record.power   = em.error ? 0.0f : em.power;
+    record.energy  = em.error ? 0.0f : em.energy;
+  }
+#else
+  record.voltage = 0.0f;
+  record.power   = 0.0f;
+  record.energy  = 0.0f;
+#endif
 
   // Зберігаємо у RAM буфер
   if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) == pdTRUE) {

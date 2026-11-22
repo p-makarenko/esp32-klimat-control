@@ -427,6 +427,8 @@ void handleHistoryPage() {
     html += "return;";
     html += "}";
     html += "rows.sort((a, b) => (a[0] > b[0] ? 1 : (a[0] < b[0] ? -1 : 0)));";
+    html += "const dedupMap = {}; rows.forEach(r => { if (r[0]) dedupMap[String(r[0]).trim()] = r; });";
+    html += "rows = Object.keys(dedupMap).sort().map(k => dedupMap[k]);";
     html += "const labels=[], fullDates=[], tc=[], tr=[], tb=[], hum=[], co2=[];";
     html += "rows.forEach(r => {";
     html += "if (!r[0]) return;";

@@ -104,51 +104,25 @@ bool syncToGoogleSheets() {
     return false;
   }
 
-  // 4. Читання та Фільтрація
+  // 4. Читання та сувора хронологічна фільтрація (захист від дублів та стрибків назад після ребута)
   uint16_t totalCount = 0;
-  readRAMData(buffer, &totalCount); // Припускаємо, що це копіює дані в buffer
+  readRAMData(buffer, &totalCount);
+
+  // Мінімальний валідний Unix timestamp (2025-01-01 00:00:00 UTC) —
+  // відсікає фейковий час 1970/2024 до NTP-синхронізації після зникнення світла/Wi-Fi
+  const unsigned long MIN_VALID_TS = 1735689600UL;
 
   uint16_t recordsToSend = 0;
-  
-  // "In-place" фільтрація: зсуваємо потрібні записи на початок масиву
+
+  // Головний і єдиний надійний критерій — реальний timestamp строго більший за lastSentTimestamp.
+  // Це повністю виключає дублі та стрибки часу назад (17:11 -> 14:02) після перезавантажень!
   for (uint16_t i = 0; i < totalCount; i++) {
-    bool isNew = false;
-    // Головний критерій - Sequence
-    if (buffer[i].sequenceNumber > syncStats.lastSentSequence) {
-        isNew = true;
-    } 
-    // Fallback критерій - Timestamp (якщо sequence скидався)
-    else if (syncStats.lastSentSequence == 0 && buffer[i].timestamp > syncStats.lastSentTimestamp) {
-        isNew = true;
-    }
-
-    if (isNew && buffer[i].timestamp > 1000000) { // Проста перевірка на валідний час
-       if (i != recordsToSend) {
-           buffer[recordsToSend] = buffer[i]; // Копіюємо на початок
-       }
-       recordsToSend++;
-    }
-  }
-
-  // Якщо нових записів немає — перевіряємо чи не застарів lastSentSequence.
-  // Це трапляється коли NVS зберіг sequence від попередньої сесії а RAM скинувся.
-  if (recordsToSend == 0 && totalCount > 0 && syncStats.lastSentSequence > 0) {
-    uint32_t maxSeq = 0;
-    for (uint16_t i = 0; i < totalCount; i++) {
-      if (buffer[i].sequenceNumber > maxSeq) maxSeq = buffer[i].sequenceNumber;
-    }
-    if (maxSeq < syncStats.lastSentSequence) {
-      Serial.printf("⚠️ [Sync] Seq застарів (%lu > %lu) — скидаємо\n",
-                    syncStats.lastSentSequence, maxSeq);
-      syncStats.lastSentSequence = 0;
-      syncStats.lastSentTimestamp = 0;
-      // Повторна фільтрація
-      recordsToSend = 0;
-      for (uint16_t i = 0; i < totalCount; i++) {
-        if (buffer[i].timestamp > 1000000) {
-          buffer[recordsToSend++] = buffer[i];
-        }
+    if (buffer[i].timestamp >= MIN_VALID_TS &&
+        buffer[i].timestamp > syncStats.lastSentTimestamp) {
+      if (i != recordsToSend) {
+        buffer[recordsToSend] = buffer[i];
       }
+      recordsToSend++;
     }
   }
 
@@ -160,8 +134,19 @@ bool syncToGoogleSheets() {
     return true;
   }
 
-  // 5. Сортування відфільтрованих даних
+  // 5. Сортування відфільтрованих даних за часом та дедуплікація однакових timestamps
   qsort(buffer, recordsToSend, sizeof(DataRecord), compareRecords);
+
+  uint16_t uniqueCount = 0;
+  for (uint16_t i = 0; i < recordsToSend; i++) {
+    if (uniqueCount > 0 && buffer[i].timestamp == buffer[uniqueCount - 1].timestamp) {
+      // Якщо раптом є дубль того ж часу — залишаємо новіший запис
+      buffer[uniqueCount - 1] = buffer[i];
+    } else {
+      buffer[uniqueCount++] = buffer[i];
+    }
+  }
+  recordsToSend = uniqueCount;
 
   // 5.1 Фільтрація за порогом температури кімнати та регулярним інтервалом
   if (config.logTempThreshold > 0.05f && recordsToSend > 1) {
@@ -322,8 +307,6 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
     struct tm* tm = localtime(&ts);
 
     char line[180];
-#if ENABLE_ENERGY_MONITOR
-    EnergyMeasurements em = getEnergyMeasurements();
     snprintf(line, sizeof(line),
              "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%.0f,%d,%d,%d,%.1f,%.1f,%.3f\n",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
@@ -331,18 +314,9 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
              records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
              records[i].humidity, records[i].co2Level, records[i].pumpPower, records[i].fanPower,
              records[i].extractorPower,
-             em.error ? 0.0f : em.voltage,
-             em.error ? 0.0f : em.power,
-             em.error ? 0.0f : em.energy);
-#else
-    snprintf(line, sizeof(line),
-             "%04d-%02d-%02d %02d:%02d:%02d,%.1f,%.1f,%.1f,%.1f,%.0f,%d,%d,%d,0,0,0\n",
-             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-             tm->tm_hour, tm->tm_min, tm->tm_sec,
-             records[i].tempCarrier, records[i].tempRoom, records[i].tempBME,
-             records[i].humidity, records[i].co2Level, records[i].pumpPower, records[i].fanPower,
-             records[i].extractorPower);
-#endif
+             records[i].voltage,
+             records[i].power,
+             records[i].energy);
     csvData += line;
   }
 
@@ -428,11 +402,10 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       delay(200);
 
       if (!client->connect(newHost.c_str(), 443)) {
-          Serial.println("❌ Redirect failed - connection to " + newHost + " failed");
-          Serial.printf("💾 Free heap: %u bytes\n", ESP.getFreeHeap());
-          response.clear();  // Звільняємо memory
+          Serial.println("⚠️ Redirect connect failed, але Google вже повернув 302 (POST записано)");
+          response.clear();
           client->stop();
-          return false;
+          return true;
       }
 
       // Redirect endpoint приймає тільки GET - redirect URL вже містить дані
@@ -453,9 +426,9 @@ bool sendBatchToSheets(WiFiClientSecure* client, DataRecord* records, uint16_t c
       }
 
       if (!client->available()) {
-          Serial.println("❌ Redirect timeout");
+          Serial.println("⚠️ Redirect GET timeout, але Google вже повернув 302 (POST записано)");
           client->stop();
-          return false;
+          return true;
       }
 
       response = "";

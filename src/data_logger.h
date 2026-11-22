@@ -39,6 +39,9 @@ struct DataRecord {
   uint8_t extractorPower;      // Потужність витяжки (0-100%)
   uint8_t mode;                // Режим роботи (0=AUTO, 1=MANUAL, 2=FORCE, 3=EMERGENCY)
   uint8_t dataVersion;         // Версія структури (для міграції)
+  float voltage;               // Напруга мережі в момент запису (V)
+  float power;                 // Потужність в момент запису (W)
+  float energy;                // Лічильник енергії в момент запису (kWh)
 };
 
 // Агрегований запис (для SPIFFS - середнє за 5 хвилин)
