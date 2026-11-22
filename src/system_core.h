@@ -325,6 +325,7 @@ extern TaskHandle_t dataLoggerTaskHandle;
 extern TaskHandle_t plantFanTaskHandle;
 extern TaskHandle_t dmxTaskHandle;
 extern TaskHandle_t lightSchedulerTaskHandle;
+extern TaskHandle_t loopTaskHandle;
 
 // Функції призупинення/відновлення задач (для OTA)
 void suspendAllTasks();

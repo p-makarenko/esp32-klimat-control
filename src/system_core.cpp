@@ -791,6 +791,7 @@ void suspendAllTasks() {
     if (plantFanTaskHandle != NULL) {
         vTaskSuspend(plantFanTaskHandle);
         Serial.println("  - PlantFanTask призупинено");
+    }
     if (dmxTaskHandle != NULL) {
         vTaskSuspend(dmxTaskHandle);
         Serial.println("  - DMXTask призупинено");
@@ -799,6 +800,9 @@ void suspendAllTasks() {
         vTaskSuspend(lightSchedulerTaskHandle);
         Serial.println("  - LightSchedulerTask призупинено");
     }
+    if (loopTaskHandle != NULL) {
+        vTaskSuspend(loopTaskHandle);
+        Serial.println("  - LoopTask призупинено");
     }
 
     Serial.println("✅ Всі некритичні задачі призупинено");
@@ -840,6 +844,7 @@ void resumeAllTasks() {
     if (plantFanTaskHandle != NULL) {
         vTaskResume(plantFanTaskHandle);
         Serial.println("  - PlantFanTask відновлено");
+    }
     if (dmxTaskHandle != NULL) {
         vTaskResume(dmxTaskHandle);
         Serial.println("  - DMXTask відновлено");
@@ -848,6 +853,9 @@ void resumeAllTasks() {
         vTaskResume(lightSchedulerTaskHandle);
         Serial.println("  - LightSchedulerTask відновлено");
     }
+    if (loopTaskHandle != NULL) {
+        vTaskResume(loopTaskHandle);
+        Serial.println("  - LoopTask відновлено");
     }
 
     Serial.println("✅ Всі задачі відновлено");

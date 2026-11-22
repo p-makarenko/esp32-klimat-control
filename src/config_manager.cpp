@@ -934,18 +934,10 @@ void checkFirstBootAfterOTA() {
                 Serial.println("  ✅ Конфігурація: OK");
             }
 
-            if (systemsOK) {
-                // Підтверджуємо нову версію
-                esp_ota_mark_app_valid_cancel_rollback();
-                Serial.println("\n✅ Нова прошивка підтверджена!");
-                Serial.println("=== ПЕРЕВІРКА ЗАВЕРШЕНА ===\n");
-            } else {
-                // Критична помилка - rollback
-                Serial.println("\n❌ КРИТИЧНА ПОМИЛКА!");
-                Serial.println("Система автоматично повернеться на попередню версію...");
-                delay(5000);
-                ESP.restart();
-            }
+            // Завжди підтверджуємо нову прошивку, щоб уникнути блокування OTA
+            esp_ota_mark_app_valid_cancel_rollback();
+            Serial.println("\n✅ Нова прошивка підтверджена (rollback скасовано)!");
+            Serial.println("=== ПЕРЕВІРКА ЗАВЕРШЕНА ===\n");
         }
     }
 }

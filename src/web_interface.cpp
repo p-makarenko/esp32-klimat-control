@@ -29,6 +29,7 @@
 #include <Update.h>
 #include <esp_task_wdt.h>
 #include <esp_ota_ops.h>
+#include <esp_partition.h>
 #include <vector>
 #include <algorithm>
 
@@ -349,6 +350,7 @@ void initWiFi() {
         html += "document.getElementById('uploadForm').addEventListener('submit',function(e){";
         html += "e.preventDefault();";
         html += "var form=e.target;var data=new FormData(form);";
+        html += "var file=form.querySelector('input[type=\"file\"]').files[0];";
         html += "var xhr=new XMLHttpRequest();";
         html += "document.getElementById('progress').style.display='block';";
         html += "xhr.upload.addEventListener('progress',function(e){";
@@ -356,9 +358,9 @@ void initWiFi() {
         html += "document.getElementById('bar').style.width=p+'%';";
         html += "document.getElementById('status').innerHTML=p+'%';}});";
         html += "xhr.addEventListener('load',function(){";
-        html += "if(xhr.status==200){document.getElementById('status').innerHTML='✅ Успіх! Перезавантаження...';}";
+        html += "if(xhr.status==200){document.getElementById('status').innerHTML='✅ Успіх! Перезавантаження...';setTimeout(function(){location.reload();},10000);}";
         html += "else{document.getElementById('status').innerHTML='❌ Помилка: '+xhr.responseText;}});";
-        html += "xhr.open('POST','/update',true);xhr.send(data);});";
+        html += "xhr.open('POST','/update?size='+(file?file.size:0),true);xhr.send(data);});";
         html += "</script>";
         html += "</div></body></html>";
         server.send(200, "text/html", html);
@@ -592,7 +594,7 @@ void handleOTAPage() {
     html += "  };";
     html += "  xhr.onerror = function() { alert('Помилка з\\'єднання під час OTA'); };";
     html += "  document.getElementById('progress').style.display = 'block';";
-    html += "  xhr.open('POST', '/update');";
+    html += "  xhr.open('POST', '/update?size=' + file.size);";
     html += "  var formData = new FormData();";
     html += "  formData.append('update', file, file.name);";
     html += "  xhr.send(formData);";
@@ -820,14 +822,51 @@ void handleOTAUpload() {
         // Очищаємо попередні помилки Update
         Update.clearError();
 
-        if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+        // Підтверджуємо поточний образ у ESP-IDF щоб скасувати будь-який завислий rollback стан
+        esp_ota_mark_app_valid_cancel_rollback();
+
+        const esp_partition_t* runningPart = esp_ota_get_running_partition();
+        const esp_partition_t* nextPart = esp_ota_get_next_update_partition(NULL);
+        if (runningPart) {
+            Serial.printf("🔍 OTA Running partition: %s @ 0x%06X\n", runningPart->label, runningPart->address);
+        }
+        if (nextPart) {
+            Serial.printf("🔍 OTA Target partition:  %s @ 0x%06X\n", nextPart->label, nextPart->address);
+        } else {
+            Serial.println("❌ OTA Target partition NOT FOUND!");
+        }
+
+        size_t otaSize = UPDATE_SIZE_UNKNOWN;
+        if (server.hasArg("size") && server.arg("size").toInt() > 0) {
+            otaSize = (size_t)server.arg("size").toInt();
+            Serial.printf("📏 Отримано розмір файлу: %u байт\n", otaSize);
+        }
+
+        // Повне або часткове очищення цільового розділу перед записом щоб уникнути сміття у хвості
+        if (nextPart) {
+            size_t eraseSize = (otaSize != UPDATE_SIZE_UNKNOWN) ? otaSize : nextPart->size;
+            eraseSize = (eraseSize + 4095) & ~4095;
+            if (eraseSize > nextPart->size) eraseSize = nextPart->size;
+            Serial.printf("🧹 Очищення цільового розділу %s (%u байт)...\n", nextPart->label, eraseSize);
+            esp_task_wdt_reset();
+            esp_err_t err = esp_partition_erase_range(nextPart, 0, eraseSize);
+            if (err == ESP_OK) {
+                Serial.println("✅ Цільовий розділ успішно очищено");
+            } else {
+                Serial.printf("⚠️ Помилка очищення: 0x%x\n", err);
+            }
+            esp_task_wdt_reset();
+        }
+
+        if (!Update.begin(otaSize, U_FLASH)) {
             Serial.println("❌ Update.begin() failed");
             Update.printError(Serial);
             setOTAInProgress(false);
             resumeCriticalTasks();
             return;
         }
-        Serial.printf("📥 OTA Started: %s\n", upload.filename.c_str());
+        Serial.printf("📥 OTA Started: %s (розмір: %s)\n", upload.filename.c_str(),
+                      otaSize == UPDATE_SIZE_UNKNOWN ? "невідомий" : String(otaSize).c_str());
     }
     else if (upload.status == UPLOAD_FILE_WRITE) {
         esp_task_wdt_reset();
@@ -840,14 +879,32 @@ void handleOTAUpload() {
     }
     else if (upload.status == UPLOAD_FILE_END) {
         esp_task_wdt_reset();
-        Serial.printf("📊 Total: %u bytes, written: %u bytes\n", upload.totalSize, Update.progress());
+        Serial.printf("📊 Total: %u bytes, written: %u bytes, freeHeap: %u\n",
+                      upload.totalSize, Update.progress(), ESP.getFreeHeap());
 
         if (Update.end(true)) {
             Serial.println("✅ OTA Success!");
             setOTAInProgress(false);
         } else {
-            Serial.printf("❌ OTA Error: %s\n", Update.errorString());
+            Serial.printf("❌ OTA Error: %s (MD5 rx: %s)\n", Update.errorString(), Update.md5String().c_str());
             Update.printError(Serial);
+
+            // Повторна спроба активації після паузи (перевірка чи не було тимчасового збою SHA/Cache)
+            const esp_partition_t* nextPart = esp_ota_get_next_update_partition(NULL);
+            if (nextPart) {
+                delay(200);
+                esp_task_wdt_reset();
+                esp_err_t retryErr = esp_ota_set_boot_partition(nextPart);
+                Serial.printf("🔁 Retry esp_ota_set_boot_partition(%s): 0x%x (%s)\n",
+                              nextPart->label, retryErr, esp_err_to_name(retryErr));
+                if (retryErr == ESP_OK) {
+                    Update.clearError();
+                    Serial.println("✅ OTA Success on retry!");
+                    setOTAInProgress(false);
+                    return;
+                }
+            }
+
             setOTAInProgress(false);
             resumeCriticalTasks();
         }

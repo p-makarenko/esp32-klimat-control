@@ -671,6 +671,10 @@ void handleEnergyPage() {
     html += "    }";
     html += "    if(!Array.isArray(rows) || rows.length===0){";
     html += "      if(status) status.textContent='⚠️ Немає даних за період';";
+    html += "      powerChart.data.labels=[];";
+    html += "      powerChart.data.datasets[0].data=[];";
+    html += "      powerChart.data.datasets[1].data=[];";
+    html += "      powerChart.update('none');";
     html += "      updatePeriodSummary(null, null, null);";
     html += "      return;";
     html += "    }";
@@ -692,15 +696,17 @@ void handleEnergyPage() {
     html += "      }";
     html += "      labels.push(lbl);";
     html += "      fullDates.push(dt);";
-    html += "      var v = parseFloat(String(r[9]).replace(',', '.'))||0;";
-    html += "      var p = parseFloat(String(r[10]).replace(',', '.'))||0;";
+    html += "      var v = (r.length > 9 && r[9] !== undefined) ? parseFloat(String(r[9]).replace(',', '.')) : 0;";
+    html += "      var p = (r.length > 10 && r[10] !== undefined) ? parseFloat(String(r[10]).replace(',', '.')) : 0;";
+    html += "      if(isNaN(v)) v = 0;";
+    html += "      if(isNaN(p)) p = 0;";
     html += "      voltage.push(v);";
     html += "      power.push(p);";
     html += "      if(p>maxW) maxW=p;";
     html += "      sumW+=p;";
     html += "      if(!isNaN(d.getTime())){";
     html += "        if(prevD!==null){";
-    html += "          var dtHours=(d.getTime()-prevD.getTime())/3600000;";
+    html += "          var dtHours=Math.abs(d.getTime()-prevD.getTime())/3600000;";
     html += "          if(dtHours>0 && dtHours<24){";
     html += "            sumKwh+=((p+prevP)/2*dtHours)/1000;";
     html += "          }";
@@ -716,7 +722,7 @@ void handleEnergyPage() {
     html += "    powerChart.update('none');";
     html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
     html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
-    html += "    if(status) status.textContent='✅ '+rows.length+' записів';";
+    html += "    if(status) status.textContent='✅ '+rows.length+' записів (Sheets)';";
     html += "  })";
     html += "  .catch(function(err){";
     html += "    clearTimeout(timeoutId);";
@@ -767,7 +773,10 @@ void handleEnergyPage() {
     html += "initCharts();";
     html += "loadRAMData();";
     html += "setInterval(upd,2000); upd();";
-    html += "setInterval(function(){ if(currentPeriod==='day' && document.querySelector('input[name=\"dataSource\"]:checked').value==='ram') loadRAMData(); }, 120000);";
+    html += "setInterval(function(){";
+    html += "  var checkedSrc = document.querySelector('input[name=\"dataSource\"]:checked');";
+    html += "  if(currentPeriod==='day' && checkedSrc && checkedSrc.value==='ram') loadRAMData();";
+    html += "}, 120000);";
     html += "</script>";
 
     html += getNavFooter();

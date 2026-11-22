@@ -239,6 +239,11 @@ void setup() {
 
 // ГОЛОВНИЙ ЦИКЛ
 void loop() {
+  if (isOTAInProgress()) {
+    delay(200);
+    return;
+  }
+
   // OTA handler - повинен викликатись регулярно
   handleOTA();
 

@@ -38,12 +38,17 @@ void initServo() {
   ventServo.write(ventState.currentAngle);
   delay(600);
   ventServo.detach();
+  pinMode(SERVO_PIN, OUTPUT);
+  digitalWrite(SERVO_PIN, LOW);
   
   Serial.printf("✓ Сервопривід ініціалізовано: %s (%d°)\n", 
                 ventState.open ? "ВІДКРИТА" : "ЗАКРИТА", ventState.currentAngle);
 }
 
 void initGPIO() {
+  pinMode(SERVO_PIN, OUTPUT);
+  digitalWrite(SERVO_PIN, LOW);
+
   pinMode(VENT_SWITCH_PIN, INPUT_PULLUP);
   pinMode(HUMIDIFIER_PIN, OUTPUT);
   digitalWrite(HUMIDIFIER_PIN, LOW);
@@ -288,6 +293,8 @@ void moveServoSmooth(int targetAngle) {
   
   delay(SERVO_DETACH_DELAY);
   ventServo.detach();
+  pinMode(SERVO_PIN, OUTPUT);
+  digitalWrite(SERVO_PIN, LOW);
   ventState.servoAttached = false;
   ventState.moving = false;
 
@@ -324,7 +331,7 @@ void controlVentilation() {
     lastRawState = rawState;
   }
   
-  if ((millis() - lastDebounceTime) >= 50) {
+  if ((millis() - lastDebounceTime) >= 200) {
     int stableSwitchState = rawState;
     int expectedAngle = (stableSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
     bool expectedOpen = (stableSwitchState == HIGH);
