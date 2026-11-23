@@ -20,6 +20,7 @@ void setPWM(uint8_t dutyCycle);
 
 // Основні функції управління
 void setPumpPercent(uint8_t percent);
+void updatePumpKickstart();                    // Завершення пускового імпульсу насоса (неблокуюче)
 void pumpStartupRamp(uint8_t targetPercent);  // Плавний розгон насоса перед запуском
 void setFanPercent(uint8_t percent);
 void setExtractorPercent(uint8_t percent);
@@ -41,6 +42,11 @@ void controlPump(bool state);
 void controlFan(bool state);
 void controlHumidifier(bool state);
 bool isVentSwitchOpen();
+
+// Режим тиші (вимкнення вентиляторів та зволожувача під час роботи мікрофона)
+void setQuietMode(bool enable, uint16_t ttlSec = 120);
+bool isQuietModeActive();
+uint16_t getQuietModeRemainingSec();
 
 
 // Task функції (для FreeRTOS)

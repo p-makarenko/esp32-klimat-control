@@ -35,46 +35,6 @@ void handleControlPage() {
     // Навігація зверху
     html += getNavHeader("🎛️ ПАНЕЛЬ КЕРУВАННЯ СИСТЕМОЮ");
 
-    // Додаткові стилі для слайдерів та режимів
-    html += "<style>";
-    // Покращені слайдери
-    html += ".slider { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #ddd; outline: none; margin: 15px 0; transition: background 0.3s; }";
-    html += ".slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #4CAF50; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: all 0.3s; }";
-    html += ".slider::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5); }";
-    html += ".slider::-webkit-slider-thumb:active { transform: scale(1.1); }";
-    html += ".slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #4CAF50; cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }";
-    html += ".slider:hover { background: #ccc; }";
-    html += ".slider-value { display: inline-block; min-width: 50px; text-align: center; font-weight: 700; font-size: 20px; color: #4CAF50; margin-left: 10px; }";
-
-    // Секції керування
-    html += ".control-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #4CAF50; }";
-    html += ".control-section h3 { margin-top: 0; color: #2c3e50; font-size: 18px; }";
-
-    // Кнопки режимів
-    html += ".mode-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }";
-    html += ".mode-btn { padding: 15px 20px; border: 2px solid #ddd; background: #f5f5f5; color: #333; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.3s; position: relative; overflow: hidden; }";
-    html += ".mode-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }";
-    html += ".mode-btn.active { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; border-color: #4CAF50; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); animation: pulse 2s infinite; }";
-    html += "@keyframes pulse { 0%, 100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); } 50% { box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6); } }";
-    html += ".mode-btn.active::before { content: '✓ '; font-weight: 600; margin-right: 5px; }";
-
-    // Мобільна оптимізація
-    html += "@media (max-width: 768px) {";
-    html += "  .control-section { padding: 15px; }";
-    html += "  .slider { height: 12px; margin: 20px 0; }";
-    html += "  .slider::-webkit-slider-thumb { width: 36px; height: 36px; }";
-    html += "  .slider::-moz-range-thumb { width: 36px; height: 36px; }";
-    html += "  .slider-value { font-size: 24px; display: block; margin: 10px 0; }";
-    html += "  .control-section h3 { font-size: 16px; }";
-    html += "  .mode-btn { font-size: 14px; padding: 12px 15px; }";
-    html += "}";
-
-    // Додаткова оптимізація для маленьких екранів
-    html += "@media (max-width: 480px) {";
-    html += "  .btn { display: inline-block; width: calc(33.33% - 6px); margin: 3px; padding: 10px 5px; font-size: 12px; }";
-    html += "}";
-    html += "</style>";
-
     // ДАТЧИКИ - показники
     float tempRoom = 0, tempCarrier = 0, tempBME = 0, humidity = 0, pressure = 0;
     bool roomValid = false, carrierValid = false, bmeValid = false;
@@ -98,40 +58,36 @@ void handleControlPage() {
     html += "<div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;'>";
 
     // Температура кімнати
-    html += "<div style='padding: 12px; background: " + String(roomValid ? "#e3f2fd" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
-    html += "<div style='font-size: 12px; color: #666;'>🏠 Кімната</div>";
-    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(roomValid ? "#1976D2" : "#c62828") + ";'>";
+    html += "<div class='sensor-tile" + String(roomValid ? "" : " err") + "' style='border-top-color:#fb7185'>";
+    html += "<div class='lbl'>🏠 Кімната</div><div class='val' style='color:" + String(roomValid ? "#fb7185" : "var(--e)") + "'>";
     html += roomValid ? String(tempRoom, 1) + "°C" : "---";
     html += "</div></div>";
 
     // Температура теплоносія
-    html += "<div style='padding: 12px; background: " + String(carrierValid ? "#fff3e0" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
-    html += "<div style='font-size: 12px; color: #666;'>🔥 Теплоносій</div>";
-    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(carrierValid ? "#ef6c00" : "#c62828") + ";'>";
+    html += "<div class='sensor-tile" + String(carrierValid ? "" : " err") + "' style='border-top-color:#f59e0b'>";
+    html += "<div class='lbl'>🔥 Теплоносій</div><div class='val' style='color:" + String(carrierValid ? "#f59e0b" : "var(--e)") + "'>";
     html += carrierValid ? String(tempCarrier, 1) + "°C" : "---";
     html += "</div></div>";
 
     // Вологість
-    html += "<div style='padding: 12px; background: " + String(bmeValid ? "#e8f5e9" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
-    html += "<div style='font-size: 12px; color: #666;'>💧 Вологість</div>";
-    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(bmeValid ? "#388E3C" : "#c62828") + ";'>";
+    html += "<div class='sensor-tile" + String(bmeValid ? "" : " err") + "' style='border-top-color:#38bdf8'>";
+    html += "<div class='lbl'>💧 Вологість</div><div class='val' style='color:" + String(bmeValid ? "#38bdf8" : "var(--e)") + "'>";
     html += bmeValid ? String(humidity, 0) + "%" : "---";
     html += "</div></div>";
 
     // Тиск
-    html += "<div style='padding: 12px; background: " + String(bmeValid ? "#f3e5f5" : "#ffebee") + "; border-radius: 8px; text-align: center;'>";
-    html += "<div style='font-size: 12px; color: #666;'>🌡️ Тиск</div>";
-    html += "<div style='font-size: 24px; font-weight: bold; color: " + String(bmeValid ? "#7B1FA2" : "#c62828") + ";'>";
+    html += "<div class='sensor-tile" + String(bmeValid ? "" : " err") + "' style='border-top-color:#a78bfa'>";
+    html += "<div class='lbl'>🌡️ Тиск</div><div class='val' style='color:" + String(bmeValid ? "#a78bfa" : "var(--e)") + "'>";
     html += bmeValid ? String(pressure, 0) + " hPa" : "---";
     html += "</div></div>";
 
     html += "</div>";
 
     // Цільова температура
-    html += "<div style='margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 5px; text-align: center;'>";
-    html += "<span style='color: #555;'>🎯 Ціль: </span>";
-    html += "<strong style='color: #2e7d32;'>" + String(targetTemp, 1) + "°C</strong>";
-    html += "<span style='color: #888; margin-left: 10px;'>(діапазон " + String(config.tempMin, 1) + " - " + String(config.tempMax, 1) + "°C)</span>";
+    html += "<div style='margin-top: 14px; padding: 10px; background: var(--s); border: 1px solid var(--b); border-radius: 8px; text-align: center;'>";
+    html += "<span style='color: var(--m);'>🎯 Ціль: </span>";
+    html += "<strong style='color: var(--ok);'>" + String(targetTemp, 1) + "°C</strong>";
+    html += "<span style='color: var(--m); margin-left: 10px;'>(діапазон " + String(config.tempMin, 1) + " - " + String(config.tempMax, 1) + "°C)</span>";
     html += "</div>";
     html += "</div>";
 
@@ -186,12 +142,12 @@ void handleControlPage() {
     html += "</div>";
 
     // Опція блокування ручного режиму
-    html += "<div style='margin-top: 20px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 5px;'>";
+    html += "<div style='margin-top: 20px; padding: 15px; background: rgba(16,185,129,.14); border: 1px solid var(--ok); border-left: 4px solid var(--ok); border-radius: 10px;'>";
     html += "<label style='display: flex; align-items: center; cursor: pointer; font-size: 16px; font-weight: 500;'>";
     html += "<input type='checkbox' id='lockManualMode' " + String(heatingState.manualModeLocked ? "checked" : "") + " onchange=\"toggleLockManual()\" style='width: 20px; height: 20px; margin-right: 10px; cursor: pointer;'>";
     html += "<span>🔒 Блокувати ручний режим (без автоповернення)</span>";
     html += "</label>";
-    html += "<div style='margin-top: 8px; font-size: 13px; color: #555;'>";
+    html += "<div style='margin-top: 8px; font-size: 13px; color: var(--m);'>";
     html += "Коли увімкнено: ручний режим не скасується автоматично через 15 хвилин";
     html += "</div>";
     html += "</div>";
@@ -203,7 +159,7 @@ void handleControlPage() {
         html += "</div>";
     }
 
-    html += "<div style='margin-top: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px;'>";
+    html += "<div style='margin-top: 15px; padding: 12px; background: rgba(245,158,11,.14); border: 1px solid var(--w); border-left: 4px solid var(--w); border-radius: 10px; font-size: 14px;'>";
     html += "<strong>ℹ️ Автоматичні режими:</strong><br>";
     html += "⚡ <strong>ФОРСАЖ</strong> - вмикається при температурі < 20°C (80% потужність)<br>";
     html += "🚨 <strong>АВАРІЯ</strong> - вмикається при температурі < 18°C (100% потужність)<br>";

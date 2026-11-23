@@ -432,6 +432,9 @@ void loadConfiguration() {
   config.authPassword = preferences.getString("authPass", "admin");
   
   preferences.end();
+
+  // Завантаження налаштувань плавного вентилятора та профілю енергозбереження
+  loadPowerSaveConfig();
   
   // Ініціалізація буферів
   for (int i = 0; i < TREND_WINDOW_SIZE; i++) {
@@ -558,7 +561,184 @@ void saveConfiguration() {
 
   preferences.end();
 
+  // Збереження налаштувань плавного вентилятора та профілю енергозбереження
+  savePowerSaveConfig();
+
   Serial.println("   ✅ Налаштування успішно збережені в NVS!\n");
+}
+
+void loadPowerSaveConfig() {
+  Preferences ps;
+  ps.begin("powersave", true);
+
+  // Плавна робота вентилятора обігріву та пусковий імпульс насоса
+  config.pumpStartPercent               = ps.getUChar("pmpStartPct", 45);
+  config.pumpStartDurationSec           = ps.getUChar("pmpStartSec", 2);
+  config.fanSmooth.enabled              = ps.getBool("fsEn", true);
+  config.fanSmooth.hysteresis           = ps.getFloat("fsHyst", 0.5f);
+  config.fanSmooth.maxStepPerSec        = ps.getUChar("fsStep", 5);
+  config.fanSmooth.minRunSec            = ps.getUShort("fsMinRun", 60);
+  config.fanSmooth.minOffSec            = ps.getUShort("fsMinOff", 60);
+  config.fanSmooth.keepLowInsteadOfStop = ps.getBool("fsKeepLow", true);
+
+  // Профіль енергозбереження / Блекаут (ECO)
+  config.powerSave.activationMode       = ps.getUChar("ecoActMode", ECO_MODE_AUTO);
+  config.powerSave.outageConfirmSec     = ps.getUShort("ecoOutSec", 6);
+  config.powerSave.restoreConfirmSec    = ps.getUShort("ecoResSec", 15);
+
+  config.powerSave.heatingPolicy        = ps.getUChar("ecoHeatPol", ECO_DEV_LIMITED);
+  config.powerSave.ecoTempMin           = ps.getFloat("ecoTempMin", 20.0f);
+  config.powerSave.ecoTempHyst          = ps.getFloat("ecoTempHyst", 0.8f);
+  config.powerSave.ecoPumpMaxPercent    = ps.getUChar("ecoPumpMax", 40);
+  config.powerSave.ecoFanMaxPercent     = ps.getUChar("ecoFanMax", 30);
+  config.powerSave.ecoCheckCarrierTemp  = ps.getBool("ecoChkCar", true);
+  config.powerSave.ecoCarrierMinDelta   = ps.getFloat("ecoCarDlt", 3.0f);
+  config.powerSave.ecoAllowHeaterRelay  = ps.getBool("ecoHtrRel", false);
+  config.powerSave.ecoPumpPulseMode     = ps.getBool("ecoPmpPls", false);
+  config.powerSave.ecoPumpPulseOnSec    = ps.getUShort("ecoPlsOn", 120);
+  config.powerSave.ecoPumpPulseOffSec   = ps.getUShort("ecoPlsOff", 300);
+
+  config.powerSave.extractorPolicy      = ps.getUChar("ecoExtPol", ECO_DEV_OFF);
+  config.powerSave.ecoExtOnMin          = ps.getUShort("ecoExtOn", 2);
+  config.powerSave.ecoExtOffMin         = ps.getUShort("ecoExtOff", 58);
+  config.powerSave.ecoExtPower          = ps.getUChar("ecoExtPwr", 25);
+
+  config.powerSave.plantFanPolicy       = ps.getUChar("ecoPlfPol", ECO_DEV_OFF);
+  config.powerSave.ecoPlantFanPower     = ps.getUChar("ecoPlfPwr", 20);
+  config.powerSave.ecoPlantFanOnMin     = ps.getUShort("ecoPlfOn", 5);
+  config.powerSave.ecoPlantFanOffMin    = ps.getUShort("ecoPlfOff", 55);
+
+  config.powerSave.humidifierPolicy     = ps.getUChar("ecoHumPol", ECO_DEV_OFF);
+  config.powerSave.ecoHumMin            = ps.getFloat("ecoHumMin", 45.0f);
+  config.powerSave.ecoHumMax            = ps.getFloat("ecoHumMax", 50.0f);
+  config.powerSave.lightPolicy          = ps.getUChar("ecoLgtPol", ECO_DEV_OFF);
+  config.powerSave.ecoLightScalePercent = ps.getUChar("ecoLgtScl", 25);
+
+  config.powerSave.pauseSheetsSync      = ps.getBool("ecoPauSh", true);
+  config.powerSave.pauseAdaptiveThresh  = ps.getBool("ecoPauAdp", true);
+
+  ps.end();
+}
+
+void savePowerSaveConfig() {
+  Preferences ps;
+  ps.begin("powersave", false);
+
+  ps.putUChar("pmpStartPct", config.pumpStartPercent);
+  ps.putUChar("pmpStartSec", config.pumpStartDurationSec);
+
+  ps.putBool("fsEn",       config.fanSmooth.enabled);
+  ps.putFloat("fsHyst",    config.fanSmooth.hysteresis);
+  ps.putUChar("fsStep",    config.fanSmooth.maxStepPerSec);
+  ps.putUShort("fsMinRun", config.fanSmooth.minRunSec);
+  ps.putUShort("fsMinOff", config.fanSmooth.minOffSec);
+  ps.putBool("fsKeepLow",  config.fanSmooth.keepLowInsteadOfStop);
+
+  ps.putUChar("ecoActMode",  config.powerSave.activationMode);
+  ps.putUShort("ecoOutSec",  config.powerSave.outageConfirmSec);
+  ps.putUShort("ecoResSec",  config.powerSave.restoreConfirmSec);
+
+  ps.putUChar("ecoHeatPol",  config.powerSave.heatingPolicy);
+  ps.putFloat("ecoTempMin",  config.powerSave.ecoTempMin);
+  ps.putFloat("ecoTempHyst", config.powerSave.ecoTempHyst);
+  ps.putUChar("ecoPumpMax",  config.powerSave.ecoPumpMaxPercent);
+  ps.putUChar("ecoFanMax",   config.powerSave.ecoFanMaxPercent);
+  ps.putBool("ecoChkCar",    config.powerSave.ecoCheckCarrierTemp);
+  ps.putFloat("ecoCarDlt",   config.powerSave.ecoCarrierMinDelta);
+  ps.putBool("ecoHtrRel",    config.powerSave.ecoAllowHeaterRelay);
+  ps.putBool("ecoPmpPls",    config.powerSave.ecoPumpPulseMode);
+  ps.putUShort("ecoPlsOn",   config.powerSave.ecoPumpPulseOnSec);
+  ps.putUShort("ecoPlsOff",  config.powerSave.ecoPumpPulseOffSec);
+
+  ps.putUChar("ecoExtPol",   config.powerSave.extractorPolicy);
+  ps.putUShort("ecoExtOn",   config.powerSave.ecoExtOnMin);
+  ps.putUShort("ecoExtOff",  config.powerSave.ecoExtOffMin);
+  ps.putUChar("ecoExtPwr",   config.powerSave.ecoExtPower);
+
+  ps.putUChar("ecoPlfPol",   config.powerSave.plantFanPolicy);
+  ps.putUChar("ecoPlfPwr",   config.powerSave.ecoPlantFanPower);
+  ps.putUShort("ecoPlfOn",   config.powerSave.ecoPlantFanOnMin);
+  ps.putUShort("ecoPlfOff",  config.powerSave.ecoPlantFanOffMin);
+
+  ps.putUChar("ecoHumPol",   config.powerSave.humidifierPolicy);
+  ps.putFloat("ecoHumMin",   config.powerSave.ecoHumMin);
+  ps.putFloat("ecoHumMax",   config.powerSave.ecoHumMax);
+  ps.putUChar("ecoLgtPol",   config.powerSave.lightPolicy);
+  ps.putUChar("ecoLgtScl",   config.powerSave.ecoLightScalePercent);
+
+  ps.putBool("ecoPauSh",     config.powerSave.pauseSheetsSync);
+  ps.putBool("ecoPauAdp",    config.powerSave.pauseAdaptiveThresh);
+
+  ps.end();
+}
+
+bool isEcoModeActive() {
+  if (config.powerSave.activationMode == ECO_MODE_DISABLED) {
+    return false;
+  }
+  if (config.powerSave.activationMode == ECO_MODE_FORCE_ON) {
+    return true;
+  }
+  return powerOutageState.ecoActive || powerOutageState.detected;
+}
+
+void applyEcoPreset(uint8_t presetId) {
+  if (presetId == 0) {
+    // Пресет 0: Виживання (максимальна економія старого АКБ)
+    config.powerSave.heatingPolicy        = ECO_DEV_LIMITED;
+    config.powerSave.ecoTempMin           = 19.0f;
+    config.powerSave.ecoTempHyst          = 1.0f;
+    config.powerSave.ecoPumpMaxPercent    = 35;
+    config.powerSave.ecoFanMaxPercent     = 25;
+    config.powerSave.ecoCheckCarrierTemp  = true;
+    config.powerSave.ecoCarrierMinDelta   = 4.0f;
+    config.powerSave.ecoAllowHeaterRelay  = false;
+    config.powerSave.ecoPumpPulseMode     = true;
+    config.powerSave.ecoPumpPulseOnSec    = 90;
+    config.powerSave.ecoPumpPulseOffSec   = 300;
+    config.powerSave.extractorPolicy      = ECO_DEV_OFF;
+    config.powerSave.plantFanPolicy       = ECO_DEV_OFF;
+    config.powerSave.humidifierPolicy     = ECO_DEV_OFF;
+    config.powerSave.lightPolicy          = ECO_DEV_OFF;
+    config.powerSave.pauseSheetsSync      = true;
+    config.powerSave.pauseAdaptiveThresh  = true;
+  } else if (presetId == 1) {
+    // Пресет 1: Збалансована економія
+    config.powerSave.heatingPolicy        = ECO_DEV_LIMITED;
+    config.powerSave.ecoTempMin           = 21.0f;
+    config.powerSave.ecoTempHyst          = 0.8f;
+    config.powerSave.ecoPumpMaxPercent    = 45;
+    config.powerSave.ecoFanMaxPercent     = 35;
+    config.powerSave.ecoCheckCarrierTemp  = true;
+    config.powerSave.ecoCarrierMinDelta   = 3.0f;
+    config.powerSave.ecoAllowHeaterRelay  = false;
+    config.powerSave.ecoPumpPulseMode     = false;
+    config.powerSave.extractorPolicy      = ECO_DEV_LIMITED;
+    config.powerSave.ecoExtOnMin          = 2;
+    config.powerSave.ecoExtOffMin         = 58;
+    config.powerSave.ecoExtPower          = 25;
+    config.powerSave.plantFanPolicy       = ECO_DEV_LIMITED;
+    config.powerSave.ecoPlantFanPower     = 20;
+    config.powerSave.ecoPlantFanOnMin     = 5;
+    config.powerSave.ecoPlantFanOffMin    = 55;
+    config.powerSave.humidifierPolicy     = ECO_DEV_LIMITED;
+    config.powerSave.ecoHumMin            = 45.0f;
+    config.powerSave.ecoHumMax            = 50.0f;
+    config.powerSave.lightPolicy          = ECO_DEV_LIMITED;
+    config.powerSave.ecoLightScalePercent = 25;
+    config.powerSave.pauseSheetsSync      = true;
+    config.powerSave.pauseAdaptiveThresh  = true;
+  } else if (presetId == 2) {
+    // Пресет 2: Теплий сезон (обігрів, витяжка, вітер, світло — все OFF)
+    config.powerSave.heatingPolicy        = ECO_DEV_OFF;
+    config.powerSave.extractorPolicy      = ECO_DEV_OFF;
+    config.powerSave.plantFanPolicy       = ECO_DEV_OFF;
+    config.powerSave.humidifierPolicy     = ECO_DEV_OFF;
+    config.powerSave.lightPolicy          = ECO_DEV_OFF;
+    config.powerSave.pauseSheetsSync      = true;
+    config.powerSave.pauseAdaptiveThresh  = true;
+  }
+  savePowerSaveConfig();
 }
 
 void initMutexes() {

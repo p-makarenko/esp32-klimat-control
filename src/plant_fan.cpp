@@ -120,9 +120,82 @@ static void stepBreeze() {
 }
 
 // ============================================================================
-// ГОЛОВНА ЛОГІКА ТАЙМЕРА
+// ГОЛОВНА ЛОГІКА ТАЙМЕРА (З ПІДТРИМКОЮ ЕКО-РЕЖИМУ / БЛЕКАУТУ)
 // ============================================================================
+extern bool isQuietModeActive();
+
 static void updateFan() {
+    if (isQuietModeActive()) {
+        if (currentPowerPct > 0) {
+            applyPower(0);
+        }
+        return;
+    }
+
+    static bool          ecoWasActive     = false;
+    static bool          ecoTimerState    = false;
+    static unsigned long ecoPhaseStart    = 0;
+
+    bool ecoNow = isEcoModeActive();
+    if (ecoNow) {
+        uint8_t pol = config.powerSave.plantFanPolicy;
+        if (pol == ECO_DEV_OFF) {
+            if (!ecoWasActive || currentPowerPct > 0) {
+                applyPower(0);
+                timerState = false;
+                Serial.println("🔋 ЕКО-режим: вітер рослин вимкнено (0%)");
+            }
+            ecoWasActive = true;
+            ecoPhaseStart = 0;
+            ecoTimerState = false;
+            return;
+        } else if (pol == ECO_DEV_LIMITED) {
+            ecoWasActive = true;
+            if (!config.plantFanTimer.enabled) {
+                applyPower(0);
+                timerState = false;
+                return;
+            }
+            unsigned long now = millis();
+            unsigned long onDur  = (unsigned long)config.powerSave.ecoPlantFanOnMin  * 60000UL;
+            unsigned long offDur = (unsigned long)config.powerSave.ecoPlantFanOffMin * 60000UL;
+            if (ecoPhaseStart == 0) {
+                ecoPhaseStart = now;
+                ecoTimerState = (onDur > 0);
+            }
+            unsigned long elapsed = now - ecoPhaseStart;
+            if (ecoTimerState) {
+                if (offDur > 0 && elapsed >= onDur) {
+                    ecoTimerState = false;
+                    ecoPhaseStart = now;
+                    applyPower(0);
+                    timerState = false;
+                    return;
+                }
+                timerState = true;
+                applyPower(config.powerSave.ecoPlantFanPower);
+            } else {
+                if (onDur > 0 && (offDur == 0 || elapsed >= offDur)) {
+                    ecoTimerState = true;
+                    ecoPhaseStart = now;
+                    timerState = true;
+                    applyPower(config.powerSave.ecoPlantFanPower);
+                } else {
+                    timerState = false;
+                    applyPower(0);
+                }
+            }
+            return;
+        }
+        // ECO_DEV_UNCHANGED — штатна робота
+    }
+
+    if (ecoWasActive) {
+        ecoWasActive = false;
+        ecoPhaseStart = 0;
+        timerPhaseStart = millis();
+    }
+
     const PlantFanTimer& t = config.plantFanTimer;
 
     if (!t.enabled) {

@@ -68,7 +68,69 @@ void initGPIO() {
                 ventState.open ? "ВІДКРИТО" : "ЗАКРИТО", ventState.currentAngle);
 }
 
+// ============================================================================
+// РЕЖИМ ТИШІ (QUIET MODE) - тимчасове вимкнення шуму (вентилятори + зволожувач)
+// ============================================================================
+static volatile bool _quietModeEnabled = false;
+static unsigned long _quietModeUntilMs = 0;
+
+bool isQuietModeActive() {
+    if (!_quietModeEnabled) return false;
+    if ((long)(millis() - _quietModeUntilMs) >= 0) {
+        _quietModeEnabled = false;
+        Serial.println("🔊 Режим тиші завершено за таймаутом (авто-повернення)");
+        return false;
+    }
+    return true;
+}
+
+uint16_t getQuietModeRemainingSec() {
+    if (!isQuietModeActive()) return 0;
+    unsigned long rem = _quietModeUntilMs - millis();
+    return (uint16_t)((rem + 999) / 1000);
+}
+
+void setQuietMode(bool enable, uint16_t ttlSec) {
+    if (enable) {
+        if (ttlSec < 5) ttlSec = 5;
+        if (ttlSec > 300) ttlSec = 300;
+        _quietModeUntilMs = millis() + (unsigned long)ttlSec * 1000UL;
+        bool wasActive = _quietModeEnabled;
+        _quietModeEnabled = true;
+
+        // Миттєво глушимо всі вентилятори та зволожувач
+        ledcWrite(FAN_CHANNEL, 0);
+        ledcWrite(EXTRACTOR_CHANNEL, 0);
+        ledcWrite(PLANT_FAN_CHANNEL, 0);
+        digitalWrite(HEATER_FAN_RELAY_PIN, HIGH); // HIGH = реле 220В ВИМКНЕНО
+        digitalWrite(HUMIDIFIER_PIN, LOW);        // LOW = зволожувач ВИМКНЕНО
+        humidifierState.active = false;
+
+        if (xSemaphoreTake(getHeatingMutex(), pdMS_TO_TICKS(50))) {
+            heatingState.fanPower = 0;
+            heatingState.extractorPower = 0;
+            xSemaphoreGive(getHeatingMutex());
+        }
+
+        if (!wasActive) {
+            Serial.printf("🔇 Режим тиші УВІМКНЕНО (до %u сек)\n", ttlSec);
+        }
+    } else {
+        if (_quietModeEnabled) {
+            _quietModeEnabled = false;
+            _quietModeUntilMs = 0;
+            Serial.println("🔊 Режим тиші ВИМКНЕНО (повернення штатної роботи)");
+        }
+    }
+}
+
 void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorPercent) {
+    // 0. Режим тиші: примусово глушимо вентилятор обігріву та витяжку
+    if (isQuietModeActive()) {
+        fanPercent = 0;
+        extractorPercent = 0;
+    }
+
     // 1. Повне блокування насоса
     if (config.pumpDisabled) {
         pumpPercent = 0;
@@ -88,8 +150,10 @@ void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorP
         extractorPercent = constrain(extractorPercent, config.extractorMinPercent, config.extractorMaxPercent);
     }
 
-    // 4. Керування реле 220В вентилятора обігріву (Pin 7)
-    if (fanPercent > 0 && config.heaterFanRelayEnabled) {
+    // 4. Керування реле 220В вентилятора обігріву (Pin 7) з урахуванням ЕКО-режиму
+    bool allowHeaterRelay = config.heaterFanRelayEnabled &&
+                            (!isEcoModeActive() || config.powerSave.ecoAllowHeaterRelay);
+    if (fanPercent > 0 && allowHeaterRelay) {
         digitalWrite(HEATER_FAN_RELAY_PIN, LOW);
     } else {
         digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);
@@ -114,9 +178,37 @@ void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorP
     }
 }
 
+// Стан неблокуючого пускового імпульсу (Kickstart) для насоса
+static bool          s_pumpKickstartActive = false;
+static unsigned long s_pumpKickstartEndMs  = 0;
+static uint8_t       s_pumpKickstartTarget = 0;
+
+void updatePumpKickstart() {
+  if (!s_pumpKickstartActive) return;
+
+  if (config.pumpDisabled) {
+    s_pumpKickstartActive = false;
+    setPumpPercent(0);
+    return;
+  }
+
+  if (millis() >= s_pumpKickstartEndMs) {
+    uint8_t target = s_pumpKickstartTarget;
+    s_pumpKickstartActive = false;
+    uint8_t pwmValue = map(target, 0, 100, 0, 255);
+    if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+      heatingState.pumpPower = pwmValue;
+      ledcWrite(PUMP_CHANNEL, pwmValue);
+      xSemaphoreGive(getHeatingMutex());
+    }
+    Serial.printf("💧 Насос: пуск завершено → робоча потужність %u%%\n", target);
+  }
+}
+
 void setPumpPercent(uint8_t percent) {
   // ⛔ Якщо насос повністю вимкнено у налаштуваннях — завжди 0%
   if (config.pumpDisabled) {
+    s_pumpKickstartActive = false;
     if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
       heatingState.pumpPower = 0;
       ledcWrite(PUMP_CHANNEL, 0);
@@ -125,9 +217,7 @@ void setPumpPercent(uint8_t percent) {
     return;
   }
 
-  uint8_t originalPercent = percent;
-
-  // Тільки в автоматичному режимі застосовувати мінімум/максимум з налаштувань
+  // Тільки в штатному автоматичному режимі застосовувати мін/макс (ФОРСАЖ 80% і АВАРІЯ 100% при 220В мають пріоритет)
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
     if (percent > 0 && percent < config.pumpMinPercent) {
       percent = config.pumpMinPercent;
@@ -137,6 +227,41 @@ void setPumpPercent(uint8_t percent) {
     }
   } else {
     percent = constrain(percent, 0, 100);
+  }
+
+  // Неблокуючий пусковий імпульс (Kickstart): при старті з 0% на низькій потужності
+  // спочатку подаємо pumpStartPercent (напр. 45%) на pumpStartDurationSec сек, потім знижуємо до цілі
+  if (percent == 0) {
+    s_pumpKickstartActive = false;
+  } else if (config.pumpStartDurationSec > 0 && percent < config.pumpStartPercent) {
+    uint8_t currentPower = 0;
+    if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
+      currentPower = heatingState.pumpPower;
+      xSemaphoreGive(getHeatingMutex());
+    }
+
+    if (currentPower == 0 && !s_pumpKickstartActive) {
+      // Старт з повної зупинки — запускаємо kickstart
+      s_pumpKickstartActive = true;
+      s_pumpKickstartTarget = percent;
+      s_pumpKickstartEndMs  = millis() + (unsigned long)config.pumpStartDurationSec * 1000UL;
+      Serial.printf("🚀 Насос Kickstart: %u%% на %u сек (далі → %u%%)\n",
+                    config.pumpStartPercent, config.pumpStartDurationSec, percent);
+      percent = config.pumpStartPercent;
+    } else if (s_pumpKickstartActive) {
+      if (millis() < s_pumpKickstartEndMs) {
+        // Триває пусковий імпульс — оновлюємо кінцеву ціль, але тримаємо пускову потужність
+        s_pumpKickstartTarget = percent;
+        percent = config.pumpStartPercent;
+      } else {
+        // Час пуску вийшов — переходимо на цільову потужність
+        s_pumpKickstartActive = false;
+        Serial.printf("💧 Насос: пуск завершено → робоча потужність %u%%\n", percent);
+      }
+    }
+  } else {
+    // Ціль >= pumpStartPercent — kickstart не потрібен
+    s_pumpKickstartActive = false;
   }
 
   uint8_t pwmValue = map(percent, 0, 100, 0, 255);
@@ -219,6 +344,9 @@ void pumpStartupRamp(uint8_t targetPercent) {
 }
 
 void setFanPercent(uint8_t percent) {
+  if (isQuietModeActive()) {
+    percent = 0;
+  }
   uint8_t originalPercent = percent;
   
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
@@ -240,8 +368,10 @@ void setFanPercent(uint8_t percent) {
     // 1. Звичайний ШІМ вентилятора обігріву (працює штатно)
     ledcWrite(FAN_CHANNEL, pwmValue);
 
-    // 2. Реле 220В (Pin 7) — слухається ТІЛЬКИ своєї галочки
-    if (percent > 0 && config.heaterFanRelayEnabled) {
+    // 2. Реле 220В (Pin 7) — слухається своєї галочки та ЕКО-політики
+    bool allowHeaterRelay = config.heaterFanRelayEnabled &&
+                            (!isEcoModeActive() || config.powerSave.ecoAllowHeaterRelay);
+    if (percent > 0 && allowHeaterRelay) {
       digitalWrite(HEATER_FAN_RELAY_PIN, LOW);   // Увімкнути 220В (LOW)
     } else {
       digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);  // Вимкнути 220В (HIGH)
@@ -254,6 +384,9 @@ void setFanPercent(uint8_t percent) {
 }
 
 void setExtractorPercent(uint8_t percent) {
+  if (isQuietModeActive()) {
+    percent = 0;
+  }
   uint8_t originalPercent = percent;
 
   if (!heatingState.manualMode && !heatingState.forceMode && !heatingState.emergencyMode) {
@@ -367,14 +500,21 @@ void controlVentilation() {
 }
 
 void controlHumidifier(float humidity, float tempRoom) {
-  if (!config.humidityConfig.enabled || !config.humidifierEnabled) {
+  if (isQuietModeActive() ||
+      !config.humidityConfig.enabled || !config.humidifierEnabled ||
+      (isEcoModeActive() && config.powerSave.humidifierPolicy == ECO_DEV_OFF)) {
     digitalWrite(HUMIDIFIER_PIN, LOW);
     humidifierState.active = false;
     return;
   }
   
   float adaptiveHumMin, adaptiveHumMax;
-  calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
+  if (isEcoModeActive() && config.powerSave.humidifierPolicy == ECO_DEV_LIMITED) {
+    adaptiveHumMin = config.powerSave.ecoHumMin;
+    adaptiveHumMax = config.powerSave.ecoHumMax;
+  } else {
+    calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
+  }
   
   unsigned long now = millis();
   
@@ -415,6 +555,9 @@ void heatingTask(void *parameter) {
     if (config.humidifierEnabled) {
       controlHumidifier(humidity, tempRoom);
     }
+
+    // Завершення неблокуючого пускового імпульсу насоса (Kickstart)
+    updatePumpKickstart();
     
     if (heatingState.emergencyMode) {
       if (getEmergencyStartTime() == 0) {

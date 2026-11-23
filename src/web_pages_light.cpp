@@ -23,9 +23,9 @@ void handleLightPage() {
 
     String html = getHtmlHead("Освітлення");
     html += "<div class='container'>";
-    html += getNavHeader("💡 КЕРУВАННЯ ОСВІТЛЕННЯМ");
+    html += getNavHeader("💡 DMX ОСВІТЛЕННЯ");
 
-    // Поточний стан
+    // Поточний стан DMX
     html += "<div class='card' style='border-left-color:#f59e0b'>";
     html += "<b>Поточний стан:</b> ";
     html += "R=" + String(cur.r) + " G=" + String(cur.g) +
@@ -64,7 +64,7 @@ void handleLightPage() {
     html += "<b>Розклад (ключові точки)</b>";
     html += "<form method='POST' action='/light/save'>";
     html += "<table style='width:100%;border-collapse:collapse;margin-top:10px'>";
-    html += "<tr style='background:#f0f0f0'><th style='padding:8px;text-align:left'>Час</th>";
+    html += "<tr><th style='padding:8px;text-align:left'>Час</th>";
     html += "<th>R (CH1)</th><th>G (CH2)</th><th>B (CH3)</th><th>Яскр (CH4)</th><th>Колір</th></tr>";
 
     for (int i = 0; i < LIGHT_KEYFRAME_COUNT; i++) {

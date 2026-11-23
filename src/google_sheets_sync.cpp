@@ -469,6 +469,11 @@ void autoSyncTask() {
 
     if (syncStats.syncInProgress) return;
 
+    // Під час ЕКО-режиму / блекауту призупиняємо автосинхронізацію (економія Wi-Fi/CPU)
+    if (isEcoModeActive() && config.powerSave.pauseSheetsSync) {
+        return;
+    }
+
     // Перевіряємо чи час для щоденної синхронізації
     if (checkDailySyncTime() && !lastDailySyncDone) {
         Serial.println("🕐 [Sync] Щоденна синхронізація (23:59)");

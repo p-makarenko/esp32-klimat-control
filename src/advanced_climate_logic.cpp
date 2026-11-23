@@ -633,15 +633,61 @@ void processExtendedCommand(String command) {
         // Скидання аварійного режиму
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.ecoActive = false;
+        powerOutageState.ecoHeatingOn = false;
+        if (config.powerSave.activationMode == ECO_MODE_FORCE_ON) {
+            config.powerSave.activationMode = ECO_MODE_AUTO;
+            savePowerSaveConfig();
+        }
         heatingState.emergencyMode = false;
         heatingState.forceMode = false;
 
         Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-        Serial.println("║  ✓ АВАРІЙНИЙ РЕЖИМ СКИНУТО                           ║");
+        Serial.println("║  ✓ АВАРІЙНИЙ / ЕКО РЕЖИМ СКИНУТО                     ║");
         Serial.println("╠═══════════════════════════════════════════════════════╣");
         Serial.println("║  Всі аварійні прапорці очищено                       ║");
         Serial.println("║  Система повернулась в AUTO режим                    ║");
         Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+    }
+    else if (command == "eco on") {
+        config.powerSave.activationMode = ECO_MODE_FORCE_ON;
+        powerOutageState.ecoActive = true;
+        powerOutageState.ecoStartTime = millis();
+        powerOutageState.emergencyHeatingActive = true;
+        savePowerSaveConfig();
+        Serial.println("🔋 ЕКО-режим УВІМКНЕНО ПРИМУСОВО");
+    }
+    else if (command == "eco auto") {
+        config.powerSave.activationMode = ECO_MODE_AUTO;
+        if (!powerOutageState.detected) {
+            powerOutageState.ecoActive = false;
+            powerOutageState.emergencyHeatingActive = false;
+            powerOutageState.ecoHeatingOn = false;
+        }
+        savePowerSaveConfig();
+        Serial.println("🤖 ЕКО-режим переведено в АВТО (по 220В PZEM)");
+    }
+    else if (command == "eco off") {
+        config.powerSave.activationMode = ECO_MODE_DISABLED;
+        powerOutageState.ecoActive = false;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.ecoHeatingOn = false;
+        savePowerSaveConfig();
+        Serial.println("⛔ ЕКО-режим ВИМКНЕНО");
+    }
+    else if (command == "eco status" || command == "eco") {
+        Serial.printf("🔋 ЕКО: %s | Режим=%u | 220В=%.1fВ (%s) | Обігрів=%u (T=%.1f°C, Насос<=%u%%, Вент<=%u%%) | Витяжка=%u | Вітер=%u | Світло=%u\n",
+                      isEcoModeActive() ? "АКТИВНИЙ" : "ВИМК",
+                      config.powerSave.activationMode,
+                      powerOutageState.lastVoltage,
+                      powerOutageState.detected ? "БЛЕКАУТ" : "ОК",
+                      config.powerSave.heatingPolicy,
+                      config.powerSave.ecoTempMin,
+                      config.powerSave.ecoPumpMaxPercent,
+                      config.powerSave.ecoFanMaxPercent,
+                      config.powerSave.extractorPolicy,
+                      config.powerSave.plantFanPolicy,
+                      config.powerSave.lightPolicy);
     }
     else if (command == "sheets-sync" || command == "sheets sync") {
         Serial.println("📤 Запуск синхронізації з Google Sheets...");
@@ -781,7 +827,90 @@ bool isHeatingSeasonActive() {
 // ============================================================================
 
 // ============================================================================
-// АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ (ВИПРАВЛЕНА ЛОГІКА)
+// ПЛАВНА РОБОТА ВЕНТИЛЯТОРА ОБІГРІВУ (АНТИЦИКЛЮВАННЯ + ПЛАВНИЙ РОЗГІН/ГАЛЬМУВАННЯ)
+// ============================================================================
+
+static float         s_smoothedFanPct    = 0.0f;
+static unsigned long s_lastFanSmoothMs   = 0;
+static bool          s_fanRunningState   = false;
+static unsigned long s_fanStateChangeMs  = 0;
+
+static uint8_t computeSmoothFanPercent(uint8_t targetPercent, bool urgent, uint8_t minWorkingPct) {
+    unsigned long now = millis();
+    if (s_lastFanSmoothMs == 0) {
+        s_lastFanSmoothMs = now;
+        s_smoothedFanPct = (float)((heatingState.fanPower * 100 + 127) / 255);
+        s_fanRunningState = (s_smoothedFanPct > 0.5f);
+        s_fanStateChangeMs = 0; // Після ребута не чекаємо minOffSec перед першим пуском
+    }
+
+    if (!config.fanSmooth.enabled || urgent) {
+        s_smoothedFanPct = (float)targetPercent;
+        bool nextRun = (targetPercent > 0);
+        if (nextRun != s_fanRunningState) {
+            s_fanRunningState = nextRun;
+            s_fanStateChangeMs = now;
+        }
+        s_lastFanSmoothMs = now;
+        return targetPercent;
+    }
+
+    // 1. Антициклювання (мінімальний час роботи та мінімальний час паузи)
+    unsigned long minRunMs = (unsigned long)config.fanSmooth.minRunSec * 1000UL;
+    unsigned long minOffMs = (unsigned long)config.fanSmooth.minOffSec * 1000UL;
+    unsigned long elapsedInState = now - s_fanStateChangeMs;
+
+    uint8_t effectiveTarget = targetPercent;
+    if (s_fanRunningState && targetPercent == 0) {
+        if (s_fanStateChangeMs > 0 && elapsedInState < minRunMs) {
+            // Ще не відпрацював мінімальний час — тримаємо на низьких обертах замість зупинки
+            effectiveTarget = minWorkingPct;
+        } else {
+            s_fanRunningState = false;
+            s_fanStateChangeMs = now;
+        }
+    } else if (!s_fanRunningState && targetPercent > 0) {
+        if (s_fanStateChangeMs > 0 && elapsedInState < minOffMs) {
+            // Ще триває мінімальна пауза після реальної зупинки — не робимо зайвий пуск
+            effectiveTarget = 0;
+        } else {
+            s_fanRunningState = true;
+            s_fanStateChangeMs = now;
+        }
+    }
+
+    // 2. Плавна зміна швидкості (slew-rate limiter)
+    float dtSec = (float)(now - s_lastFanSmoothMs) / 1000.0f;
+    s_lastFanSmoothMs = now;
+    if (dtSec < 0.05f) dtSec = 0.05f;
+    if (dtSec > 10.0f) dtSec = 10.0f;
+
+    float maxDelta = (float)max((uint8_t)1, config.fanSmooth.maxStepPerSec) * dtSec;
+    float diff = (float)effectiveTarget - s_smoothedFanPct;
+
+    if (fabs(diff) <= maxDelta) {
+        s_smoothedFanPct = (float)effectiveTarget;
+    } else if (diff > 0.0f) {
+        // При старті з 0 одразу підхоплюємо мінімальну стабільну швидкість
+        if (s_smoothedFanPct < (float)minWorkingPct && effectiveTarget >= minWorkingPct) {
+            s_smoothedFanPct = (float)minWorkingPct;
+        } else {
+            s_smoothedFanPct += maxDelta;
+        }
+    } else {
+        s_smoothedFanPct -= maxDelta;
+        // При плавній зупинці нижче мінімальної швидкості — чисто гасимо в 0
+        if (effectiveTarget == 0 && s_smoothedFanPct < (float)minWorkingPct) {
+            s_smoothedFanPct = 0.0f;
+        }
+    }
+
+    int outPct = (int)roundf(s_smoothedFanPct);
+    return (uint8_t)constrain(outPct, 0, 100);
+}
+
+// ============================================================================
+// АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ (ВИПРАВЛЕНА ЛОГІКА З ПЛАВНИМ ВЕНТИЛЯТОРОМ)
 // ============================================================================
 
 void smartHeatingControl() {
@@ -864,44 +993,48 @@ void smartHeatingControl() {
     }
 
     // ------------------------------------------------------------------------
-    // ✅ ОСНОВНЕ ВИПРАВЛЕННЯ ЛОГІКИ ВЕНТИЛЯТОРА:
+    // ✅ ПЛАВНА ЛОГІКА ВЕНТИЛЯТОРА (З ГІСТЕРЕЗИСОМ ТА АНТИЦИКЛЮВАННЯМ):
     // ------------------------------------------------------------------------
-    int fanPower = 0;
+    int targetFanPower = 0;
+    float hyst = config.fanSmooth.enabled ? constrain(config.fanSmooth.hysteresis, 0.1f, 3.0f) : 0.0f;
+    float stopTemp = (config.fanSmooth.enabled && config.fanSmooth.keepLowInsteadOfStop)
+                     ? (config.tempMax + hyst)
+                     : config.tempMax;
+    float startTemp = config.tempMax - hyst;
+    uint8_t minFan = max((uint8_t)1, config.fanMinPercent);
 
-    if (tempRoom >= config.tempMax) {
-        // 1. Температура в нормі або вища за максимум — ОБОГРІВ НЕ ПОТРІБЕН (0%)
-        fanPower = 0;
+    if (tempRoom >= stopTemp) {
+        // Температура досягла верхньої межі з гістерезисом — зупиняємо вентилятор
+        targetFanPower = 0;
+    } else if (!s_fanRunningState && tempRoom > startTemp) {
+        // Вентилятор стоїть, а температура ще в зоні гістерезису — не смикаємо повторний пуск
+        targetFanPower = 0;
     } else if (tempRoom <= config.tempMin) {
-        // 2. Температура нижче мінімуму — МАКСИМАЛЬНИЙ ОБІГРІВ
-        fanPower = config.fanMaxPercent;
+        // Температура нижче мінімуму — максимальний дозволений обігрів
+        targetFanPower = config.fanMaxPercent;
+    } else if (tempRoom >= config.tempMax) {
+        // Зона м'якого утримання [tempMax .. tempMax+hyst]: тримаємо економний мінімум замість частих стопів
+        targetFanPower = minFan;
     } else {
-        // 3. Плавне регулювання у діапазоні [tempMin ... tempMax]
-        float targetTemp = (config.tempMin + config.tempMax) / 2.0f;
-        float tempDiff = targetTemp - tempRoom; 
-        float halfRange = (config.tempMax - config.tempMin) / 2.0f;
-
-        if (halfRange > 0.1f) {
-            float normalizedDiff = constrain(tempDiff / halfRange, -1.0f, 1.0f);
-            int midFan = (config.fanMinPercent + config.fanMaxPercent) / 2;
-            int fanRange = (config.fanMaxPercent - config.fanMinPercent) / 2;
-
-            fanPower = midFan + (int)(normalizedDiff * fanRange);
+        // Плавне лінійне регулювання в діапазоні [tempMin ... tempMax]
+        float range = config.tempMax - config.tempMin;
+        if (range > 0.1f) {
+            float ratio = constrain((config.tempMax - tempRoom) / range, 0.0f, 1.0f);
+            targetFanPower = (int)roundf(minFan + ratio * (float)(config.fanMaxPercent - minFan));
         } else {
-            fanPower = (config.fanMinPercent + config.fanMaxPercent) / 2;
-        }
-
-        // 💡 Застосовуємо fanMinPercent тільки коли дійсно потрібен обігрів
-        if (fanPower > 0 && fanPower < config.fanMinPercent) {
-            fanPower = config.fanMinPercent;
+            targetFanPower = (minFan + config.fanMaxPercent) / 2;
         }
     }
 
-    fanPower = constrain(fanPower, 0, config.fanMaxPercent);
-    setFanPercent(fanPower);
+    targetFanPower = constrain(targetFanPower, 0, config.fanMaxPercent);
+    // Критичний перегрів (+1.5°C вище tempMax) — зупиняємо без очікування minRunSec
+    bool urgentStop = (targetFanPower == 0 && tempRoom >= (config.tempMax + 1.5f));
+    uint8_t smoothFan = computeSmoothFanPercent((uint8_t)targetFanPower, urgentStop, minFan);
+    setFanPercent(smoothFan);
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C, Вентилятор=%d%%\n",
-                     getFormattedTime().c_str(), tempRoom, fanPower);
+        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C, Вентилятор=%d%% (ціль %d%%)\n",
+                     getFormattedTime().c_str(), tempRoom, smoothFan, targetFanPower);
         lastPowerUpdate = now;
     }
 }
@@ -984,7 +1117,8 @@ void smartCoolingControl() {
     }
 
     fanPower = constrain(fanPower, config.fanMinPercent, config.fanMaxPercent);
-    setFanPercent(fanPower);
+    uint8_t smoothCoolFan = computeSmoothFanPercent((uint8_t)fanPower, false, max((uint8_t)1, config.fanMinPercent));
+    setFanPercent(smoothCoolFan);
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
         Serial.printf("❄️ Режим охолодження: T=%.1f°C (діапазон %.1f-%.1f°C), Насос=0%%, Вентилятор=%d%%\n",
@@ -998,7 +1132,9 @@ void smartCoolingControl() {
 // ============================================================================
 
 void advancedHumidityControl(float humidity, float tempRoom) {
-    if (!config.humidifierEnabled || !config.humidityConfig.enabled) {
+    if (isQuietModeActive() ||
+        !config.humidifierEnabled || !config.humidityConfig.enabled ||
+        (isEcoModeActive() && config.powerSave.humidifierPolicy == ECO_DEV_OFF)) {
         digitalWrite(HUMIDIFIER_PIN, LOW);
         humidifierState.active = false;
         return;
@@ -1007,7 +1143,12 @@ void advancedHumidityControl(float humidity, float tempRoom) {
     unsigned long now = millis();
     
     float adaptiveHumMin, adaptiveHumMax;
-    calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
+    if (isEcoModeActive() && config.powerSave.humidifierPolicy == ECO_DEV_LIMITED) {
+        adaptiveHumMin = config.powerSave.ecoHumMin;
+        adaptiveHumMax = config.powerSave.ecoHumMax;
+    } else {
+        calculateAdaptiveHumidity(tempRoom, adaptiveHumMin, adaptiveHumMax);
+    }
     
     if (!humidifierState.active &&
         now - humidifierState.lastCycle < config.humidityConfig.minInterval) {
@@ -1035,6 +1176,73 @@ void advancedHumidityControl(float humidity, float tempRoom) {
 // ============================================================================
 
 void advancedUpdateExtractorTimer() {
+    static bool wasEcoControlled = false;
+    static unsigned long ecoExtCycleStart = 0;
+    static bool ecoExtState = false;
+
+    bool ecoNow = isEcoModeActive();
+
+    if (ecoNow) {
+        uint8_t pol = config.powerSave.extractorPolicy;
+        if (pol == ECO_DEV_OFF) {
+            if (!wasEcoControlled || heatingState.extractorPower > 0) {
+                setExtractorPercent(0);
+                Serial.println("🔋 ЕКО-режим: витяжку вимкнено (0%)");
+            }
+            wasEcoControlled = true;
+            ecoExtCycleStart = 0;
+            ecoExtState = false;
+            return;
+        } else if (pol == ECO_DEV_LIMITED) {
+            wasEcoControlled = true;
+            if (!config.extractorTimer.enabled) {
+                setExtractorPercent(0);
+                return;
+            }
+            unsigned long now = millis();
+            unsigned long onDur  = (unsigned long)config.powerSave.ecoExtOnMin  * 60000UL;
+            unsigned long offDur = (unsigned long)config.powerSave.ecoExtOffMin * 60000UL;
+            unsigned long cycleDur = onDur + offDur;
+
+            if (ecoExtCycleStart == 0) {
+                ecoExtCycleStart = now;
+                ecoExtState = (onDur > 0);
+                setExtractorPercent(ecoExtState ? config.powerSave.ecoExtPower : 0);
+                Serial.printf("🔋 ЕКО-таймер витяжки: %s (%u%%)\n",
+                              ecoExtState ? "РОБОТА" : "ПАУЗА",
+                              ecoExtState ? config.powerSave.ecoExtPower : 0);
+                return;
+            }
+
+            bool shouldBeOn = false;
+            if (cycleDur == 0) {
+                shouldBeOn = false;
+            } else {
+                unsigned long elapsed = now - ecoExtCycleStart;
+                if (elapsed >= cycleDur) {
+                    ecoExtCycleStart = now;
+                    elapsed = 0;
+                }
+                shouldBeOn = (elapsed < onDur);
+            }
+
+            if (shouldBeOn != ecoExtState) {
+                ecoExtState = shouldBeOn;
+                setExtractorPercent(shouldBeOn ? config.powerSave.ecoExtPower : 0);
+                Serial.printf("🔋 ЕКО-таймер витяжки: %s\n", shouldBeOn ? "УВІМК" : "ПАУЗА");
+            }
+            return;
+        }
+        // Якщо ECO_DEV_UNCHANGED — працюємо за штатним таймером
+    }
+
+    if (wasEcoControlled) {
+        wasEcoControlled = false;
+        ecoExtCycleStart = 0;
+        // Перезапускаємо штатний стан витяжки після виходу з ЕКО
+        config.extractorTimer.cycleStart = 0;
+    }
+
     if (!config.extractorTimer.enabled) {
         return;
     }
@@ -1232,7 +1440,7 @@ void initAdvancedLogic() {
 }
 
 // ============================================================================
-// МОНІТОРИНГ ВІДКЛЮЧЕННЯ ЖИВЛЕННЯ (ПО НАПРУЗІ PZEM)
+// МОНІТОРИНГ ВІДКЛЮЧЕННЯ ЖИВЛЕННЯ (ПО НАПРУЗІ PZEM) ТА ЕКО-РЕЖИМ
 // ============================================================================
 
 void monitorPowerOutage() {
@@ -1253,36 +1461,170 @@ void monitorPowerOutage() {
     // Визначаємо наявність живлення: 175-255В = норма
     bool powerOk = !energy.error && (voltage >= POWER_OUTAGE_VOLTAGE_MIN) && (voltage <= POWER_OUTAGE_VOLTAGE_MAX);
 
-    if (!powerOk && !powerOutageState.detected) {
-        // Живлення зникло — входимо в аварійний режим
-        if (heatingState.manualModeLocked) {
-            Serial.println("🔒 Відключення 220В виявлено, але блокування ручного режиму АКТИВНО");
+    // 1. Якщо ЕКО-режим повністю вимкнено в налаштуваннях
+    if (config.powerSave.activationMode == ECO_MODE_DISABLED) {
+        powerOutageState.detected = false;
+        powerOutageState.ecoActive = false;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.outagePendingSince = 0;
+        powerOutageState.restorePendingSince = 0;
+        powerOutageState.ecoHeatingOn = false;
+        return;
+    }
+
+    // 2. Фактичне визначення наявності 220В із захистом від хибних спрацювань (debounce)
+    unsigned long outConfirmMs = (unsigned long)config.powerSave.outageConfirmSec * 1000UL;
+    unsigned long resConfirmMs = (unsigned long)config.powerSave.restoreConfirmSec * 1000UL;
+
+    if (!powerOk) {
+        powerOutageState.restorePendingSince = 0;
+        if (!powerOutageState.detected) {
+            if (powerOutageState.outagePendingSince == 0) {
+                powerOutageState.outagePendingSince = now;
+            }
+            if ((now - powerOutageState.outagePendingSince) >= outConfirmMs) {
+                powerOutageState.detected = true;
+                powerOutageState.detectionTime = now;
+                powerOutageState.outagePendingSince = 0;
+
+                Serial.println("\n╔═══════════════════════════════════════════════════════╗");
+                Serial.println("║  🔋 БЛЕКАУТ: ВІДСУТНІСТЬ 220В ПІДТВЕРДЖЕНО!           ║");
+                Serial.println("╠═══════════════════════════════════════════════════════╣");
+                Serial.printf("║  ⚡ Напруга: %.1f В (норма: %.0f-%.0f В)             ║\n",
+                               voltage, POWER_OUTAGE_VOLTAGE_MIN, POWER_OUTAGE_VOLTAGE_MAX);
+                Serial.println("║  🔋 Активовано профіль енергозбереження (ЕКО)        ║");
+                Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+            }
+        }
+    } else {
+        powerOutageState.outagePendingSince = 0;
+        if (powerOutageState.detected) {
+            if (powerOutageState.restorePendingSince == 0) {
+                powerOutageState.restorePendingSince = now;
+            }
+            if ((now - powerOutageState.restorePendingSince) >= resConfirmMs) {
+                powerOutageState.detected = false;
+                powerOutageState.restorePendingSince = 0;
+                powerOutageState.ecoHeatingOn = false;
+
+                // Автоповернення до АВТО-режиму після стабільного відновлення 220В
+                if (config.powerSave.activationMode == ECO_MODE_FORCE_ON) {
+                    config.powerSave.activationMode = ECO_MODE_AUTO;
+                    savePowerSaveConfig();
+                    Serial.println("🤖 Примусовий ЕКО скинуто в АВТО після повернення 220В");
+                }
+                if (heatingState.manualMode && !heatingState.manualModeLocked) {
+                    heatingState.manualMode = false;
+                    heatingState.manualModeStartTime = 0;
+                    Serial.println("🤖 Незаблокований ручний режим скинуто в АВТО після повернення 220В");
+                }
+
+                Serial.println("\n╔═══════════════════════════════════════════════════════╗");
+                Serial.println("║  ✅ ЖИВЛЕННЯ 220В СТАБІЛЬНО ВІДНОВЛЕНО!               ║");
+                Serial.println("╠═══════════════════════════════════════════════════════╣");
+                Serial.printf("║  ⚡ Напруга: %.1f В                                  ║\n", voltage);
+                Serial.println("║  🔄 Повернення до штатного АВТО-режиму               ║");
+                Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+            }
+        }
+    }
+
+    // 3. Обчислюємо підсумковий статус ЕКО-профілю (авто по 220В або примусовий ручний)
+    bool shouldBeEco = (config.powerSave.activationMode == ECO_MODE_FORCE_ON) || powerOutageState.detected;
+
+    if (heatingState.manualModeLocked) {
+        shouldBeEco = false;
+    }
+
+    if (shouldBeEco && !powerOutageState.ecoActive) {
+        powerOutageState.ecoActive = true;
+        powerOutageState.ecoStartTime = now;
+        powerOutageState.emergencyHeatingActive = true;
+    } else if (!shouldBeEco && powerOutageState.ecoActive) {
+        powerOutageState.ecoActive = false;
+        powerOutageState.ecoStartTime = 0;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.ecoHeatingOn = false;
+    }
+}
+
+// ============================================================================
+// ЕНЕРГОЕФЕКТИВНЕ КЕРУВАННЯ ОБІГРІВОМ ПІД ЧАС БЛЕКАУТУ / ЕКО-РЕЖИМУ
+// ============================================================================
+
+void ecoHeatingControl(float tempRoom, float tempCarrier, bool roomValid, bool carrierValid, bool bmeValid) {
+    // Політика 2: залишити штатний обігрів без змін
+    if (config.powerSave.heatingPolicy == ECO_DEV_UNCHANGED) {
+        smartHeatingControl();
+        return;
+    }
+
+    // Політика 0: повністю вимкнути обігрів при блекауті
+    if (config.powerSave.heatingPolicy == ECO_DEV_OFF || !config.heatingEnabled || !isHeatingSeasonActive()) {
+        setPumpPercent(0);
+        setFanPercent(computeSmoothFanPercent(0, false, max((uint8_t)1, config.fanMinPercent)));
+        powerOutageState.ecoHeatingOn = false;
+        return;
+    }
+
+    // Політика 1: гнучкий ЕКО-обігрів (низькі рівні оберти + гістерезис + перевірка теплоносія)
+    bool hasTemp = roomValid || bmeValid;
+    if (!hasTemp) {
+        setPumpPercent(0);
+        setFanPercent(0);
+        powerOutageState.ecoHeatingOn = false;
+        return;
+    }
+
+    float effectiveTemp = roomValid ? tempRoom : getAdjustedBmeTemperature();
+
+    // Захист від холостої роботи: якщо теплоносій холодний — не садимо АКБ
+    if (config.powerSave.ecoCheckCarrierTemp && carrierValid) {
+        if (tempCarrier < (effectiveTemp + config.powerSave.ecoCarrierMinDelta)) {
+            setPumpPercent(0);
+            setFanPercent(computeSmoothFanPercent(0, false, max((uint8_t)1, config.fanMinPercent)));
+            powerOutageState.ecoHeatingOn = false;
             return;
         }
+    }
 
-        powerOutageState.detected = true;
-        powerOutageState.detectionTime = now;
-        powerOutageState.emergencyHeatingActive = true;
+    float hyst = constrain(config.powerSave.ecoTempHyst, 0.2f, 5.0f);
+    if (!powerOutageState.ecoHeatingOn && effectiveTemp <= config.powerSave.ecoTempMin) {
+        powerOutageState.ecoHeatingOn = true;
+        Serial.printf("🔋 ЕКО-обігрів: СТАРТ (T=%.1f°C <= %.1f°C)\n", effectiveTemp, config.powerSave.ecoTempMin);
+    } else if (powerOutageState.ecoHeatingOn && effectiveTemp >= (config.powerSave.ecoTempMin + hyst)) {
+        powerOutageState.ecoHeatingOn = false;
+        Serial.printf("🔋 ЕКО-обігрів: СТОП (T=%.1f°C >= %.1f°C)\n", effectiveTemp, config.powerSave.ecoTempMin + hyst);
+    }
 
-        Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-        Serial.println("║  🚨 АВАРІЯ: ВІДСУТНІСТЬ 220В!                        ║");
-        Serial.println("╠═══════════════════════════════════════════════════════╣");
-        Serial.printf("║  ⚡ Напруга: %.1f В (норма: %.0f-%.0f В)             ║\n",
-                       voltage, POWER_OUTAGE_VOLTAGE_MIN, POWER_OUTAGE_VOLTAGE_MAX);
-        Serial.println("║  🔥 Аварійний режим обігріву активовано              ║");
-        Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+    if (powerOutageState.ecoHeatingOn) {
+        // Насос: рівна обмежена потужність або імпульсний режим
+        uint8_t pumpTarget = config.powerSave.ecoPumpMaxPercent;
+        if (config.powerSave.ecoPumpPulseMode && pumpTarget > 0) {
+            static unsigned long pulseCycleStart = 0;
+            unsigned long now = millis();
+            unsigned long onMs  = (unsigned long)max((uint16_t)10, config.powerSave.ecoPumpPulseOnSec) * 1000UL;
+            unsigned long offMs = (unsigned long)config.powerSave.ecoPumpPulseOffSec * 1000UL;
+            unsigned long totalMs = onMs + offMs;
+            if (pulseCycleStart == 0) pulseCycleStart = now;
+            unsigned long elapsed = now - pulseCycleStart;
+            if (elapsed >= totalMs) {
+                pulseCycleStart = now;
+                elapsed = 0;
+            }
+            if (elapsed >= onMs) {
+                pumpTarget = 0;
+            }
+        }
+        setPumpPercent(pumpTarget);
 
-    } else if (powerOk && powerOutageState.detected) {
-        // Живлення повернулось — виходимо з аварії
-        powerOutageState.detected = false;
-        powerOutageState.emergencyHeatingActive = false;
-
-        Serial.println("\n╔═══════════════════════════════════════════════════════╗");
-        Serial.println("║  ✅ ЖИВЛЕННЯ 220В ВІДНОВЛЕНО!                        ║");
-        Serial.println("╠═══════════════════════════════════════════════════════╣");
-        Serial.printf("║  ⚡ Напруга: %.1f В                                  ║\n", voltage);
-        Serial.println("║  🔄 Повернення до штатного режиму                   ║");
-        Serial.println("╚═══════════════════════════════════════════════════════╝\n");
+        // Вентилятор: рівні низькі оберти без стрибків (найвищий ККД по АКБ)
+        uint8_t fanTarget = config.powerSave.ecoFanMaxPercent;
+        uint8_t minWork = (fanTarget > 0) ? min(fanTarget, max((uint8_t)1, config.fanMinPercent)) : 1;
+        setFanPercent(computeSmoothFanPercent(fanTarget, false, minWork));
+    } else {
+        setPumpPercent(0);
+        setFanPercent(computeSmoothFanPercent(0, false, max((uint8_t)1, config.fanMinPercent)));
     }
 }
 
@@ -1300,6 +1642,11 @@ void monitorPowerOutage() {
  * автоматично підвищуються назад до оригінальних значень.
  */
 void checkAdaptiveThresholds() {
+    // Під час ЕКО-режиму / блекауту не змінюємо основні пороги, щоб не псувати конфіг
+    if (isEcoModeActive() && config.powerSave.pauseAdaptiveThresh) {
+        return;
+    }
+
     // Перевірка не частіше ніж раз на хвилину
     static unsigned long lastCheck = 0;
     unsigned long now = millis();
@@ -1558,11 +1905,14 @@ void advancedLogicTask(void *parameter) {
         float tempRoom = 0, tempCarrier = 0, humidity = 0;
         bool roomValid = false, bmeValid = false;
 
+        bool carrierValid = false;
+
         if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
             tempRoom = sensorData.tempRoom;
             tempCarrier = sensorData.tempCarrier;
             humidity = sensorData.humidity;
             roomValid = sensorData.roomValid;
+            carrierValid = sensorData.carrierValid;
             bmeValid = sensorData.bmeValid;
             xSemaphoreGive(getSensorMutex());
         }
@@ -1586,25 +1936,15 @@ void advancedLogicTask(void *parameter) {
             Serial.println("🔒 Блокування ручного режиму активне - зупинена аварійна логіка живлення");
         }
 
-        // ПРІОРИТЕТ 1: Моніторинг живлення 220В (через PZEM)
+        // ПРІОРИТЕТ 1: Моніторинг живлення 220В (через PZEM) та стану ЕКО-профілю
         monitorPowerOutage();
 
-        // ПРІОРИТЕТ 2: Автоматичне керування (АВТО режим включає підрежими ФОРСАЖ і АВАРІЯ)
-        if (!heatingState.manualMode && !powerOutageState.emergencyHeatingActive) {
-            smartHeatingControl();
-        }
-
-        // 🚨 АВАРІЙНИЙ РЕЖИМ: При відключенні 220В включаємо насос ТІЛЬКИ якщо є валідний датчик і температура низька
-        if (powerOutageState.emergencyHeatingActive) {
-            bool hasTemp = roomValid || bmeValid;
-            float effectiveTemp = roomValid ? tempRoom : (bmeValid ? getAdjustedBmeTemperature() : 99.0f);
-            if (hasTemp && effectiveTemp < config.tempMin) {
-                setPumpPercent(100);
-                setFanPercent(100);
+        // ПРІОРИТЕТ 2: Автоматичне керування обігрівом (штатний або ЕКО-профіль)
+        if (!heatingState.manualMode && !heatingState.manualModeLocked) {
+            if (isEcoModeActive()) {
+                ecoHeatingControl(tempRoom, tempCarrier, roomValid, carrierValid, bmeValid);
             } else {
-                // Температура в нормі або датчики несправні - вимикаємо системи для економії батареї
-                setPumpPercent(0);
-                setFanPercent(0);
+                smartHeatingControl();
             }
         }
 

@@ -34,57 +34,77 @@ void handleSettingsPage() {
     if (!checkAuth()) return;
     if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
-    String html = getHtmlHead("Налаштування системи");
-    html.reserve(24576);
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "text/html", "");
+
+    String html;
+    html.reserve(4096);
+    auto flushChunk = [&]() {
+        if (html.length() > 0) {
+            server.sendContent(html);
+            html = "";
+            yield();
+        }
+    };
+
+    html = getHtmlHead("Налаштування системи");
     html += "<div class='container'>";
 
     // Навігація зверху
     html += getNavHeader("⚙️ ПАНЕЛЬ НАЛАШТУВАНЬ СИСТЕМИ");
 
-    // Стилі для вкладок
+    // Стилі для категорій та вкладок
     html += "<style>";
-    html += ".tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 2px solid #ddd; }";
-    html += ".tab { padding: 12px 20px; background: #e0e0e0; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.3s; color: #555; }";
-    html += ".tab:hover { background: #d0d0d0; }";
-    html += ".tab.active { background: #4CAF50; color: white; box-shadow: 0 -2px 8px rgba(76, 175, 80, 0.3); }";
-    html += ".tab-content { display: none; animation: fadeIn 0.3s; }";
+    html += ".cat-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; padding: 5px; background: var(--s2); border: 1px solid var(--b); border-radius: 10px; }";
+    html += ".cat-btn { padding: 11px 14px; border: none; border-radius: 8px; background: transparent; color: var(--m); font-size: 15px; font-weight: 600; cursor: pointer; transition: .15s; }";
+    html += ".cat-btn:hover { color: var(--t); background: var(--s); }";
+    html += ".cat-btn.active { background: var(--ah); color: #fff; }";
+    html += ".tabs { display: none; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--b); }";
+    html += ".tabs.active { display: flex; }";
+    html += ".tab { padding: 9px 14px; background: var(--s2); border: 1px solid var(--b); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: .15s; color: var(--m); }";
+    html += ".tab:hover { background: var(--s); color: var(--t); border-color: var(--a); }";
+    html += ".tab.active { background: var(--ok); color: #fff; border-color: var(--ok); font-weight: 600; }";
+    html += ".tab-content { display: none; animation: fadeIn 0.2s; }";
     html += ".tab-content.active { display: block; }";
-    html += "@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
-    html += ".section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3498db; }";
-    html += ".section h3 { margin-top: 0; color: #2980b9; }";
-    html += ".form-group { margin-bottom: 20px; }";
-    html += "label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }";
-    html += "input[type='number'], input[type='text'], input[type='password'] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }";
-    html += ".btn-secondary { background: #3498db; margin-left: 10px; }";
-    html += ".btn-secondary:hover { background: #2980b9; }";
-
-    // Мобільні стилі для вкладок
-    html += "@media (max-width: 768px) {";
-    html += "  .tabs { gap: 3px; }";
-    html += "  .tab { padding: 10px 12px; font-size: 13px; }";
-    html += "  .section { padding: 15px; }";
-    html += "  .btn-secondary { margin-left: 0; margin-top: 10px; }";
-    html += "}";
-    html += "@media (max-width: 480px) {";
-    html += "  .tab { padding: 8px 10px; font-size: 12px; flex: 1 1 calc(25% - 3px); text-align: center; }";
-    html += "}";
+    html += "@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }";
+    html += ".section { background: var(--s2); padding: 18px; border-radius: 12px; margin-bottom: 18px; border: 1px solid var(--b); border-left: 3px solid var(--a); }";
+    html += ".section h3 { margin-top: 0; color: var(--a); }";
+    html += ".form-group { margin-bottom: 16px; }";
+    html += "label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--t); font-size: 14px; }";
+    html += "input[type='number'], input[type='text'], input[type='password'], select { width: 100%; padding: 10px; border: 1px solid var(--b); border-radius: 8px; box-sizing: border-box; font-size: 16px; background: var(--s); color: var(--t); }";
+    html += ".tip { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; margin-left:6px; border-radius:50%; background:rgba(56,189,248,.18); color:var(--a); font-size:12px; font-weight:700; cursor:help; position:relative; vertical-align:middle; }";
+    html += ".tip::after { content: attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%); min-width:220px; max-width:300px; padding:8px 10px; border-radius:8px; background:#0f172a; color:#f8fafc; border:1px solid var(--a); font-size:12.5px; font-weight:400; line-height:1.35; white-space:normal; box-shadow:0 6px 20px rgba(0,0,0,.35); opacity:0; pointer-events:none; transition:opacity .15s; z-index:99; }";
+    html += ".tip:hover::after, .tip:focus::after { opacity:1; }";
+    html += "@media (max-width: 768px) { .cat-btn { font-size: 13.5px; padding: 10px 8px; } .tab { padding: 8px 11px; font-size: 13px; } .section { padding: 14px; } }";
+    html += "@media (max-width: 480px) { .tab { flex: 1 1 calc(33.33% - 6px); text-align: center; font-size: 12px; padding: 8px 6px; } }";
     html += "</style>";
 
-    // ВКЛАДКИ
-    html += "<div class='tabs'>";
-    html += "<button type='button' class='tab active' onclick='switchTab(0)'>🌡️ Клімат</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(1)'>🔧 Пристрої</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(2)'>🌀 Витяжка</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(3)'>🔄 Сезон</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(4)'>🚨 Аварія</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(5)'>💨 Датчики</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(6)'>⚙️ Система</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(7)'>🎯 Серво</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(8)'>📶 WiFi</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(9)'>📊 Sync</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(10)'>🕒 Час</button>";
-    html += "<button type='button' class='tab' onclick='switchTab(11)'>💨 Вітер</button>";
-    html += "</div>"; // Закриваємо .tabs
+    // КАТЕГОРІЇ: Робочі (клімат/пристрої) vs Системні
+    html += "<div class='cat-bar'>";
+    html += "<button type='button' class='cat-btn active' data-cat='work' onclick=\"switchCat('work')\">🌿 Клімат і пристрої</button>";
+    html += "<button type='button' class='cat-btn' data-cat='sys' onclick=\"switchCat('sys')\">🛠️ Системні налаштування</button>";
+    html += "</div>";
+
+    // РОБОЧІ ВКЛАДКИ
+    html += "<div class='tabs active' id='cat-work'>";
+    html += "<button type='button' class='tab active' data-tab='0' data-cat='work' onclick='switchTab(0)'>🌡️ Клімат</button>";
+    html += "<button type='button' class='tab' data-tab='1' data-cat='work' onclick='switchTab(1)'>🔧 Пристрої</button>";
+    html += "<button type='button' class='tab' data-tab='2' data-cat='work' onclick='switchTab(2)'>🌀 Витяжка</button>";
+    html += "<button type='button' class='tab' data-tab='11' data-cat='work' onclick='switchTab(11)'>💨 Вітер</button>";
+    html += "<button type='button' class='tab' data-tab='3' data-cat='work' onclick='switchTab(3)'>🔄 Сезон</button>";
+    html += "<button type='button' class='tab' data-tab='4' data-cat='work' onclick='switchTab(4)'>🚨 Аварія</button>";
+    html += "<button type='button' class='tab' data-tab='12' data-cat='work' onclick='switchTab(12)'>🔋 Економія</button>";
+    html += "</div>";
+
+    // СИСТЕМНІ ВКЛАДКИ
+    html += "<div class='tabs' id='cat-sys'>";
+    html += "<button type='button' class='tab' data-tab='5' data-cat='sys' onclick='switchTab(5)'>💨 Датчики</button>";
+    html += "<button type='button' class='tab' data-tab='7' data-cat='sys' onclick='switchTab(7)'>🎯 Серво</button>";
+    html += "<button type='button' class='tab' data-tab='8' data-cat='sys' onclick='switchTab(8)'>📶 Wi-Fi</button>";
+    html += "<button type='button' class='tab' data-tab='9' data-cat='sys' onclick='switchTab(9)'>📊 Sync</button>";
+    html += "<button type='button' class='tab' data-tab='10' data-cat='sys' onclick='switchTab(10)'>🕒 Час</button>";
+    html += "<button type='button' class='tab' data-tab='6' data-cat='sys' onclick='switchTab(6)'>⚙️ Система</button>";
+    html += "</div>";
     html += "<form method='POST' action='/settings'>";
 
     // TAB 0: КЛІМАТ
@@ -132,16 +152,28 @@ void handleSettingsPage() {
     html += "<label>Максимум насоса (%):</label>";
     html += "<input type='number' name='pumpMax' value='" + String(config.pumpMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>🚀 Пускова потужність насоса (%):</label>";
+    html += "<input type='number' name='pumpStartPct' value='" + String(config.pumpStartPercent) + "' min='20' max='100'>";
+    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>При старті з 0% спочатку подається ця потужність (напр. 45%), потім знижується до цільової (напр. 33%)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>⏱️ Час пуску насоса (сек):</label>";
+    html += "<input type='number' name='pumpStartSec' value='" + String(config.pumpStartDurationSec) + "' min='0' max='15'>";
+    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Тривалість стартового імпульсу (0 = вимкнути)</small>";
+    html += "</div>";
+    html += "</div>";
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='pumpDisabled' " + String(config.pumpDisabled ? "checked" : "") + "> ⛔ Повністю вимкнути насос (Блокування)</label>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>При увімкненні насос буде повністю заблоковано (0%) у всіх режимах</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>При увімкненні насос буде повністю заблоковано (0%) у всіх режимах</small>";
     html += "</div>";
 
     // Блок вентилятора обігріву
     html += "<div class='form-group' style='margin-top: 25px;'>";
     html += "<label>Мінімум вентилятора обігріву (%):</label>";
     html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Мінімальна швидкість для стабільної роботи вентилятора</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Мінімальна швидкість для стабільної роботи вентилятора</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Максимум вентилятора обігріву (%):</label>";
@@ -151,7 +183,7 @@ void handleSettingsPage() {
     // Нова галочка реле 220В вентилятора
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='heaterFanRelay' " + String(config.heaterFanRelayEnabled ? "checked" : "") + "> 🔌 Увімкнути живлення 220В вентилятора (Реле Pin 7)</label>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>При знятті галочки реле вентилятора буде заблоковано в STAN OFF</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>При знятті галочки реле вентилятора буде заблоковано в STAN OFF</small>";
     html += "</div>";
 
     // Блок витяжки
@@ -165,7 +197,38 @@ void handleSettingsPage() {
     html += "</div>";
 
     html += "</div>";
+
+    // Секція плавної роботи вентилятора обігріву (у всіх режимах)
+    html += "<div class='section' style='border-left-color: #10b981;'>";
+    html += "<h3>🌊 ПЛАВНА РОБОТА ВЕНТИЛЯТОРА (економія та ресурс)</h3>";
+    html += "<p style='color: var(--m); font-size: 13.5px; margin-top: 0;'>Запобігає частим пускам/зупинкам, зменшує пускові струми та економить електроенергію й ресурс мотора у всіх автоматичних режимах.</p>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='fsEn' " + String(config.fanSmooth.enabled ? "checked" : "") + "> Увімкнути плавний режим вентилятора</label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='fsKeepLow' " + String(config.fanSmooth.keepLowInsteadOfStop ? "checked" : "") + "> Тримати низькі оберти замість стопу біля верхньої межі</label>";
+    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Постійні 15–25% споживають у 4–6 разів менше, ніж часті старти, і тримають рівну температуру</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Гістерезис вентилятора (°C):</label>";
+    html += "<input type='number' step='0.1' name='fsHyst' value='" + String(config.fanSmooth.hysteresis, 1) + "' min='0.1' max='3.0'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Макс. швидкість зміни обертів (%/сек):</label>";
+    html += "<input type='number' name='fsStep' value='" + String(config.fanSmooth.maxStepPerSec) + "' min='1' max='50'>";
+    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Менше = плавніший розгін/гальмування (рекомендовано 3–8 %/сек)</small>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мін. час роботи перед зупинкою (сек):</label>";
+    html += "<input type='number' name='fsMinRun' value='" + String(config.fanSmooth.minRunSec) + "' min='0' max='600'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Мін. час паузи перед повторним пуском (сек):</label>";
+    html += "<input type='number' name='fsMinOff' value='" + String(config.fanSmooth.minOffSec) + "' min='0' max='600'>";
+    html += "</div>";
+    html += "</div>";
     html += "</div>"; // tab1
+    flushChunk();
 
     // TAB 2: ТАЙМЕР
     html += "<div class='tab-content' id='tab2'>";
@@ -203,11 +266,11 @@ void handleSettingsPage() {
     html += "<h3>🔄 СЕЗОННІ РЕЖИМИ</h3>";
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='coolingMode' " + String(config.coolingMode ? "checked" : "") + "> ❄️ Режим охолодження (літо: холодна вода в теплоносії)</label>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Інверсна логіка: вентилятор працює на максимум при перегріві, насос вимкнений</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Інверсна логіка: вентилятор працює на максимум при перегріві, насос вимкнений</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='seasonalDisable' " + String(config.seasonalHeatingDisable ? "checked" : "") + "> 🌞 Автоматичне відключення обігріву (травень-вересень)</label>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Система автоматично відключить обігрів в теплі місяці</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Система автоматично відключить обігрів в теплі місяці</small>";
     html += "</div>";
     html += "</div>";
     html += "</div>"; // tab3
@@ -221,14 +284,14 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Поріг ФОРСАЖУ - критично низька температура (°C):</label>";
     html += "<input type='number' step='0.5' name='tempCriticalLow' value='" + String(config.tempCriticalLow, 1) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається ФОРСАЖ (насос 80%, вентилятор 80%)</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається ФОРСАЖ (насос 80%, вентилятор 80%)</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Поріг АВАРІЇ - аварійна температура (°C):</label>";
     html += "<input type='number' step='0.5' name='tempEmergencyLow' value='" + String(config.tempEmergencyLow, 1) + "'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається АВАРІЯ (насос 100%, вентилятор 100%)</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Якщо температура кімнати ≤ цього порогу, вмикається АВАРІЯ (насос 100%, вентилятор 100%)</small>";
     html += "</div>";
-    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
     html += "<strong>⚠️ ВАЖЛИВО:</strong> Поріг аварії має бути НИЖЧЕ за поріг форсажу!";
     html += "</div>";
     html += "</div>";
@@ -242,7 +305,7 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Інтервал вимірювання SCD30 (секунди):</label>";
     html += "<input type='number' name='scd30Interval' value='" + String(config.scd30MeasurementInterval > 0 ? config.scd30MeasurementInterval : 2) + "' min='2' max='1800'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>2-1800 сек. За замовчуванням 2 сек для отримання даних кожні 2 секунди</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>2-1800 сек. За замовчуванням 2 сек для отримання даних кожні 2 секунди</small>";
     html += "</div>";
     html += "</div>";
     html += "</div>"; // tab5
@@ -254,7 +317,7 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Період виведення статусу (секунди):</label>";
     html += "<input type='number' name='statusPeriod' value='" + String(config.statusPeriod / 1000) + "' min='10' max='600'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Як часто виводити статус у Serial Monitor</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Як часто виводити статус у Serial Monitor</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='autoStatus'" + String(config.autoStatusEnabled ? " checked" : "") + "> Автоматичний вивід статусу в Serial</label>";
@@ -266,7 +329,7 @@ void handleSettingsPage() {
 
     html += "<div class='section'>";
     html += "<h3>🔧 РОЗШИРЕНІ ПАРАМЕТРИ</h3>";
-    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 10px; border-radius: 5px; margin-bottom: 15px;'>";
     html += "<small style='color: #856404;'>⚠️ <strong>Увага:</strong> Змінюйте ці параметри тільки якщо розумієте що вони роблять!</small>";
     html += "</div>";
     html += "<div class='form-group' title='Час (у хвилинах) протягом якого температура або вологість не можуть досягти заданих порогів, після чого вмикається адаптивний режим (зниження цілі)'>";
@@ -286,7 +349,9 @@ void handleSettingsPage() {
     html += "<input type='number' name='adaptiveHumStep' value='" + String(config.adaptive_hum_step) + "' min='1' max='20'>";
     html += "</div>";
     html += "</div>"; // tab6
+    flushChunk();
     html += "</div>"; // tab6
+    flushChunk();
 
     // TAB 7: СЕРВО
     html += "<div class='tab-content' id='tab7'>";
@@ -294,7 +359,7 @@ void handleSettingsPage() {
     html += "<h3>🎯 КАЛІБРУВАННЯ СЕРВО</h3>";
 
     // Поточний стан
-    html += "<div style='background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196F3;'>";
+    html += "<div style='background: rgba(56,189,248,.14); padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196F3;'>";
     html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
     html += "<div><strong>Поточний кут:</strong><br><span id='servoCurrentAngle' style='font-size: 24px; color: #2196F3;'>" + String(ventState.currentAngle) + "°</span></div>";
     html += "<div><strong>Закрито:</strong><br><span id='servoClosedVal'>" + String(config.servoClosedAngle) + "°</span></div>";
@@ -346,18 +411,19 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Швидкість руху серво (мс/градус):</label>";
     html += "<input type='number' name='servoSpeed' value='" + String(config.servoSpeed) + "' min='5' max='50'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менше = швидше (5-10 швидко, 20-30 стандарт, 40-50 повільно)</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Менше = швидше (5-10 швидко, 20-30 стандарт, 40-50 повільно)</small>";
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label><input type='checkbox' name='manualVent'" + String(config.manualVentControl ? " checked" : "") + "> Ручне керування заслонкою</label>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Вимкнути автоматичне регулювання заслонки (тільки вимикач)</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Вимкнути автоматичне регулювання заслонки (тільки вимикач)</small>";
     html += "</div>";
 
-    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 10px; border-radius: 5px; margin-top: 10px;'>";
     html += "<small style='color: #856404;'>💡 <strong>Порада:</strong> Використовуйте кнопки для точного калібрування в реальному часі, або введіть значення вручну та збережіть через кнопку внизу форми.</small>";
     html += "</div>";
     html += "</div>";
     html += "</div>"; // tab6
+    flushChunk();
 
     // TAB 7: WIFI
     html += "<div class='tab-content' id='tab8'>";
@@ -365,7 +431,7 @@ void handleSettingsPage() {
     // Поточний стан WiFi
     html += "<div class='section'>";
     html += "<h3>📶 ПОТОЧНЕ ПІДКЛЮЧЕННЯ</h3>";
-    html += "<div style='background: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;'>";
+    html += "<div style='background: rgba(56,189,248,.14); padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;'>";
     html += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
     html += "<div><strong>SSID:</strong><br>" + htmlEscape(WiFi.SSID()) + "</div>";
     html += "<div><strong>IP адреса:</strong><br>" + WiFi.localIP().toString() + "</div>";
@@ -388,9 +454,9 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Пароль:</label>";
     html += "<input type='password' name='wifi_password' value='' placeholder='Залиште порожнім щоб не змінювати'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Для безпеки пароль не відображається</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Для безпеки пароль не відображається</small>";
     html += "</div>";
-    html += "<div style='background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;'>";
     html += "<strong>⚠️ ВАЖЛИВО:</strong> Після зміни WiFi налаштувань пристрій перезавантажиться та підключиться до нової мережі. ";
     html += "Переконайтеся, що ввели правильні дані!";
     html += "</div></div>";
@@ -441,7 +507,7 @@ void handleSettingsPage() {
     html += "<label>Пароль:</label>";
     html += "<input type='password' name='auth_pass' value='' placeholder='Залиште порожнім щоб не змінювати'>";
     html += "</div>";
-    html += "<div style='background: #ffebee; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f44336;'>";
+    html += "<div style='background: rgba(239,68,68,.15); padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f44336;'>";
     html += "<strong>⚠️ ВАЖЛИВО:</strong> Обов'язково увімкніть автентифікацію якщо плануєте відкрити доступ через інтернет!";
     html += "</div>";
     html += "</div></div>";
@@ -457,7 +523,7 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Інтервал запису агрегованих даних (хвилини): <strong id='spiffsLogVal'>" + String(config.spiffsLogInterval) + "</strong></label>";
     html += "<input type='range' name='spiffsLogInterval' min='1' max='60' value='" + String(config.spiffsLogInterval) + "' oninput=\"document.getElementById('spiffsLogVal').textContent=this.value\">";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Менший інтервал = більше деталей у SPIFFS. Поточний: " + String(config.spiffsLogInterval) + " хв. За замовчуванням: 5 хв.</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Менший інтервал = більше деталей у SPIFFS. Поточний: " + String(config.spiffsLogInterval) + " хв. За замовчуванням: 5 хв.</small>";
     html += "</div>";
     html += "</div>";
 
@@ -467,7 +533,7 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Регулярний інтервал відправки (хвилини): <strong id='sheetsIntVal'>" + String(config.sheetsSyncIntervalMin) + "</strong></label>";
     html += "<input type='range' name='sheetsSyncInterval' min='1' max='120' value='" + String(config.sheetsSyncIntervalMin) + "' oninput=\"document.getElementById('sheetsIntVal').textContent=this.value\">";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Дані відправляються, якщо температура кімнати змінилась на поріг нижче, АБО гарантовано кожні вказані хвилини (навіть без зміни температури). Поточний: " + String(config.sheetsSyncIntervalMin) + " хв. Типово: 15 хв.</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Дані відправляються, якщо температура кімнати змінилась на поріг нижче, АБО гарантовано кожні вказані хвилини (навіть без зміни температури). Поточний: " + String(config.sheetsSyncIntervalMin) + " хв. Типово: 15 хв.</small>";
     html += "</div>";
     html += "</div>";
 
@@ -477,14 +543,14 @@ void handleSettingsPage() {
     html += "<div class='form-group'>";
     html += "<label>Мінімальна зміна температури кімнати для запису (°C):</label>";
     html += "<input type='number' step='0.1' name='logTempThreshold' value='" + String(config.logTempThreshold, 1) + "' min='0.0' max='5.0'>";
-    html += "<small style='color: #666; display: block; margin-top: 5px;'>Якщо температура змінилась менше ніж на цей поріг, рядок не буде записано (поки не мине інтервал вище). 0 = записувати всі зміни. Типове значення: 0.5°C</small>";
+    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Якщо температура змінилась менше ніж на цей поріг, рядок не буде записано (поки не мине інтервал вище). 0 = записувати всі зміни. Типове значення: 0.5°C</small>";
     html += "</div>";
     html += "</div>";
 
     // Інформація про синхронізацію
     html += "<div class='section'>";
     html += "<h3>ℹ️ ІНФОРМАЦІЯ</h3>";
-    html += "<div style='background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #4CAF50;'>";
+    html += "<div style='background: rgba(16,185,129,.14); padding: 15px; border-radius: 5px; border-left: 4px solid #4CAF50;'>";
     html += "<p><strong>Як працює фільтрація:</strong></p>";
     html += "<ul style='margin: 10px 0; padding-left: 20px;'>";
     html += "<li>Дані записуються в буфер тільки якщо температура кімнати змінилась на вказаний поріг</li>";
@@ -502,17 +568,17 @@ void handleSettingsPage() {
     html += "<h3>🕒 ЧАС СИСТЕМИ</h3>";
     html += "<div style='display: grid; gap: 15px;'>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Поточний час:</strong>";
     html += "<span style='color: #2196F3; font-weight: 600;'>" + getTimeString() + "</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Дата:</strong>";
     html += "<span style='color: #2196F3; font-weight: 600;'>" + getDateString() + "</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Формат часу:</strong>";
     html += "<span style='color: #2196F3; font-weight: 600;'>" + getFormattedTime() + "</span>";
     html += "</div>";
@@ -536,6 +602,7 @@ void handleSettingsPage() {
     html += "</div>";
 
     html += "</div>"; // tab10
+    flushChunk();
 
     // TAB 11: ВЕНТИЛЯТОР РОСЛИН
     html += "<div class='tab-content' id='tab11'>";
@@ -543,22 +610,26 @@ void handleSettingsPage() {
     // Індикатор поточної потужності
     html += "<div class='section' style='border-left-color: #4CAF50;'>";
     html += "<h3>💨 ВЕНТИЛЯТОР ТА ПРИРОДНІЙ ВІТЕР</h3>";
-    html += "<div style='background:#e8f5e9;padding:12px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;gap:15px;'>";
-    html += "<span style='font-weight:bold;color:#333;'>Поточна потужність:</span>";
+    html += "<div style='background: rgba(16,185,129,.14);padding:12px;border-radius:6px;margin-bottom:15px;display:flex;align-items:center;gap:15px;'>";
+    html += "<span style='font-weight:bold;color: var(--t);'>Поточна потужність:</span>";
     html += "<span id='plfPowerVal' style='font-size:22px;font-weight:bold;color:#4CAF50;'>—</span>";
     html += "<div style='flex:1;background:#ddd;border-radius:4px;height:12px;'>";
     html += "<div id='plfPowerBar' style='height:12px;background:#4CAF50;border-radius:4px;width:0%;transition:width 0.3s;'></div>";
     html += "</div>";
-    html += "<span id='plfTimerState' style='font-size:13px;color:#666;'></span>";
+    html += "<span id='plfTimerState' style='font-size:13px;color: var(--m);'></span>";
     html += "</div>";
     html += "<script>";
-    html += "function updatePlfIndicator(){fetch('/status').then(r=>r.json()).then(d=>{";
-    html += "  var p=d.plantFanPower||0;";
-    html += "  document.getElementById('plfPowerVal').textContent=p+'%';";
-    html += "  document.getElementById('plfPowerBar').style.width=p+'%';";
-    html += "  document.getElementById('plfTimerState').textContent=d.plantFanOn?'▶ ПРАЦЮЄ':'⏸ ПАУЗА';";
-    html += "}).catch(()=>{})}";
-    html += "setInterval(updatePlfIndicator,1000);";
+    html += "function updatePlfIndicator(){";
+    html += "  var t=document.getElementById('tab11');";
+    html += "  if(!t||!t.classList.contains('active')) return;";
+    html += "  fetch('/status').then(r=>r.json()).then(d=>{";
+    html += "    var p=d.plantFanPower||0;";
+    html += "    document.getElementById('plfPowerVal').textContent=p+'%';";
+    html += "    document.getElementById('plfPowerBar').style.width=p+'%';";
+    html += "    document.getElementById('plfTimerState').textContent=d.plantFanOn?'▶ ПРАЦЮЄ':'⏸ ПАУЗА';";
+    html += "  }).catch(()=>{})";
+    html += "}";
+    html += "setInterval(updatePlfIndicator,2000);";
     html += "updatePlfIndicator();";
     html += "</script>";
     html += "<div class='form-group'>";
@@ -603,7 +674,7 @@ void handleSettingsPage() {
     // Природній вітер
     html += "<div class='section' style='border-left-color: #2196F3;'>";
     html += "<h3>💨 ПРИРОДНІЙ ВІТЕР</h3>";
-    html += "<p style='color:#555; font-size:14px;'>Імітація природного вітру: базова швидкість хаотично коливається, рандомні пориви наростають плавно і спадають.</p>";
+    html += "<p style='color: var(--m); font-size:14px;'>Імітація природного вітру: базова швидкість хаотично коливається, рандомні пориви наростають плавно і спадають.</p>";
     html += "<div class='form-group'>";
     html += "<label>Мінімальна базова швидкість (%):</label>";
     html += "<input type='number' name='brzBaseMin' value='" + String(config.breezeConfig.baseSpeedMin) + "' min='5' max='80'>";
@@ -635,6 +706,165 @@ void handleSettingsPage() {
     html += "</div>";
 
     html += "</div>"; // tab11
+    flushChunk();
+
+    // TAB 12: ЕНЕРГОЗБЕРЕЖЕННЯ / БЛЕКАУТ (ECO)
+    html += "<div class='tab-content' id='tab12'>";
+
+    // Швидкі пресети та поточний стан
+    html += "<div class='section' style='border-left-color: #f59e0b;'>";
+    html += "<h3>🔋 РЕЖИМ ЕНЕРГОЗБЕРЕЖЕННЯ (БЛЕКАУТ / АКБ)</h3>";
+    html += "<p style='color:var(--m);font-size:13px;margin-top:0;'>💡 Наведіть курсор (або натисніть) на значок <span class='tip' tabindex='0' data-tip='Тут зʼявляються детальні підказки до кожного параметра ЕКО-режиму'>?</span> біля будь-якого пункту, щоб побачити пояснення.</p>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 12px; border-radius: 8px; margin-bottom: 15px;'>";
+    html += "<strong>Поточний стан:</strong> " + String(isEcoModeActive() ? "🔋 ЕКО АКТИВНИЙ" : "🟢 Штатний режим (220В)");
+    html += " | <strong>Напруга PZEM:</strong> " + String(powerOutageState.lastVoltage, 1) + " В";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Швидкі профілі <span class='tip' tabindex='0' data-tip='Підставляють готові рекомендовані значення в поля нижче без автозбереження. Перевірте цифри і натисніть «Зберегти» внизу.'>?</span>:</label>";
+    html += "<div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 6px;'>";
+    html += "<button type='button' class='btn' style='background:#ef4444;color:#fff;margin:0;' onclick='applyEcoPresetUI(0)' title='Максимальна економія старого АКБ: витяжка/вітер/зволожувач/світло OFF, обігрів до 19°C на низьких обертах з імпульсним насосом'>🆘 Виживання (старий АКБ)</button>";
+    html += "<button type='button' class='btn' style='background:#f59e0b;color:#fff;margin:0;' onclick='applyEcoPresetUI(1)' title='Помірна економія: обігрів 21°C, рідкі цикли витяжки та вітру, знижені пороги вологості 45-50%, світло 25%'>⚖️ Збалансований ЕКО</button>";
+    html += "<button type='button' class='btn' style='background:#10b981;color:#fff;margin:0;' onclick='applyEcoPresetUI(2)' title='Усе силове навантаження OFF — працює лише ESP32 та датчики'>☀️ Теплий сезон (все OFF)</button>";
+    html += "</div>";
+    html += "<div id='ecoPresetMsg' style='display:none; margin-top:10px; padding:10px 12px; border-radius:8px; background:rgba(16,185,129,.16); border-left:4px solid #10b981; font-size:13.5px;'></div>";
+    html += "</div>";
+
+    html += "<div class='form-group' title='Визначає, коли вмикається профіль економії: автоматично при зникненні 220В на PZEM, вручну примусово або повністю вимкнено'>";
+    html += "<label>Активація ЕКО-режиму <span class='tip' tabindex='0' data-tip='АВТО — вмикається сам, коли PZEM на вході бачить зникнення 220В. ПРИМУСОВО — тримає економію постійно, навіть при 220В. ВИМКНЕНО — ігнорує відключення 220В.'>?</span>:</label>";
+    html += "<select name='ecoActMode'>";
+    html += "<option value='0'" + String(config.powerSave.activationMode == 0 ? " selected" : "") + ">🤖 Автоматично при зникненні 220В (PZEM)</option>";
+    html += "<option value='1'" + String(config.powerSave.activationMode == 1 ? " selected" : "") + ">🔋 Примусово ЕКО (ручний режим економії)</option>";
+    html += "<option value='2'" + String(config.powerSave.activationMode == 2 ? " selected" : "") + ">⛔ Вимкнено (ігнорувати відключення 220В)</option>";
+    html += "</select>";
+    html += "</div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group' title='Скільки секунд має бути відсутня напруга 220В, перш ніж система перейде в ЕКО-режим (захист від коротких мигань)'>";
+    html += "<label>Підтвердження блекауту (сек) <span class='tip' tabindex='0' data-tip='Затримка перед входом в ЕКО при зникненні 220В. Захищає від хибних спрацювань при короткому миганні світла (рекомендовано 5–10 с).'>?</span>:</label>";
+    html += "<input type='number' name='ecoOutSec' value='" + String(config.powerSave.outageConfirmSec) + "' min='0' max='120'></div>";
+    html += "<div class='form-group' title='Скільки секунд напруга 220В має триматися стабільно після повернення, перш ніж повернути повне навантаження'>";
+    html += "<label>Стабілізація після 220В (сек) <span class='tip' tabindex='0' data-tip='Пауза після появи 220В перед поверненням штатної потужності. Береже блок живлення та обладнання від повторних стрибків (рекомендовано 10–30 с).'>?</span>:</label>";
+    html += "<input type='number' name='ecoResSec' value='" + String(config.powerSave.restoreConfirmSec) + "' min='0' max='300'></div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Обігрів під час блекауту
+    html += "<div class='section' style='border-left-color: #ef4444;'>";
+    html += "<h3>🔥 ОБІГРІВ ПРИ БЛЕКАУТІ (НАСОС + ВЕНТИЛЯТОР)</h3>";
+    html += "<div class='form-group' title='Оберіть поведінку обігріву при роботі від акумулятора'>";
+    html += "<label>Політика обігріву <span class='tip' tabindex='0' data-tip='Вимкнути — 0% на насос і вентилятор. ЕКО-обігрів — тримає лише мінімальну температуру на низьких рівних обертах. Штатний — звичайний обігрів без обмежень ЕКО.'>?</span>:</label><select name='ecoHeatPol'>";
+    html += "<option value='0'" + String(config.powerSave.heatingPolicy == 0 ? " selected" : "") + ">⛔ Вимкнути повністю (0%)</option>";
+    html += "<option value='1'" + String(config.powerSave.heatingPolicy == 1 ? " selected" : "") + ">🔋 ЕКО-обігрів (низькі рівні оберти + гістерезис)</option>";
+    html += "<option value='2'" + String(config.powerSave.heatingPolicy == 2 ? " selected" : "") + ">🔄 Залишити штатний режим</option>";
+    html += "</select></div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group' title='Температура в кімнаті, нижче якої вмикається ЕКО-обігрів (наприклад, 19–20°C для виживання рослин)'>";
+    html += "<label>ЕКО мін. температура (°C) <span class='tip' tabindex='0' data-tip='Поріг увімкнення обігріву під час блекауту. Чим нижче це значення (напр. 19°C замість 24°C), тим довше протягне акумулятор. Основні налаштування не змінюються.'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='ecoTempMin' value='" + String(config.powerSave.ecoTempMin, 1) + "' min='10' max='35'></div>";
+    html += "<div class='form-group' title='На скільки градусів вище ЕКО мін. температури треба прогріти кімнату перед зупинкою обігріву'>";
+    html += "<label>Гістерезис ЕКО-обігріву (°C) <span class='tip' tabindex='0' data-tip='Запас нагріву до зупинки (напр. при мін. 19°C і гістерезисі 1.0°C обігрів ввімкнеться на 19°C і вимкнеться на 20°C). Запобігає частим пускам.'>?</span>:</label>";
+    html += "<input type='number' step='0.1' name='ecoTempHyst' value='" + String(config.powerSave.ecoTempHyst, 1) + "' min='0.2' max='5.0'></div>";
+    html += "<div class='form-group' title='Максимальна робоча потужність насоса при блекауті (при старті автоматично спрацює Kickstart)'>";
+    html += "<label>Макс. потужність насоса (%) <span class='tip' tabindex='0' data-tip='Робоча потужність насоса в ЕКО-режимі (напр. 33–40%). При запуску з 0% автоматично спрацює пусковий імпульс (Kickstart 45%), а потім знизиться сюди.'>?</span>:</label>";
+    html += "<input type='number' name='ecoPumpMax' value='" + String(config.powerSave.ecoPumpMaxPercent) + "' min='0' max='100'></div>";
+    html += "<div class='form-group' title='Максимальна швидкість вентилятора обігріву при блекауті'>";
+    html += "<label>Макс. потужність вентилятора (%) <span class='tip' tabindex='0' data-tip='Рівні низькі оберти (20–35%) споживають у 4–6 разів менше заряду АКБ, ніж високі оберти або часті старти.'>?</span>:</label>";
+    html += "<input type='number' name='ecoFanMax' value='" + String(config.powerSave.ecoFanMaxPercent) + "' min='0' max='100'></div>";
+    html += "</div>";
+    html += "<div class='form-group' title='Якщо теплоносій остиг і не тепліший за кімнату — насос і вентилятор не вмикатимуться дарма'>";
+    html += "<label><input type='checkbox' name='ecoChkCar' " + String(config.powerSave.ecoCheckCarrierTemp ? "checked" : "") + "> Не крутити вхолосту, якщо теплоносій холодний <span class='tip' tabindex='0' data-tip='Захищає АКБ від марної витрати заряду, коли котел/теплоносій уже остиг і гріти все одно нічим.'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group' title='На скільки градусів теплоносій має бути теплішим за кімнату, щоб дозволити роботу обігріву'>";
+    html += "<label>Мін. різниця T_теплоносія − T_кімнати (°C) <span class='tip' tabindex='0' data-tip='Наприклад, при 3°C і кімнаті 19°C обігрів працюватиме лише поки теплоносій тепліший за 22°C.'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='ecoCarDlt' value='" + String(config.powerSave.ecoCarrierMinDelta, 1) + "' min='0.5' max='20.0'></div>";
+    html += "<div class='form-group' title='Керування реле живлення 220В вентилятора обігріву (Pin 7) під час блекауту'>";
+    html += "<label><input type='checkbox' name='ecoHtrRel' " + String(config.powerSave.ecoAllowHeaterRelay ? "checked" : "") + "> Дозволити реле 220В вентилятора (Pin 7) при блекауті <span class='tip' tabindex='0' data-tip='Залиште вимкненим, щоб не тримати зайву котушку реле 220В під напругою під час відсутності мережі.'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group' title='Періодичне вмикання насоса замість безперервної роботи при блекауті'>";
+    html += "<label><input type='checkbox' name='ecoPmpPls' " + String(config.powerSave.ecoPumpPulseMode ? "checked" : "") + "> Імпульсний режим насоса (цикли ON/OFF для економії АКБ) <span class='tip' tabindex='0' data-tip='Замість постійної роботи насос проганяє гарячу воду задану кількість секунд, а потім робить паузу. Зменшує витрату АКБ у 2–4 рази.'>?</span></label>";
+    html += "</div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group' title='Тривалість роботи насоса в одному циклі імпульсного режиму'>";
+    html += "<label>Імпульс насоса ON (сек) <span class='tip' tabindex='0' data-tip='Скільки секунд насос качає теплоносій у кожному циклі (рекомендовано 60–120 с).'>?</span>:</label>";
+    html += "<input type='number' name='ecoPlsOn' value='" + String(config.powerSave.ecoPumpPulseOnSec) + "' min='10' max='1800'></div>";
+    html += "<div class='form-group' title='Тривалість паузи насоса між імпульсами'>";
+    html += "<label>Імпульс насоса пауза OFF (сек) <span class='tip' tabindex='0' data-tip='Скільки секунд насос відпочиває між імпульсами (рекомендовано 180–300 с).'>?</span>:</label>";
+    html += "<input type='number' name='ecoPlsOff' value='" + String(config.powerSave.ecoPumpPulseOffSec) + "' min='0' max='3600'></div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Витяжка при блекауті
+    html += "<div class='section' style='border-left-color: #3b82f6;'>";
+    html += "<h3>🌀 ВИТЯЖКА ПРИ БЛЕКАУТІ</h3>";
+    html += "<div class='form-group' title='Поведінка витяжки під час відключення світла'>";
+    html += "<label>Політика витяжки <span class='tip' tabindex='0' data-tip='Вимкнути — зберігає і заряд АКБ, і тепло в приміщенні. ЕКО-таймер — коротке провітрювання на малих обертах. Без змін — працює звичайний таймер.'>?</span>:</label><select name='ecoExtPol'>";
+    html += "<option value='0'" + String(config.powerSave.extractorPolicy == 0 ? " selected" : "") + ">⛔ Вимкнути повністю (0%)</option>";
+    html += "<option value='1'" + String(config.powerSave.extractorPolicy == 1 ? " selected" : "") + ">🔋 ЕКО-таймер (рідкі цикли + низька потужність)</option>";
+    html += "<option value='2'" + String(config.powerSave.extractorPolicy == 2 ? " selected" : "") + ">🔄 Без змін (штатний таймер)</option>";
+    html += "</select></div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;'>";
+    html += "<div class='form-group' title='Хвилин роботи витяжки в ЕКО-таймері'><label>Робота (хв) <span class='tip' tabindex='0' data-tip='Тривалість одного провітрювання в ЕКО-режимі (напр. 2 хв).'>?</span>:</label><input type='number' name='ecoExtOn' value='" + String(config.powerSave.ecoExtOnMin) + "' min='0' max='120'></div>";
+    html += "<div class='form-group' title='Хвилин паузи витяжки в ЕКО-таймері'><label>Пауза (хв) <span class='tip' tabindex='0' data-tip='Пауза між провітрюваннями в ЕКО-режимі (напр. 58 хв).'>?</span>:</label><input type='number' name='ecoExtOff' value='" + String(config.powerSave.ecoExtOffMin) + "' min='0' max='240'></div>";
+    html += "<div class='form-group' title='Потужність витяжки в ЕКО-таймері'><label>Потужність (%) <span class='tip' tabindex='0' data-tip='Обмежена швидкість витяжки під час ЕКО-провітрювання (напр. 25%).'>?</span>:</label><input type='number' name='ecoExtPwr' value='" + String(config.powerSave.ecoExtPower) + "' min='5' max='100'></div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Вітер (вентилятор рослин) при блекауті
+    html += "<div class='section' style='border-left-color: #10b981;'>";
+    html += "<h3>💨 ВІТЕР РОСЛИН ПРИ БЛЕКАУТІ</h3>";
+    html += "<div class='form-group' title='Поведінка вентилятора обдуву рослин під час блекауту'>";
+    html += "<label>Політика вітру <span class='tip' tabindex='0' data-tip='Вимкнути — 0% на вентилятор рослин. ЕКО-таймер — без енерговитратних поривів, лише рівні мінімальні оберти за рідким графіком.'>?</span>:</label><select name='ecoPlfPol'>";
+    html += "<option value='0'" + String(config.powerSave.plantFanPolicy == 0 ? " selected" : "") + ">⛔ Вимкнути повністю (0%)</option>";
+    html += "<option value='1'" + String(config.powerSave.plantFanPolicy == 1 ? " selected" : "") + ">🔋 ЕКО-таймер (рівна низька швидкість без поривів)</option>";
+    html += "<option value='2'" + String(config.powerSave.plantFanPolicy == 2 ? " selected" : "") + ">🔄 Без змін (штатний режим)</option>";
+    html += "</select></div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;'>";
+    html += "<div class='form-group' title='Хвилин роботи обдуву в ЕКО-таймері'><label>Робота (хв) <span class='tip' tabindex='0' data-tip='Скільки хвилин дує обдув рослин в одному ЕКО-циклі (напр. 5 хв).'>?</span>:</label><input type='number' name='ecoPlfOn' value='" + String(config.powerSave.ecoPlantFanOnMin) + "' min='0' max='120'></div>";
+    html += "<div class='form-group' title='Хвилин паузи обдуву в ЕКО-таймері'><label>Пауза (хв) <span class='tip' tabindex='0' data-tip='Скільки хвилин обдув вимкнений між циклами (напр. 55 хв).'>?</span>:</label><input type='number' name='ecoPlfOff' value='" + String(config.powerSave.ecoPlantFanOffMin) + "' min='0' max='240'></div>";
+    html += "<div class='form-group' title='Фіксована швидкість обдуву в ЕКО-режимі (без поривів)'><label>Потужність (%) <span class='tip' tabindex='0' data-tip='Рівна швидкість обдуву без поривів вітру (напр. 20%).'>?</span>:</label><input type='number' name='ecoPlfPwr' value='" + String(config.powerSave.ecoPlantFanPower) + "' min='5' max='100'></div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Зволожувач при блекауті (зі зниженими порогами вологості)
+    html += "<div class='section' style='border-left-color: #06b6d4;'>";
+    html += "<h3>💧 ЗВОЛОЖУВАЧ ПРИ БЛЕКАУТІ</h3>";
+    html += "<div class='form-group' title='Поведінка зволожувача під час відключення світла'>";
+    html += "<label>Політика зволожувача <span class='tip' tabindex='0' data-tip='Вимкнути — зволожувач не працює. ЕКО-пороги — використовує знижену ціль вологості нижче, щоб рідше вмикатись і економити АКБ. Без змін — штатні пороги.'>?</span>:</label><select name='ecoHumPol'>";
+    html += "<option value='0'" + String(config.powerSave.humidifierPolicy == 0 ? " selected" : "") + ">⛔ Вимкнути повністю</option>";
+    html += "<option value='1'" + String(config.powerSave.humidifierPolicy == 1 ? " selected" : "") + ">🔋 ЕКО-пороги вологості (знижені)</option>";
+    html += "<option value='2'" + String(config.powerSave.humidifierPolicy == 2 ? " selected" : "") + ">🔄 Без змін (штатні пороги)</option>";
+    html += "</select></div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group' title='Вологість, нижче якої зволожувач увімкнеться в ЕКО-режимі'>";
+    html += "<label>ЕКО мін. вологість (%) <span class='tip' tabindex='0' data-tip='Поріг увімкнення зволожувача при блекауті (напр. 45% замість 65%). Чим нижче поріг — тим рідше працює зволожувач.'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='ecoHumMin' value='" + String(config.powerSave.ecoHumMin, 1) + "' min='20' max='85'></div>";
+    html += "<div class='form-group' title='Вологість, при досягненні якої зволожувач вимкнеться в ЕКО-режимі'>";
+    html += "<label>ЕКО макс. вологість (%) <span class='tip' tabindex='0' data-tip='Поріг вимкнення зволожувача при блекауті (має бути вищим за мінімальний, напр. 50%).'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='ecoHumMax' value='" + String(config.powerSave.ecoHumMax, 1) + "' min='25' max='90'></div>";
+    html += "</div>";
+    html += "</div>";
+
+    // Світло DMX та Фонові сервіси
+    html += "<div class='section' style='border-left-color: #8b5cf6;'>";
+    html += "<h3>💡 СВІТЛО DMX ТА ФОНОВІ СЕРВІСИ</h3>";
+    html += "<div class='form-group' title='Поведінка DMX-світильника при відключенні світла'>";
+    html += "<label>💡 Освітлення DMX при блекауті <span class='tip' tabindex='0' data-tip='Вимкнути — гасить світло в 0% протягом 5 секунд. Приглушити — зменшує загальну яскравість (master) на заданий відсоток від розкладу.'>?</span>:</label><select name='ecoLgtPol'>";
+    html += "<option value='0'" + String(config.powerSave.lightPolicy == 0 ? " selected" : "") + ">⛔ Вимкнути повністю (0%)</option>";
+    html += "<option value='1'" + String(config.powerSave.lightPolicy == 1 ? " selected" : "") + ">🌙 Приглушити до % від розкладу</option>";
+    html += "<option value='2'" + String(config.powerSave.lightPolicy == 2 ? " selected" : "") + ">🔄 Без змін</option>";
+    html += "</select></div>";
+    html += "<div class='form-group' title='Відсоток від штатної яскравості розкладу в режимі приглушення'>";
+    html += "<label>Масштаб яскравості DMX в ЕКО (%) <span class='tip' tabindex='0' data-tip='Наприклад, 25% означає, що світло світитиме в 4 рази слабше за поточний розклад (діє при політиці «Приглушити»).'>?</span>:</label>";
+    html += "<input type='number' name='ecoLgtScl' value='" + String(config.powerSave.ecoLightScalePercent) + "' min='0' max='100'></div>";
+    html += "<div class='form-group' title='Тимчасово зупиняє відправку в Google Sheets під час блекауту'>";
+    html += "<label><input type='checkbox' name='ecoPauSh' " + String(config.powerSave.pauseSheetsSync ? "checked" : "") + "> ☁️ Призупинити автосинхронізацію Google Sheets при блекауті <span class='tip' tabindex='0' data-tip='Дані продовжують писатися локально на ESP32 (RAM/SPIFFS) і відправляться після повернення світла. Зменшує піки струму Wi-Fi та марні таймаути.'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group' title='Не дозволяє адаптивному алгоритму змінювати базові пороги температури й вологості під час блекауту'>";
+    html += "<label><input type='checkbox' name='ecoPauAdp' " + String(config.powerSave.pauseAdaptiveThresh ? "checked" : "") + "> 🛡️ Призупинити адаптивне зниження порогів (зберегти базовий конфіг) <span class='tip' tabindex='0' data-tip='Гарантує, що після повернення 220В система повернеться саме до ваших базових температур і вологості.'>?</span></label>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "</div>"; // tab12
+    flushChunk();
 
     // Кнопки збереження
     html += "<div style='margin-top: 30px;'>";
@@ -645,25 +875,31 @@ void handleSettingsPage() {
 
     // JavaScript
     html += "<script>";
-    // Функція перемикання вкладок
-    html += "function switchTab(tabIndex) {";
-    html += "  const tabs = document.querySelectorAll('.tab');";
-    html += "  const contents = document.querySelectorAll('.tab-content');";
-    html += "  tabs.forEach((tab, i) => {";
-    html += "    if (i === tabIndex) {";
-    html += "      tab.classList.add('active');";
-    html += "      contents[i].classList.add('active');";
-    html += "    } else {";
-    html += "      tab.classList.remove('active');";
-    html += "      contents[i].classList.remove('active');";
-    html += "    }";
-    html += "  });";
-    html += "  localStorage.setItem('settingsTab', tabIndex);";
+    // Функції перемикання категорій та вкладок (по id, з захистом від невалідного індексу)
+    html += "function switchCat(cat) {";
+    html += "  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));";
+    html += "  document.querySelectorAll('.tabs').forEach(t => t.classList.toggle('active', t.id === 'cat-' + cat));";
+    html += "  const firstTab = document.querySelector('#cat-' + cat + ' .tab');";
+    html += "  if (firstTab) switchTab(parseInt(firstTab.dataset.tab));";
+    html += "}";
+    html += "function switchTab(tabId) {";
+    html += "  const target = document.getElementById('tab' + tabId);";
+    html += "  const btn = document.querySelector('.tab[data-tab=\"' + tabId + '\"]');";
+    html += "  if (!target || !btn) { tabId = 0; }";
+    html += "  const activeBtn = document.querySelector('.tab[data-tab=\"' + tabId + '\"]');";
+    html += "  if (activeBtn) {";
+    html += "    const cat = activeBtn.dataset.cat;";
+    html += "    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));";
+    html += "    document.querySelectorAll('.tabs').forEach(t => t.classList.toggle('active', t.id === 'cat-' + cat));";
+    html += "  }";
+    html += "  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.tab) === tabId));";
+    html += "  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab' + tabId));";
+    html += "  localStorage.setItem('settingsTab', tabId);";
     html += "}";
     // Відновлення останньої вкладки при завантаженні
     html += "window.addEventListener('load', function() {";
     html += "  const savedTab = localStorage.getItem('settingsTab');";
-    html += "  if (savedTab !== null) switchTab(parseInt(savedTab));";
+    html += "  if (savedTab !== null && !isNaN(parseInt(savedTab))) switchTab(parseInt(savedTab));";
     html += "});";
     // Валідація форми
     html += "document.querySelector('form').addEventListener('submit', function(e) {";
@@ -737,6 +973,23 @@ void handleSettingsPage() {
     html += "  const checked = document.getElementById('use_auth').checked;";
     html += "  document.getElementById('auth_fields').style.display = checked ? 'block' : 'none';";
     html += "}";
+    html += "function applyEcoPresetUI(id) {";
+    html += "  const presets = {";
+    html += "    0: { name:'🆘 Виживання (старий АКБ)', ecoHeatPol:1, ecoTempMin:19.0, ecoTempHyst:1.0, ecoPumpMax:35, ecoFanMax:25, ecoChkCar:true, ecoCarDlt:4.0, ecoHtrRel:false, ecoPmpPls:true, ecoPlsOn:90, ecoPlsOff:300, ecoExtPol:0, ecoPlfPol:0, ecoHumPol:0, ecoLgtPol:0, ecoPauSh:true, ecoPauAdp:true },";
+    html += "    1: { name:'⚖️ Збалансований ЕКО', ecoHeatPol:1, ecoTempMin:21.0, ecoTempHyst:0.8, ecoPumpMax:45, ecoFanMax:35, ecoChkCar:true, ecoCarDlt:3.0, ecoHtrRel:false, ecoPmpPls:false, ecoExtPol:1, ecoExtOn:2, ecoExtOff:58, ecoExtPwr:25, ecoPlfPol:1, ecoPlfOn:5, ecoPlfOff:55, ecoPlfPwr:20, ecoHumPol:1, ecoHumMin:45.0, ecoHumMax:50.0, ecoLgtPol:1, ecoLgtScl:25, ecoPauSh:true, ecoPauAdp:true },";
+    html += "    2: { name:'☀️ Теплий сезон (все OFF)', ecoHeatPol:0, ecoExtPol:0, ecoPlfPol:0, ecoHumPol:0, ecoLgtPol:0, ecoPauSh:true, ecoPauAdp:true }";
+    html += "  };";
+    html += "  const p = presets[id]; if (!p) return;";
+    html += "  Object.keys(p).forEach(k => {";
+    html += "    if (k === 'name') return;";
+    html += "    const el = document.querySelector('[name=\"' + k + '\"]');";
+    html += "    if (!el) return;";
+    html += "    if (el.type === 'checkbox') el.checked = !!p[k];";
+    html += "    else el.value = p[k];";
+    html += "  });";
+    html += "  const msg = document.getElementById('ecoPresetMsg');";
+    html += "  if (msg) { msg.style.display = 'block'; msg.innerHTML = '✅ Підставлено пресет <strong>' + p.name + '</strong>. Перегляньте поля нижче, за потреби змініть та натисніть <strong>«💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ»</strong> внизу.'; }";
+    html += "}";
     html += "</script>";
 
     html += "</div>"; // container
@@ -745,7 +998,8 @@ void handleSettingsPage() {
     html += getUkraineMarquee();
     html += getHtmlFooter();
 
-    server.send(200, "text/html", html);
+    flushChunk();
+    server.sendContent("");
 }
 // ============================================================================
 // ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ
@@ -784,6 +1038,8 @@ void handleSaveSettings() {
         // 3. ОБМЕЖЕННЯ ПРИСТРОЇВ (ШІМ %)
         if (server.hasArg("pumpMin"))      config.pumpMinPercent = constrain(server.arg("pumpMin").toInt(), 0, 100);
         if (server.hasArg("pumpMax"))      config.pumpMaxPercent = constrain(server.arg("pumpMax").toInt(), 0, 100);
+        if (server.hasArg("pumpStartPct")) config.pumpStartPercent = constrain(server.arg("pumpStartPct").toInt(), 20, 100);
+        if (server.hasArg("pumpStartSec")) config.pumpStartDurationSec = constrain(server.arg("pumpStartSec").toInt(), 0, 15);
         if (server.hasArg("fanMin"))       config.fanMinPercent = constrain(server.arg("fanMin").toInt(), 0, 30);
         if (server.hasArg("fanMax"))       config.fanMaxPercent = constrain(server.arg("fanMax").toInt(), 0, 100);
         if (server.hasArg("extractorMin")) config.extractorMinPercent = constrain(server.arg("extractorMin").toInt(), 0, 100);
@@ -847,11 +1103,60 @@ void handleSaveSettings() {
             config.authPassword = server.arg("auth_pass");
         }
 
+        // 11. ПЛАВНА РОБОТА ВЕНТИЛЯТОРА ОБІГРІВУ
+        config.fanSmooth.enabled              = server.hasArg("fsEn");
+        config.fanSmooth.keepLowInsteadOfStop = server.hasArg("fsKeepLow");
+        if (server.hasArg("fsHyst"))   config.fanSmooth.hysteresis    = constrain(server.arg("fsHyst").toFloat(), 0.1f, 3.0f);
+        if (server.hasArg("fsStep"))   config.fanSmooth.maxStepPerSec = constrain(server.arg("fsStep").toInt(), 1, 50);
+        if (server.hasArg("fsMinRun")) config.fanSmooth.minRunSec     = constrain(server.arg("fsMinRun").toInt(), 0, 600);
+        if (server.hasArg("fsMinOff")) config.fanSmooth.minOffSec     = constrain(server.arg("fsMinOff").toInt(), 0, 600);
+
+        // 12. ПРОФІЛЬ ЕНЕРГОЗБЕРЕЖЕННЯ / БЛЕКАУТ (ECO)
+        if (server.hasArg("ecoActMode")) config.powerSave.activationMode = constrain(server.arg("ecoActMode").toInt(), 0, 2);
+        if (server.hasArg("ecoOutSec"))  config.powerSave.outageConfirmSec  = constrain(server.arg("ecoOutSec").toInt(), 0, 120);
+        if (server.hasArg("ecoResSec"))  config.powerSave.restoreConfirmSec = constrain(server.arg("ecoResSec").toInt(), 0, 300);
+
+        if (server.hasArg("ecoHeatPol"))  config.powerSave.heatingPolicy     = constrain(server.arg("ecoHeatPol").toInt(), 0, 2);
+        if (server.hasArg("ecoTempMin"))  config.powerSave.ecoTempMin        = constrain(server.arg("ecoTempMin").toFloat(), 10.0f, 35.0f);
+        if (server.hasArg("ecoTempHyst")) config.powerSave.ecoTempHyst       = constrain(server.arg("ecoTempHyst").toFloat(), 0.2f, 5.0f);
+        if (server.hasArg("ecoPumpMax"))  config.powerSave.ecoPumpMaxPercent = constrain(server.arg("ecoPumpMax").toInt(), 0, 100);
+        if (server.hasArg("ecoFanMax"))   config.powerSave.ecoFanMaxPercent  = constrain(server.arg("ecoFanMax").toInt(), 0, 100);
+        config.powerSave.ecoCheckCarrierTemp = server.hasArg("ecoChkCar");
+        if (server.hasArg("ecoCarDlt"))   config.powerSave.ecoCarrierMinDelta = constrain(server.arg("ecoCarDlt").toFloat(), 0.5f, 20.0f);
+        config.powerSave.ecoAllowHeaterRelay = server.hasArg("ecoHtrRel");
+        config.powerSave.ecoPumpPulseMode    = server.hasArg("ecoPmpPls");
+        if (server.hasArg("ecoPlsOn"))    config.powerSave.ecoPumpPulseOnSec  = constrain(server.arg("ecoPlsOn").toInt(), 10, 1800);
+        if (server.hasArg("ecoPlsOff"))   config.powerSave.ecoPumpPulseOffSec = constrain(server.arg("ecoPlsOff").toInt(), 0, 3600);
+
+        if (server.hasArg("ecoExtPol")) config.powerSave.extractorPolicy = constrain(server.arg("ecoExtPol").toInt(), 0, 2);
+        if (server.hasArg("ecoExtOn"))  config.powerSave.ecoExtOnMin     = constrain(server.arg("ecoExtOn").toInt(), 0, 120);
+        if (server.hasArg("ecoExtOff")) config.powerSave.ecoExtOffMin    = constrain(server.arg("ecoExtOff").toInt(), 0, 240);
+        if (server.hasArg("ecoExtPwr")) config.powerSave.ecoExtPower     = constrain(server.arg("ecoExtPwr").toInt(), 5, 100);
+
+        if (server.hasArg("ecoPlfPol")) config.powerSave.plantFanPolicy    = constrain(server.arg("ecoPlfPol").toInt(), 0, 2);
+        if (server.hasArg("ecoPlfOn"))  config.powerSave.ecoPlantFanOnMin  = constrain(server.arg("ecoPlfOn").toInt(), 0, 120);
+        if (server.hasArg("ecoPlfOff")) config.powerSave.ecoPlantFanOffMin = constrain(server.arg("ecoPlfOff").toInt(), 0, 240);
+        if (server.hasArg("ecoPlfPwr")) config.powerSave.ecoPlantFanPower  = constrain(server.arg("ecoPlfPwr").toInt(), 5, 100);
+
+        if (server.hasArg("ecoHumPol")) config.powerSave.humidifierPolicy     = constrain(server.arg("ecoHumPol").toInt(), 0, 2);
+        if (server.hasArg("ecoHumMin")) config.powerSave.ecoHumMin            = constrain(server.arg("ecoHumMin").toFloat(), 20.0f, 85.0f);
+        if (server.hasArg("ecoHumMax")) config.powerSave.ecoHumMax            = constrain(server.arg("ecoHumMax").toFloat(), 25.0f, 90.0f);
+        if (config.powerSave.ecoHumMax <= config.powerSave.ecoHumMin) {
+            config.powerSave.ecoHumMax = min(90.0f, config.powerSave.ecoHumMin + 3.0f);
+        }
+        if (server.hasArg("ecoLgtPol")) config.powerSave.lightPolicy          = constrain(server.arg("ecoLgtPol").toInt(), 0, 2);
+        if (server.hasArg("ecoLgtScl")) config.powerSave.ecoLightScalePercent = constrain(server.arg("ecoLgtScl").toInt(), 0, 100);
+
+        config.powerSave.pauseSheetsSync     = server.hasArg("ecoPauSh");
+        config.powerSave.pauseAdaptiveThresh = server.hasArg("ecoPauAdp");
+
         // Збереження конфігурації в Flash
         saveConfiguration();
 
         // Миттєво оновлюємо стан реле 220В вентилятора (Pin 7) після збереження галочки
-        if (heatingState.fanPower > 0 && config.heaterFanRelayEnabled) {
+        bool allowRelay = config.heaterFanRelayEnabled &&
+                          (!isEcoModeActive() || config.powerSave.ecoAllowHeaterRelay);
+        if (heatingState.fanPower > 0 && allowRelay) {
             digitalWrite(HEATER_FAN_RELAY_PIN, LOW);
         } else {
             digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);

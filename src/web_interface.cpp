@@ -238,6 +238,13 @@ void initWiFi() {
         if (WiFi.RSSI() < -80) {
             Serial.println("⚠️  Слабкий сигнал Wi-Fi!");
         }
+
+        // Піднімаємо постійну локальну AP-мережу для TC421 (AP+STA, підмережа 192.168.10.x)
+        WiFi.mode(WIFI_AP_STA);
+        WiFi.softAPConfig(IPAddress(192, 168, 10, 1), IPAddress(192, 168, 10, 1), IPAddress(255, 255, 255, 0));
+        WiFi.softAP(LIGHT_AP_SSID, LIGHT_AP_PASSWORD, WiFi.channel(), 0, MAX_CLIENTS);
+        Serial.printf("🔆 AP для TC421 запущено: SSID='%s' IP=%s (канал %d)\n",
+                      LIGHT_AP_SSID, WiFi.softAPIP().toString().c_str(), WiFi.channel());
     } else {
         Serial.println("\n❌ Не вдалося підключитись ні до однієї відомої мережі");
         Serial.println("Запускаємо точку доступу...");
@@ -245,12 +252,13 @@ void initWiFi() {
         WiFi.disconnect(true);
         delay(100);
         WiFi.mode(WIFI_AP);
-        WiFi.softAP("ClimateControl", "12345678");
+        WiFi.softAPConfig(IPAddress(192, 168, 10, 1), IPAddress(192, 168, 10, 1), IPAddress(255, 255, 255, 0));
+        WiFi.softAP(LIGHT_AP_SSID, LIGHT_AP_PASSWORD, WIFI_CHANNEL, 0, MAX_CLIENTS);
 
         Serial.print("✅ Точка доступу запущена. IP: ");
         Serial.println(WiFi.softAPIP());
-        Serial.println("   SSID: ClimateControl");
-        Serial.println("   Пароль: 12345678");
+        Serial.printf("   SSID: %s\n", LIGHT_AP_SSID);
+        Serial.printf("   Пароль: %s\n", LIGHT_AP_PASSWORD);
     }
 
     if (WiFi.status() == WL_CONNECTED) {
@@ -310,6 +318,35 @@ void initWiFi() {
     server.on("/light/off", HTTP_GET, handleLightOff);
     server.on("/light/toggle", HTTP_POST, handleLightToggle);
     server.on("/light/preset", HTTP_GET, handleLightPreset);
+
+    // Окрема сторінка фітолампи TC421 WiFi
+    server.on("/tc421", HTTP_GET, handleTC421Page);
+    server.on("/tc421/discover", HTTP_GET, handleTC421Discover);
+    server.on("/tc421/target", HTTP_POST, handleTC421Target);
+    server.on("/tc421/schedule/save", HTTP_POST, handleTC421ScheduleSave);
+    server.on("/tc421/preset", HTTP_GET, handleTC421Preset);
+    server.on("/tc421/preset/reset", HTTP_GET, handleTC421ResetProfile);
+    server.on("/tc421/manual", HTTP_POST, handleTC421Manual);
+    server.on("/tc421/api/manual", HTTP_ANY, handleTC421ApiManual);
+    server.on("/tc421/api/status", HTTP_GET, handleTC421ApiStatus);
+    server.on("/tc421/off", HTTP_GET, handleTC421Off);
+    server.on("/tc421/internal", HTTP_GET, handleTC421Internal);
+    server.on("/tc421/synctime", HTTP_GET, handleTC421SyncTime);
+
+    // Режим тиші (автоматичне вимкнення вентиляторів і зволожувача при роботі мікрофона)
+    server.on("/api/quiet", HTTP_ANY, []() {
+        if (server.hasArg("on")) {
+            bool on = (server.arg("on") == "1" || server.arg("on") == "true");
+            uint16_t ttl = server.hasArg("ttl") ? (uint16_t)server.arg("ttl").toInt() : 120;
+            setQuietMode(on, ttl);
+        }
+        String json = "{\"quiet\":";
+        json += isQuietModeActive() ? "true" : "false";
+        json += ",\"remaining\":";
+        json += String(getQuietModeRemainingSec());
+        json += "}";
+        server.send(200, "application/json", json);
+    });
 
     server.on("/ota", HTTP_GET, handleOTAPage);
     server.on("/api/ota/status", HTTP_GET, handleOTAStatus);
@@ -494,9 +531,8 @@ void handleOTAPage() {
     if (!checkAuth()) return;
 
     String html = getHtmlHead("OTA та Backup");
-    html += getNavHeader("OTA та Backup");
-
     html += "<div class='container'>";
+    html += getNavHeader("🔄 OTA ТА BACKUP");
 
     html += "<div class='card'>";
     html += "<h2>Інформація про систему</h2>";
@@ -783,12 +819,15 @@ void handleFactoryReset() {
     factoryResetComplete();
 }
 
+static bool webOtaStarted = false;
+
 void handleOTAUploadResult() {
     if (!checkAuth()) return;
-    if (!isOTAInProgress()) {
+    if (!webOtaStarted) {
         server.send(400, "text/plain", "OTA not started");
         return;
     }
+    webOtaStarted = false;
     setOTAInProgress(false);
     bool success = !Update.hasError();
     String message = success ? "OK" : Update.errorString();
@@ -873,10 +912,12 @@ void handleOTAUpload() {
         if (!Update.begin(otaSize, U_FLASH)) {
             Serial.println("❌ Update.begin() failed");
             Update.printError(Serial);
+            webOtaStarted = false;
             setOTAInProgress(false);
             resumeCriticalTasks();
             return;
         }
+        webOtaStarted = true;
         Serial.printf("📥 OTA Started: %s (розмір: %s)\n", upload.filename.c_str(),
                       otaSize == UPDATE_SIZE_UNKNOWN ? "невідомий" : String(otaSize).c_str());
     }
@@ -924,6 +965,7 @@ void handleOTAUpload() {
     else if (upload.status == UPLOAD_FILE_ABORTED) {
         Serial.println("❌ Upload aborted");
         Update.end();
+        webOtaStarted = false;
         setOTAInProgress(false);
         resumeCriticalTasks();
     }

@@ -363,6 +363,7 @@ void handleEnergyPage() {
     if (!checkAuth()) return;
 
     String html = getHtmlHead("⚡ Енергоконтролер", true);
+    html.reserve(24576);
     html += "<div class='container'>";
     html += getNavHeader("⚡ ЕНЕРГОКОНТРОЛЕР");
 
@@ -371,9 +372,9 @@ void handleEnergyPage() {
 
     // Картки з даними
     html += "<style>.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}";
-    html += ".ek{background:#f9f9f9;padding:15px;border-radius:8px;text-align:center;border-left:4px solid #f59e0b}";
-    html += ".ev{font-size:1.8rem;font-weight:700;color:#333;display:block;margin:5px 0}";
-    html += ".eu{font-size:0.8rem;color:#888}";
+    html += ".ek{background:var(--s2);border:1px solid var(--b);border-top:3px solid var(--w);padding:15px;border-radius:12px;text-align:center}";
+    html += ".ev{font-size:1.8rem;font-weight:700;color:var(--t);display:block;margin:5px 0;font-variant-numeric:tabular-nums}";
+    html += ".eu{font-size:0.82rem;color:var(--m)}";
     html += "@media(max-width:480px){.eg{grid-template-columns:repeat(2,1fr)}}</style>";
 
     html += "<div class='eg'>";

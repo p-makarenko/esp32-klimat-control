@@ -125,6 +125,10 @@
 #define WIFI_CHANNEL       1
 #define MAX_CLIENTS        4
 
+// Власна локальна AP-мережа ESP32 для TC421 WiFi (працює завжди в режимі AP+STA)
+#define LIGHT_AP_SSID      "KlimatLight"
+#define LIGHT_AP_PASSWORD  "12345678"
+
 // Структура для списку WiFi мереж
 struct WiFiCredentials {
     const char* ssid;
@@ -132,9 +136,10 @@ struct WiFiCredentials {
 };
 
 // Список відомих WiFi мереж (в порядку пріоритету)
-#define KNOWN_NETWORKS_COUNT 2
+#define KNOWN_NETWORKS_COUNT 3
 const WiFiCredentials KNOWN_NETWORKS[KNOWN_NETWORKS_COUNT] = {
     {"Redmi Note 14", "12345678"},
+    {"RedmiNote14", "12345678"},
     {"Redmi Note 9", "1234567890"}
 };
 

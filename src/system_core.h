@@ -71,6 +71,77 @@ struct BreezeConfig {
   uint16_t calmMaxSec;    // сек максимальне затишшя
 };
 
+// ============================================================================
+// ПЛАВНА РОБОТА ВЕНТИЛЯТОРА ОБІГРІВУ (У ВСІХ РЕЖИМАХ)
+// ============================================================================
+struct FanSmoothConfig {
+  bool     enabled;              // Увімкнути плавний режим (антициклювання + плавний ШІМ)
+  float    hysteresis;           // Гістерезис вимкнення/пуску біля порогу (°C, default: 0.5)
+  uint8_t  maxStepPerSec;        // Макс. зміна швидкості %/сек (default: 5)
+  uint16_t minRunSec;            // Мін. час роботи перед зупинкою (сек, default: 60)
+  uint16_t minOffSec;            // Мін. час паузи перед повторним пуском (сек, default: 60)
+  bool     keepLowInsteadOfStop; // Тримати мінімум замість стопу до tempMax + hyst
+};
+
+// ============================================================================
+// ЕНЕРГОЗБЕРЕЖЕННЯ / ПРОФІЛЬ БЛЕКАУТУ (ECO / UPS MODE)
+// ============================================================================
+enum EcoActivationMode : uint8_t {
+  ECO_MODE_AUTO     = 0,  // Автоматично при зникненні 220В (PZEM)
+  ECO_MODE_FORCE_ON = 1,  // Примусово увімкнено (ручний ЕКО)
+  ECO_MODE_DISABLED = 2   // Вимкнено (ігнорувати відключення 220В)
+};
+
+enum EcoDevicePolicy : uint8_t {
+  ECO_DEV_OFF       = 0,  // Повністю вимкнути (0%)
+  ECO_DEV_LIMITED   = 1,  // ЕКО / обмежений режим
+  ECO_DEV_UNCHANGED = 2   // Без змін (штатний режим)
+};
+
+struct PowerSaveConfig {
+  uint8_t  activationMode;       // EcoActivationMode (0=AUTO, 1=FORCE_ON, 2=DISABLED)
+  uint16_t outageConfirmSec;     // Підтвердження зникнення 220В (сек, default: 6)
+  uint16_t restoreConfirmSec;    // Стабілізація після повернення 220В (сек, default: 15)
+
+  // Обігрів при блекауті
+  uint8_t  heatingPolicy;        // 0=OFF, 1=ECO-обігрів, 2=Штатний (default: 1)
+  float    ecoTempMin;           // Цільова мін. температура при блекауті (°C, default: 20.0)
+  float    ecoTempHyst;          // Гістерезис обігріву при блекауті (°C, default: 0.8)
+  uint8_t  ecoPumpMaxPercent;    // Стелі потужності насоса при блекауті (%, default: 40)
+  uint8_t  ecoFanMaxPercent;     // Стелі потужності вентилятора при блекауті (%, default: 30)
+  bool     ecoCheckCarrierTemp;  // Не крутити вхолосту, якщо теплоносій холодний
+  float    ecoCarrierMinDelta;   // Мін. перевищення теплоносія над кімнатою (°C, default: 3.0)
+  bool     ecoAllowHeaterRelay;  // Дозволити реле 220В вентилятора при блекауті (default: false)
+  bool     ecoPumpPulseMode;     // Імпульсний режим насоса при блекауті (default: false)
+  uint16_t ecoPumpPulseOnSec;    // Імпульс насоса ON (сек, default: 120)
+  uint16_t ecoPumpPulseOffSec;   // Імпульс насоса OFF (сек, default: 300)
+
+  // Витяжка при блекауті
+  uint8_t  extractorPolicy;      // EcoDevicePolicy: 0=OFF, 1=ЕКО-таймер, 2=Без змін
+  uint16_t ecoExtOnMin;          // ЕКО-таймер витяжки: робота (хв, default: 2)
+  uint16_t ecoExtOffMin;         // ЕКО-таймер витяжки: пауза (хв, default: 58)
+  uint8_t  ecoExtPower;          // ЕКО-таймер витяжки: потужність (%, default: 25)
+
+  // Вітер (вентилятор рослин) при блекауті
+  uint8_t  plantFanPolicy;       // EcoDevicePolicy: 0=OFF, 1=ЕКО-мінімум/таймер, 2=Без змін
+  uint8_t  ecoPlantFanPower;     // Фіксована потужність вітру в ЕКО без поривів (%, default: 20)
+  uint16_t ecoPlantFanOnMin;     // ЕКО-таймер вітру: робота (хв, default: 5)
+  uint16_t ecoPlantFanOffMin;    // ЕКО-таймер вітру: пауза (хв, default: 55)
+
+  // Зволожувач при блекауті
+  uint8_t  humidifierPolicy;     // 0=OFF, 1=ЕКО-пороги вологості, 2=Без змін (default: 0)
+  float    ecoHumMin;            // ЕКО мін. вологість увімкнення (%, default: 45.0)
+  float    ecoHumMax;            // ЕКО макс. вологість вимкнення (%, default: 50.0)
+
+  // Освітлення DMX при блекауті
+  uint8_t  lightPolicy;          // 0=OFF (0%), 1=Приглушити %, 2=Без змін (default: 0)
+  uint8_t  ecoLightScalePercent; // Масштаб яскравості master в ЕКО (%, default: 25)
+
+  // Фонові сервіси
+  bool     pauseSheetsSync;      // Пауза Google Sheets під час блекауту (default: true)
+  bool     pauseAdaptiveThresh;  // Пауза адаптивних порогів під час блекауту (default: true)
+};
+
 struct SystemConfig {
   float tempMin;
   float tempMax;
@@ -87,6 +158,8 @@ struct SystemConfig {
   uint8_t fanMaxPercent;
   uint8_t pumpMinPercent;
   uint8_t pumpMaxPercent;
+  uint8_t pumpStartPercent;      // Пускова потужність насоса при старті з 0% (%, default: 45)
+  uint8_t pumpStartDurationSec;  // Тривалість пускового імпульсу насоса (сек, default: 2, 0=вимк)
   uint8_t extractorMinPercent;
   uint8_t extractorMaxPercent;
   bool manualVentControl;
@@ -149,6 +222,10 @@ struct SystemConfig {
   // Пороги для режимів форсаж та аварія
   float tempCriticalLow;       // Поріг для ФОРСАЖУ - критично низька температура (°C, default 20.0)
   float tempEmergencyLow;      // Поріг для АВАРІЇ - аварійна температура (°C, default 18.0)
+
+  // Плавна робота вентилятора обігріву та профіль енергозбереження
+  FanSmoothConfig fanSmooth;
+  PowerSaveConfig powerSave;
 };
 struct HeatingState {
   bool active;
@@ -206,12 +283,17 @@ struct HumidifierState {
   uint8_t cyclesToday;
 };
 
-// Структура для моніторингу відключення зовнішнього живлення (по напрузі PZEM)
+// Структура для моніторингу відключення зовнішнього живлення (по напрузі PZEM) та ЕКО-режиму
 struct PowerOutageState {
-  bool detected;                    // Чи виявлено відсутність 220В
-  unsigned long detectionTime;      // Час виявлення відключення
-  bool emergencyHeatingActive;      // Чи активний аварійний обігрів
+  bool detected;                    // Чи підтверджено відсутність 220В
+  unsigned long detectionTime;      // Час підтвердження відключення 220В
+  bool emergencyHeatingActive;      // Чи активний ЕКО/аварійний обігрів при блекауті
   float lastVoltage;                // Остання зчитана напруга (В)
+  bool ecoActive;                   // Чи активний зараз ЕКО-профіль (авто або ручний)
+  unsigned long ecoStartTime;       // Час активації ЕКО-профілю
+  unsigned long outagePendingSince; // Початок очікування підтвердження зникнення 220В
+  unsigned long restorePendingSince;// Початок очікування підтвердження повернення 220В
+  bool ecoHeatingOn;                // Поточний стан гістерезису обігріву в ЕКО
 };
 
 struct HistoryData {
@@ -253,6 +335,10 @@ extern int trendIndex;
 // Прототипи функцій
 void loadConfiguration();
 void saveConfiguration();
+void loadPowerSaveConfig();
+void savePowerSaveConfig();
+bool isEcoModeActive();
+void applyEcoPreset(uint8_t presetId);
 void initMutexes();
 void createTasks();
 void resetNetworkSettings();

@@ -36,7 +36,7 @@ void handleServoPage() {
 
     // Додаткові стилі
     html += "<style>";
-    html += ".status { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196F3; }";
+    html += ".status { background: rgba(56,189,248,.14); padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196F3; }";
     html += ".status-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0; }";
     html += ".status-item:last-child { border-bottom: none; }";
     html += ".buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }";
@@ -59,7 +59,7 @@ void handleServoPage() {
     html += ".btn-open:hover { background: #388E3C; }";
     html += ".btn-close { background: #f44336; color: white; }";
     html += ".btn-close:hover { background: #D32F2F; }";
-    html += ".angle-display { font-size: 48px; font-weight: 700; text-align: center; color: #2196F3; margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; }";
+    html += ".angle-display { font-size: 48px; font-weight: 700; text-align: center; color: #2196F3; margin: 20px 0; padding: 20px; background: var(--s); border-radius: 10px; }";
 
     // Мобільна оптимізація
     html += "@media (max-width: 768px) {";

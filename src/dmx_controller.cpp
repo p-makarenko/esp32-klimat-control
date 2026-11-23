@@ -18,17 +18,7 @@ void dmxInit() {
     DmxSerial.begin(250000, SERIAL_8N2, DMX_RX_PIN, DMX_TX_PIN);
     memset(_dmxBuffer, 0, sizeof(_dmxBuffer));
 
-    // Loopback тест
-    DmxSerial.write(0xAA);
-    delay(10);
-    uint8_t rx = 0;
-    int len = DmxSerial.readBytes(&rx, 1);
-    Serial.printf("[DMX] UART тест: відправив=0xAA отримав=0x%02X len=%d\n", rx, len);
-
     xTaskCreatePinnedToCore(dmxTask, "DMXTask", 4096, nullptr, 2, &dmxTaskHandle, 0);
-
-    Serial.printf("[DMX] init=OK TX=%d DE=%d addr=%d UART=%d\n",
-        DMX_TX_PIN, DMX_DE_RE_PIN, DMX_START_ADDRESS, DMX_UART_NUM);
 }
 
 void dmxSetRGBW(uint8_t r, uint8_t g, uint8_t b, uint8_t master) {
@@ -37,7 +27,6 @@ void dmxSetRGBW(uint8_t r, uint8_t g, uint8_t b, uint8_t master) {
     _dmxBuffer[2] = g;       // CH2=зелений
     _dmxBuffer[3] = b;       // CH3=синій
     _dmxBuffer[4] = master;  // CH4=dimmer (загальна яскравість)
-    Serial.printf("[DMX] R=%d G=%d B=%d M=%d\n", r, g, b, master);
 }
 
 void dmxSetChannel(uint16_t channel, uint8_t value) {
@@ -60,13 +49,8 @@ void dmxSendFrame() {
 
 void dmxTask(void* parameter) {
     TickType_t lastWake = xTaskGetTickCount();
-    uint32_t count = 0;
     while (true) {
         dmxSendFrame();
-        count++;
-        if (count % 100 == 0)
-            Serial.printf("[DMX] %u R=%d G=%d B=%d M=%d\n", count,
-                _dmxBuffer[1], _dmxBuffer[2], _dmxBuffer[3], _dmxBuffer[4]);
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(DMX_UPDATE_INTERVAL));
     }
 }

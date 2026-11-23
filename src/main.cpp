@@ -20,6 +20,7 @@
 #include "co2_sensor.h"
 #include "dmx_controller.h"
 #include "light_scheduler.h"
+#include "tc421_controller.h"
 #include <Arduino.h>
 
 // ГЛОБАЛЬНІ ЗМІННІ
@@ -45,7 +46,12 @@ PowerOutageState powerOutageState = {
   .detected = false,
   .detectionTime = 0,
   .emergencyHeatingActive = false,
-  .lastVoltage = 0
+  .lastVoltage = 0,
+  .ecoActive = false,
+  .ecoStartTime = 0,
+  .outagePendingSince = 0,
+  .restorePendingSince = 0,
+  .ecoHeatingOn = false
 };
 
 extern int historyIndex;
@@ -158,6 +164,7 @@ void setup() {
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ DMX/ОСВІТЛЕННЯ ===");
   dmxInit();
   lightSchedulerInit();
+  tc421Init();
 
   Serial.println("\n=== СТВОРЕННЯ ЗАВДАНЬ ===");
   createTasks();

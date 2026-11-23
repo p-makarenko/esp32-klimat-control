@@ -73,6 +73,22 @@ void handleLightToggle();
 void handleLightPreset();
 
 // ============================================================================
+// ФІТОЛАМПА TC421 (окрема сторінка /tc421) - forward declarations
+// ============================================================================
+void handleTC421Page();
+void handleTC421Discover();
+void handleTC421Target();
+void handleTC421ScheduleSave();
+void handleTC421Preset();
+void handleTC421ResetProfile();
+void handleTC421Manual();
+void handleTC421ApiManual();
+void handleTC421ApiStatus();
+void handleTC421Off();
+void handleTC421Internal();
+void handleTC421SyncTime();
+
+// ============================================================================
 // OTA ТА BACKUP - forward declarations
 // ============================================================================
 void handleOTAPage();

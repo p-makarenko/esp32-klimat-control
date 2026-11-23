@@ -46,9 +46,17 @@ void lightSchedulerInit() {
     xTaskCreatePinnedToCore(
         [](void*) {
             TickType_t lastWake = xTaskGetTickCount();
+            bool prevEco = false;
+            uint8_t tickCounter = 0;
             while (true) {
-                lightSchedulerUpdate();
-                vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(60000)); // кожну хвилину
+                bool curEco = isEcoModeActive();
+                // Оновлюємо кожну хвилину (12 * 5с) або миттєво при зміні стану ЕКО
+                if (tickCounter == 0 || curEco != prevEco) {
+                    prevEco = curEco;
+                    lightSchedulerUpdate();
+                }
+                tickCounter = (tickCounter + 1) % 12;
+                vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(5000)); // перевірка ЕКО кожні 5 сек
             }
         },
         "LightSched",
@@ -156,6 +164,30 @@ RGBWColor lightSchedulerCalculate(uint8_t hour, uint8_t minute) {
 // ОНОВЛЕННЯ (кожну хвилину)
 // ============================================================================
 void lightSchedulerUpdate() {
+    // Під час ЕКО-режиму примусово гасимо або приглушуємо DMX-світло згідно з політикою
+    if (isEcoModeActive()) {
+        if (config.powerSave.lightPolicy == ECO_DEV_OFF) {
+            dmxSetRGBW(0, 0, 0, 0);
+            return;
+        }
+        if (config.powerSave.lightPolicy == ECO_DEV_LIMITED) {
+            uint8_t scale = constrain(config.powerSave.ecoLightScalePercent, 0, 100);
+            if (_cfg.enabled) {
+                struct tm* t = getTimeInfo();
+                if (t != nullptr) {
+                    RGBWColor color = lightSchedulerCalculate(t->tm_hour, t->tm_min);
+                    uint8_t scaledMaster = (uint8_t)(((uint16_t)color.master * scale) / 100);
+                    dmxSetRGBW(color.r, color.g, color.b, scaledMaster);
+                }
+            } else {
+                RGBWColor cur = dmxGetCurrent();
+                uint8_t scaledMaster = (uint8_t)(((uint16_t)cur.master * scale) / 100);
+                dmxSetRGBW(cur.r, cur.g, cur.b, scaledMaster);
+            }
+            return;
+        }
+    }
+
     if (!_cfg.enabled) return; // ручний режим — не чіпаємо
 
     struct tm* t = getTimeInfo();

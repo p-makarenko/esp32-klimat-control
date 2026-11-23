@@ -41,7 +41,7 @@ void handleHistoryPage() {
 
     // Статистика
     LoggerStats stats = getLoggerStats();
-    html += "<div class='info' id='statsInfo' style='text-align: center; color: #666; margin-bottom: 20px; font-size: 0.9em;'>";
+    html += "<div class='info' id='statsInfo' style='text-align: center; color: var(--m); margin-bottom: 20px; font-size: 0.9em;'>";
     html += "Записів в RAM: " + String(stats.totalRecordsRAM) + " / " + String(HISTORY_BUFFER_SIZE);
     html += " | Записів в SPIFFS: " + String(stats.totalRecordsSPIFFS);
     html += " | Оновлення кожну хвилину";
@@ -64,13 +64,13 @@ void handleHistoryPage() {
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
-    html += "<span id='loadStatus' style='color: #555; font-size: 0.9em; font-weight: 500;'></span>";
+    html += "<span id='loadStatus' style='color: var(--m); font-size: 0.9em; font-weight: 500;'></span>";
     html += "</div>";
 
     html += "<div id='dateSelector' style='display: none; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee;'>";
     html += "<div style='display: flex; flex-wrap: wrap; gap: 10px; align-items: center;'>";
-    html += "<label>Від: <input type='date' id='startDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
-    html += "<label>До: <input type='date' id='endDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid #ddd;'></label>";
+    html += "<label>Від: <input type='date' id='startDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid var(--b);'></label>";
+    html += "<label>До: <input type='date' id='endDate' onchange='loadDataForCurrentSelection()' style='padding: 8px; border-radius: 4px; border: 1px solid var(--b);'></label>";
     html += "<button id='loadBtn' onclick='loadDataForCurrentSelection()' class='btn' style='margin: 0; padding: 8px 16px;'>🔄 Оновити</button>";
     html += "</div>";
     html += "</div>";

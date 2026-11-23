@@ -34,21 +34,27 @@ void handleRoot() {
         return;
     }
 
-    String html = getHtmlHead("Клімат-контроль");
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "text/html", "");
 
-    // Додаткові стилі специфічні для головної сторінки
-    html += "<style>";
-    html += ".mode-badge { display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; font-weight: 600; margin-top: 10px; }";
-    html += ".emergency-alert { background: #ffebee; border: 2px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 15px; }";
-    html += ".emergency-alert h3 { color: #d32f2f; margin: 0 0 10px 0; }";
-    html += ".info-banner { background: #e8f5e9; padding: 10px 15px; border-radius: 5px; margin: 10px 0; font-size: 0.85em; }";
-    html += ".android-tip { background: #fff3cd; padding: 12px 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ff9800; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }";
-    html += ".update-info { text-align: center; color: #777; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }";
-    html += "</style>";
+    String html;
+    html.reserve(4096);
+    auto flushChunk = [&]() {
+        if (html.length() > 0) {
+            server.sendContent(html);
+            html = "";
+            yield();
+        }
+    };
 
+    html = getHtmlHead("Клімат-контроль");
     html += "<div class='container'>";
+    html += getNavHeader("");
     html += "<div class='header'>";
-    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ <span onclick='showVersion()' style='cursor: pointer; color: #2196F3;'>" VERSION "</span></h1>";
+    uint32_t sketchKB = ESP.getSketchSize() / 1024;
+    uint32_t freeSketchKB = ESP.getFreeSketchSpace() / 1024;
+    String verTitle = String(VERSION) + " | Прошивка: " + String(sketchKB) + " KB | Вільно OTA: " + String(freeSketchKB) + " KB | Рядків: " + String(TOTAL_CODE_LINES);
+    html += "<h1>🌡️ КЛІМАТ-КОНТРОЛЬ <span onclick='showVersion()' title='" + verTitle + "' style='cursor: pointer; color: var(--a);'>" VERSION "</span></h1>";
 
     // JavaScript для показу версії
     html += "<script>";
@@ -57,9 +63,7 @@ void handleRoot() {
     html += "  msg += '\\n" VERSION_COMMENT "';";
     html += "  msg += '\\n\\nЗібрано: " BUILD_DATE " " BUILD_TIME "';";
     html += "  msg += '\\nРядків коду: " + String(TOTAL_CODE_LINES) + "';";
-    if (FIRMWARE_SIZE_KB > 0) {
-        html += "  msg += '\\nРозмір прошивки: " + String(FIRMWARE_SIZE_KB) + " KB';";
-    }
+    html += "  msg += '\\nРозмір прошивки: " + String(sketchKB) + " KB (вільно: " + String(freeSketchKB) + " KB)';";
     html += "  alert(msg);";
     html += "}";
     html += "</script>";
@@ -94,18 +98,28 @@ void handleRoot() {
     html += heatingState.emergencyMode ? "🚨 АВАРІЯ" : (heatingState.forceMode ? "⚡ ФОРСАЖ" : (heatingState.manualMode ? "✋ РУЧНИЙ" : "🤖 АВТО"));
     html += "</span></div>";
 
-    // Контейнер для аварійного повідомлення
+    // Контейнер для аварійного/ЕКО повідомлення та швидкого перемикача
+    html += "<div style='margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;'>";
+    html += "<button type='button' id='ecoToggleBtn' class='btn' style='margin:0; padding:8px 14px; font-size:13.5px; background:";
+    html += (config.powerSave.activationMode == ECO_MODE_FORCE_ON) ? "#f59e0b;color:#fff;" : "#334155;color:#fff;";
+    html += "' onclick='toggleEcoForce()'>";
+    html += (config.powerSave.activationMode == ECO_MODE_FORCE_ON) ? "🔋 ЕКО: ПРИМУСОВО (перемкнути на АВТО)" : "🔋 Увімкнути ЕКО-режим вручну";
+    html += "</button>";
+    html += "<a href='/settings' onclick=\"localStorage.setItem('settingsTab','12')\" style='font-size:13px; color: var(--a); text-decoration:none;'>⚙️ Налаштування ЕКО</a>";
+    html += "</div>";
+
     html += "<div id='emergencyAlert'>";
-    if (powerOutageState.detected || powerOutageState.emergencyHeatingActive) {
+    if (isEcoModeActive()) {
         html += "<div class='emergency-alert'>";
-        html += "<h3>🚨 ВІДСУТНІСТЬ 220В!</h3>";
-        html += "<p style='margin: 5px 0;'>Напруга: " + String(powerOutageState.lastVoltage, 1) + " В</p>";
-        html += "<button class='btn btn-danger' style='margin-top: 10px; padding: 12px 20px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ АВАРІЙНИЙ РЕЖИМ</button>";
+        html += powerOutageState.detected ? "<h3>🔋 БЛЕКАУТ — ЕКО-РЕЖИМ АКТИВНИЙ!</h3>" : "<h3>🔋 РУЧНИЙ ЕКО-РЕЖИМ АКТИВНИЙ</h3>";
+        html += "<p style='margin: 5px 0;'>Напруга 220В: " + String(powerOutageState.lastVoltage, 1) + " В</p>";
+        html += "<button class='btn btn-danger' style='margin-top: 10px; padding: 10px 16px; font-weight: bold;' onclick='resetEmergency()'>🔄 СКИНУТИ</button>";
         html += "</div>";
     }
     html += "</div>";
 
     html += "</div>"; // .header
+    flushChunk();
 
     // Power indicators
     html += "<div class='power-indicators'>";
@@ -169,6 +183,7 @@ void handleRoot() {
     html += "</div>";
 
     html += "</div>"; // .status-grid
+    flushChunk();
     // Командна строка
     html += "<div class='command-section'>";
     html += "<h3>💬 КОМАНДНА СТРОКА (аналогічно Serial Monitor)</h3>";
@@ -184,6 +199,10 @@ void handleRoot() {
     html += "<option value='manual'>manual - ручний режим</option>";
     html += "<option value='force'>force - форсований режим</option>";
     html += "<option value='save'>save - зберегти налаштування</option>";
+    html += "<option value='eco on'>eco on - примусовий ЕКО-режим</option>";
+    html += "<option value='eco auto'>eco auto - авто ЕКО по 220В</option>";
+    html += "<option value='eco off'>eco off - вимкнути ЕКО</option>";
+    html += "<option value='eco status'>eco status - статус ЕКО-профілю</option>";
     html += "<option value='sheets-sync'>sheets-sync - синхронізація з Google Sheets</option>";
     html += "<option value='sheets-stats'>sheets-stats - статистика синхронізації</option>";
     html += "</datalist>";
@@ -239,6 +258,7 @@ void handleRoot() {
 
     // Ukraine marquee
     html += getUkraineMarquee();
+    flushChunk();
 
     // JavaScript
     html += "<script>";
@@ -255,10 +275,15 @@ void handleRoot() {
     html += "  });";
     html += "}";
 
-    // Update status via AJAX
+    // Update status via AJAX (з захистом від накладання запитів та таймаутом)
     html += "function fin(v) { return v !== undefined && v !== null && isFinite(v); }";
+    html += "let _statusBusy = false;";
     html += "function updateStatus() {";
-    html += "  fetch('/status', {cache: 'no-store'})";
+    html += "  if (_statusBusy) return;";
+    html += "  _statusBusy = true;";
+    html += "  const ctrl = new AbortController();";
+    html += "  const tid = setTimeout(() => ctrl.abort(), 4500);";
+    html += "  fetch('/status', {cache: 'no-store', signal: ctrl.signal})";
     html += "    .then(response => response.json())";
     html += "    .then(data => {";
     html += "      if (fin(data.tempRoom)) document.getElementById('tempRoom').textContent = data.tempRoom.toFixed(1) + '°C';";
@@ -297,17 +322,29 @@ void handleRoot() {
     html += "        const lockCheckbox = document.getElementById('manualLock');";
     html += "        if (lockCheckbox) lockCheckbox.checked = data.manualModeLocked;";
     html += "      }";
-    // Emergency alert handling
+    // Emergency / ECO alert handling
+    html += "      const ecoBtn = document.getElementById('ecoToggleBtn');";
+    html += "      if (ecoBtn && data.ecoMode !== undefined) {";
+    html += "        window._currentEcoMode = data.ecoMode;";
+    html += "        if (data.ecoMode === 1) { ecoBtn.textContent = '🔋 ЕКО: ПРИМУСОВО (перемкнути на АВТО)'; ecoBtn.style.background = '#f59e0b'; }";
+    html += "        else { ecoBtn.textContent = '🔋 Увімкнути ЕКО-режим вручну'; ecoBtn.style.background = '#334155'; }";
+    html += "      }";
     html += "      const emergencyAlert = document.getElementById('emergencyAlert');";
     html += "      if (emergencyAlert) {";
-    html += "        if (data.powerOutageActive) {";
-    html += "          emergencyAlert.innerHTML = \"<div class='emergency-alert'><h3>🚨 ВІДСУТНІСТЬ 220В!</h3><p>Напруга: \" + (data.lastVoltage||0).toFixed(1) + \" В</p><button class='btn btn-danger' onclick='resetEmergency()'>🔄 СКИНУТИ</button></div>\";";
+    html += "        if (data.ecoActive || data.powerOutageActive) {";
+    html += "          const dur = data.ecoDurationSec || 0;";
+    html += "          const hh = String(Math.floor(dur / 3600)).padStart(2, '0');";
+    html += "          const mm = String(Math.floor((dur % 3600) / 60)).padStart(2, '0');";
+    html += "          const ss = String(dur % 60).padStart(2, '0');";
+    html += "          const title = data.powerOutageDetected ? '🔋 БЛЕКАУТ — ЕКО-РЕЖИМ АКТИВНИЙ!' : '🔋 РУЧНИЙ ЕКО-РЕЖИМ АКТИВНИЙ';";
+    html += "          emergencyAlert.innerHTML = \"<div class='emergency-alert'><h3>\" + title + \"</h3><p>Напруга 220В: \" + (data.lastVoltage||0).toFixed(1) + \" В | Тривалість: \" + hh + ':' + mm + ':' + ss + \"</p><button class='btn btn-danger' onclick='resetEmergency()'>🔄 СКИНУТИ</button></div>\";";
     html += "        } else emergencyAlert.innerHTML = '';";
     html += "      }";
     html += "      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();";
     html += "      lastUpdateTime = new Date();";
     html += "    })";
-    html += "    .catch(error => console.error('Помилка оновлення:', error));";
+    html += "    .catch(error => console.error('Помилка оновлення:', error))";
+    html += "    .finally(() => { clearTimeout(tid); _statusBusy = false; });";
     html += "}";
 
     // Execute command
@@ -350,6 +387,14 @@ void handleRoot() {
     html += "    .catch(error => console.error('Lock toggle error:', error));";
     html += "}";
 
+    // Toggle manual ECO mode
+    html += "function toggleEcoForce() {";
+    html += "  const nextCmd = (window._currentEcoMode === 1) ? 'eco auto' : 'eco on';";
+    html += "  fetch('/command', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'cmd=' + encodeURIComponent(nextCmd) })";
+    html += "    .then(r => r.text()).then(t => { console.log(t); updateStatus(); })";
+    html += "    .catch(e => alert('❌ Помилка: ' + e));";
+    html += "}";
+
     // Enter key handler
     html += "document.getElementById('commandInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') executeCommand(); });";
 
@@ -380,10 +425,8 @@ void handleRoot() {
 
     html += getHtmlFooter();
 
-    // Перевірка WiFi перед відправкою
-    if (WiFi.status() == WL_CONNECTED) {
-        server.send(200, "text/html", html);
-    }
+    flushChunk();
+    server.sendContent("");
 }
 
 // ============================================================================
@@ -422,9 +465,16 @@ void handleStatus() {
     else if (heatingState.manualMode) doc["mode"] = "РУЧНИЙ";
     else doc["mode"] = "АВТО";
 
-    // Інформація про аварію
-    doc["powerOutageActive"] = powerOutageState.emergencyHeatingActive || powerOutageState.detected;
-    doc["lastVoltage"] = powerOutageState.lastVoltage;
+    // Інформація про аварію та ЕКО-режим
+    doc["powerOutageActive"]   = powerOutageState.emergencyHeatingActive || powerOutageState.detected;
+    doc["powerOutageDetected"] = powerOutageState.detected;
+    doc["ecoActive"]           = isEcoModeActive();
+    doc["ecoMode"]             = config.powerSave.activationMode;
+    doc["ecoHeatingOn"]        = powerOutageState.ecoHeatingOn;
+    doc["ecoDurationSec"]      = (isEcoModeActive() && powerOutageState.ecoStartTime > 0)
+                                 ? (unsigned long)((millis() - powerOutageState.ecoStartTime) / 1000UL)
+                                 : 0UL;
+    doc["lastVoltage"]         = powerOutageState.lastVoltage;
 
     // Інформація про блокування ручного режиму
     doc["manualModeLocked"] = heatingState.manualModeLocked;

@@ -31,13 +31,13 @@ void handleWiFiSettingsPage() {
 
     // Додаткові стилі
     html += "<style>";
-    html += ".section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3498db; }";
-    html += ".current-info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 15px 0; }";
-    html += ".network-list { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px; background: white; }";
+    html += ".section { background: var(--s2); padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3498db; }";
+    html += ".current-info { background: rgba(16,185,129,.14); padding: 15px; border-radius: 5px; margin: 15px 0; }";
+    html += ".network-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--b); border-radius: 5px; padding: 10px; background: white; }";
     html += ".network-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }";
-    html += ".network-item:hover { background: #f0f0f0; }";
+    html += ".network-item:hover { background: var(--s2); }";
     html += ".network-ssid { font-weight: 600; }";
-    html += ".network-details { font-size: 0.9em; color: #666; }";
+    html += ".network-details { font-size: 0.9em; color: var(--m); }";
     html += ".connect-btn { background: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9em; }";
     html += ".connect-btn:hover { background: #45a049; }";
     html += ".btn-scan { background: #9b59b6; }";
@@ -45,8 +45,8 @@ void handleWiFiSettingsPage() {
     html += ".btn-save { background: #2ecc71; }";
     html += ".btn-save:hover { background: #27ae60; }";
     html += ".status-message { padding: 10px; border-radius: 5px; margin: 10px 0; }";
-    html += ".status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }";
-    html += ".status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }";
+    html += ".status-success { background: rgba(16,185,129,.16); color: var(--ok); border: 1px solid #c3e6cb; }";
+    html += ".status-error { background: rgba(239,68,68,.16); color: var(--e); border: 1px solid #f5c6cb; }";
     html += ".hidden { display: none; }";
     html += "</style>";
 
@@ -183,7 +183,7 @@ void handleWiFiSettingsPage() {
     html += "<div class='form-group' style='margin-bottom:15px;'>";
     html += "<label for='connectPassword'>Пароль:</label>";
     html += "<input type='password' id='connectPassword' name='password' placeholder='Введіть пароль'>";
-    html += "<small style='color:#666;'>Залиште пустим для відкритих мереж</small>";
+    html += "<small style='color: var(--m);'>Залиште пустим для відкритих мереж</small>";
     html += "</div>";
 
     html += "<input type='hidden' id='connectEncrypted' name='encrypted' value='true'>";
@@ -334,7 +334,7 @@ void handleWiFiPage() {
     String html = getHtmlHead("WiFi налаштування");
 
     html += "<style>";
-    html += ".info-box { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0; }";
+    html += ".info-box { background: rgba(56,189,248,.14); padding: 15px; border-radius: 5px; margin: 15px 0; }";
     html += ".info-item { display: flex; justify-content: space-between; padding: 5px 0; flex-wrap: wrap; }";
     html += ".form-group { margin: 15px 0; }";
     html += ".form-group label { display: block; margin-bottom: 5px; font-weight: bold; }";
@@ -346,7 +346,7 @@ void handleWiFiPage() {
     html += getNavHeader("📶 WiFi налаштування");
 
     // Попередження
-    html += "<div style='background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;'>";
     html += "<strong>⚠️ ВАЖЛИВО:</strong> Ваш пристрій і ESP32 мають бути в <strong>ОДНІЙ WiFi мережі!</strong>";
     html += "</div>";
 
@@ -384,7 +384,7 @@ void handleWiFiPage() {
     html += "</div>";
 
     html += "<h2>🔐 Безпека</h2>";
-    html += "<div style='background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em;'>";
+    html += "<div style='background: rgba(245,158,11,.14); padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em;'>";
     html += "⚠️ Увімкніть автентифікацію для доступу через інтернет!";
     html += "</div>";
     html += "<div class='form-group'>";

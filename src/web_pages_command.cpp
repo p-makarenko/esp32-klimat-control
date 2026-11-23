@@ -104,10 +104,66 @@ String processWebCommand(const String& cmd) {
         // Скидання аварійного режиму
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.ecoActive = false;
+        powerOutageState.ecoHeatingOn = false;
+        if (config.powerSave.activationMode == ECO_MODE_FORCE_ON) {
+            config.powerSave.activationMode = ECO_MODE_AUTO;
+            savePowerSaveConfig();
+        }
         heatingState.emergencyMode = false;
         heatingState.forceMode = false;
         heatingState.manualMode = false;
-        return "✅ Аварійний режим скинуто. Повернення до AUTO";
+        return "✅ Аварійний/ЕКО режим скинуто. Повернення до AUTO";
+    }
+    else if (lowerCmd == "eco on") {
+        config.powerSave.activationMode = ECO_MODE_FORCE_ON;
+        powerOutageState.ecoActive = true;
+        powerOutageState.ecoStartTime = millis();
+        powerOutageState.emergencyHeatingActive = true;
+        savePowerSaveConfig();
+        return "🔋 ЕКО-режим УВІМКНЕНО ПРИМУСОВО";
+    }
+    else if (lowerCmd == "eco auto") {
+        config.powerSave.activationMode = ECO_MODE_AUTO;
+        if (!powerOutageState.detected) {
+            powerOutageState.ecoActive = false;
+            powerOutageState.emergencyHeatingActive = false;
+            powerOutageState.ecoHeatingOn = false;
+        }
+        savePowerSaveConfig();
+        return "🤖 ЕКО-режим переведено в АВТО (по 220В PZEM)";
+    }
+    else if (lowerCmd == "eco off") {
+        config.powerSave.activationMode = ECO_MODE_DISABLED;
+        powerOutageState.ecoActive = false;
+        powerOutageState.emergencyHeatingActive = false;
+        powerOutageState.ecoHeatingOn = false;
+        savePowerSaveConfig();
+        return "⛔ ЕКО-режим ВИМКНЕНО (ігнорування 220В)";
+    }
+    else if (lowerCmd.startsWith("eco preset ")) {
+        int presetId = lowerCmd.substring(11).toInt();
+        if (presetId >= 0 && presetId <= 2) {
+            applyEcoPreset((uint8_t)presetId);
+            const char* names[] = {"Виживання (старий АКБ)", "Збалансований ЕКО", "Теплий сезон (все OFF)"};
+            return String("✅ Застосовано ЕКО-пресет: ") + names[presetId];
+        }
+        return "❌ Невірний пресет. Використовуйте: eco preset 0|1|2";
+    }
+    else if (lowerCmd == "eco status" || lowerCmd == "eco") {
+        const char* actNames[] = {"АВТО (PZEM)", "ПРИМУСОВО", "ВИМКНЕНО"};
+        const char* polNames[] = {"OFF", "ЕКО", "ШТАТНО"};
+        String s = "🔋 ЕКО СТАТУС: " + String(isEcoModeActive() ? "АКТИВНИЙ" : "НЕАКТИВНИЙ") + "\n";
+        s += "  Активація: " + String(actNames[min((uint8_t)2, config.powerSave.activationMode)]) + "\n";
+        s += "  220В PZEM: " + String(powerOutageState.lastVoltage, 1) + " В (" + String(powerOutageState.detected ? "БЛЕКАУТ" : "ОК") + ")\n";
+        s += "  Обігрів: " + String(polNames[min((uint8_t)2, config.powerSave.heatingPolicy)]) +
+             " (T=" + String(config.powerSave.ecoTempMin, 1) + "°C, Насос<=" + String(config.powerSave.ecoPumpMaxPercent) +
+             "%, Вент<=" + String(config.powerSave.ecoFanMaxPercent) + "%)\n";
+        s += "  Витяжка: " + String(polNames[min((uint8_t)2, config.powerSave.extractorPolicy)]) +
+             " | Вітер: " + String(polNames[min((uint8_t)2, config.powerSave.plantFanPolicy)]) +
+             " | Зволож: " + String(polNames[min((uint8_t)2, config.powerSave.humidifierPolicy)]) +
+             " | Світло: " + String(polNames[min((uint8_t)2, config.powerSave.lightPolicy)]);
+        return s;
     }
 
     // ========================================================================

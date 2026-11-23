@@ -32,15 +32,15 @@ void handleHelpPage() {
 
     // Додаткові стилі
     html += "<style>";
-    html += ".section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9c27b0; }";
-    html += ".tip { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4caf50; }";
-    html += ".warning { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }";
-    html += ".danger { background: #ffebee; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #f44336; }";
+    html += ".section { background: var(--s2); padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9c27b0; }";
+    html += ".tip { background: rgba(16,185,129,.14); padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4caf50; }";
+    html += ".warning { background: rgba(245,158,11,.14); padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }";
+    html += ".danger { background: rgba(239,68,68,.15); padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #f44336; }";
     html += ".code { background: #263238; color: #aed581; padding: 10px; border-radius: 5px; font-family: monospace; margin: 10px 0; }";
     html += ".faq-item { margin: 20px 0; }";
     html += ".faq-q { font-weight: 600; color: #9c27b0; font-size: 1.1em; margin-bottom: 8px; }";
-    html += ".faq-a { color: #555; line-height: 1.6; margin-left: 20px; }";
-    html += "code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #e91e63; }";
+    html += ".faq-a { color: var(--m); line-height: 1.6; margin-left: 20px; }";
+    html += "code { background: var(--s); padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #e91e63; }";
     html += "h2 { color: #9c27b0; margin-top: 30px; }";
     html += "ul, ol { line-height: 1.8; }";
     html += "</style>";
@@ -199,19 +199,19 @@ void handleDebugPage() {
     html += "<h3 style='margin-top: 0;'>💾 Пам'ять</h3>";
     html += "<div style='display: grid; gap: 10px;'>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Вільна пам'ять:</strong>";
     html += "<span style='color: #4CAF50; font-weight: 600;'>" + String(ESP.getFreeHeap() / 1024) + " KB</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Всього пам'яті:</strong>";
     html += "<span>" + String(ESP.getHeapSize() / 1024) + " KB</span>";
     html += "</div>";
 
     float heapUsed = 100.0 - (ESP.getFreeHeap() * 100.0 / ESP.getHeapSize());
     String heapColor = heapUsed > 80 ? "#f44336" : (heapUsed > 60 ? "#ff9800" : "#4CAF50");
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Використано:</strong>";
     html += "<span style='color: " + heapColor + "; font-weight: 600;'>" + String(heapUsed, 1) + "%</span>";
     html += "</div>";
@@ -224,7 +224,7 @@ void handleDebugPage() {
     html += "<h3 style='margin-top: 0;'>🖥️ Система</h3>";
     html += "<div style='display: grid; gap: 10px;'>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Задач FreeRTOS:</strong>";
     html += "<span>" + String(uxTaskGetNumberOfTasks()) + "</span>";
     html += "</div>";
@@ -237,22 +237,22 @@ void handleDebugPage() {
     if (days > 0) uptimeStr += String(days) + "д ";
     uptimeStr += String(hours) + "г " + String(minutes) + "хв";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Час роботи:</strong>";
     html += "<span style='color: #2196F3; font-weight: 600;'>" + uptimeStr + "</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Температура чіпа:</strong>";
     html += "<span>" + String(temperatureRead(), 1) + "°C</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Частота CPU:</strong>";
     html += "<span>" + String(getCpuFrequencyMhz()) + " MHz</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Версія SDK:</strong>";
     html += "<span>" + String(ESP.getSdkVersion()) + "</span>";
     html += "</div>";
@@ -265,24 +265,24 @@ void handleDebugPage() {
     html += "<h3 style='margin-top: 0;'>📶 WiFi</h3>";
     html += "<div style='display: grid; gap: 10px;'>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>SSID:</strong>";
     html += "<span>" + htmlEscape(WiFi.SSID()) + "</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>IP:</strong>";
     html += "<span>" + WiFi.localIP().toString() + "</span>";
     html += "</div>";
 
     int rssi = WiFi.RSSI();
     String rssiColor = rssi > -50 ? "#4CAF50" : (rssi > -70 ? "#ff9800" : "#f44336");
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>Сигнал:</strong>";
     html += "<span style='color: " + rssiColor + "; font-weight: 600;'>" + String(rssi) + " dBm</span>";
     html += "</div>";
 
-    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: #f5f5f5; border-radius: 5px;'>";
+    html += "<div style='display: flex; justify-content: space-between; padding: 10px; background: var(--s); border-radius: 5px;'>";
     html += "<strong>MAC:</strong>";
     html += "<span style='font-family: monospace;'>" + WiFi.macAddress() + "</span>";
     html += "</div>";
