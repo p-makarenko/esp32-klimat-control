@@ -3,7 +3,7 @@
 #include "config.h"
 #include "web_common.h"
 #include "google_sheets_sync.h"
-#include <LittleFS.h>
+#include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <time.h>
 
@@ -64,6 +64,8 @@ bool pzemReadRegisters(uint8_t addr, uint8_t *resp, uint8_t respLen) {
     while (idx < respLen && millis() - start < 500) {
         if (PZEMSerial.available()) {
             resp[idx++] = PZEMSerial.read();
+        } else {
+            delay(1);
         }
     }
     return (idx == respLen);
@@ -78,11 +80,11 @@ void initEnergyMonitor() {
 #if ENABLE_ENERGY_MONITOR
     Serial.println("⚙️  Ініціалізація енергоконтролера...");
 
-    // Ініціалізація LittleFS для історії
-    if (!LittleFS.begin(true)) {
-        Serial.println("⚠️  Помилка ініціалізації LittleFS");
+    // Використовуємо спільний SPIFFS (щоб не конфліктувати з data_logger на одному розділі флешу)
+    if (!SPIFFS.begin(true)) {
+        Serial.println("⚠️  Помилка ініціалізації SPIFFS для енергоконтролера");
     } else {
-        Serial.println("✓ LittleFS ініціалізовано");
+        Serial.println("✓ SPIFFS готовий для історії енергії");
     }
 
     PZEMSerial.begin(9600, SERIAL_8N1, PZEM_RX_PIN, PZEM_TX_PIN);
@@ -178,7 +180,19 @@ void appendEnergyHistory(float energy) {
 #if ENABLE_ENERGY_MONITOR
     if (isnan(energy) || energy < 0) return;
 
-    File f = LittleFS.open("/energy_history.csv", "a");
+    // Обмеження розміру файлу історії енергії (~24 КБ), щоб не переповнювати SPIFFS
+    if (SPIFFS.exists("/energy_history.csv")) {
+        File check = SPIFFS.open("/energy_history.csv", "r");
+        if (check) {
+            size_t sz = check.size();
+            check.close();
+            if (sz > 24576) {
+                SPIFFS.remove("/energy_history.csv");
+            }
+        }
+    }
+
+    File f = SPIFFS.open("/energy_history.csv", "a");
     if (f) {
         time_t now;
         time(&now);
@@ -254,7 +268,7 @@ void handleEnergyHistory() {
 #if ENABLE_ENERGY_MONITOR
     if (!checkAuth()) return;
 
-    File f = LittleFS.open("/energy_history.csv", "r");
+    File f = SPIFFS.open("/energy_history.csv", "r");
     if (f) {
         server.setContentLength(CONTENT_LENGTH_UNKNOWN);
         server.send(200, "text/plain", "");
@@ -277,7 +291,7 @@ void handleEnergyHistoryStats() {
     if (!checkAuth()) return;
 
 #if ENABLE_ENERGY_MONITOR
-    File f = LittleFS.open("/energy_history.csv", "r");
+    File f = SPIFFS.open("/energy_history.csv", "r");
     if (!f) {
         server.send(404, "application/json", "{\"error\":\"No data\"}");
         return;
@@ -285,30 +299,40 @@ void handleEnergyHistoryStats() {
 
     JsonDocument doc;
     float totalEnergy = 0;
+    float prevEnergy = -1.0f;
     int recordCount = 0;
     String line;
 
     while (f.available()) {
         int b = f.read();
+        if (b != '\n' && b != '\r') {
+            line += (char)b;
+        }
         if (b == '\n' || !f.available()) {
             if (line.length() > 0) {
                 int commaPos = line.indexOf(',');
                 if (commaPos > 0) {
                     float energy = line.substring(commaPos + 1).toFloat();
-                    totalEnergy += energy;
+                    if (prevEnergy >= 0.0f) {
+                        if (energy >= prevEnergy) {
+                            totalEnergy += (energy - prevEnergy);
+                        } else {
+                            // Лічильник було скинуто
+                            totalEnergy += energy;
+                        }
+                    }
+                    prevEnergy = energy;
                     recordCount++;
                 }
             }
             line = "";
-        } else {
-            line += (char)b;
         }
     }
     f.close();
 
     doc["totalEnergy"] = totalEnergy;
     doc["recordCount"] = recordCount;
-    doc["avgDaily"] = recordCount > 0 ? totalEnergy / (recordCount / 24.0) : 0;
+    doc["avgDaily"] = recordCount > 1 ? totalEnergy / ((recordCount - 1) / 24.0) : 0;
 
     String json;
     serializeJson(doc, json);

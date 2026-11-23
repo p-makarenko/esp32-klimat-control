@@ -1,4 +1,4 @@
-﻿#ifndef DATA_STORAGE_H
+#ifndef DATA_STORAGE_H
 #define DATA_STORAGE_H
 
 #include "system_core.h"

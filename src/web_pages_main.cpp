@@ -30,7 +30,7 @@ void handleRoot() {
     if (!checkAuth()) return;
 
     // Перевірка WiFi перед відправкою великої відповіді
-    if (WiFi.status() != WL_CONNECTED) {
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
         return;
     }
 
@@ -256,31 +256,32 @@ void handleRoot() {
     html += "}";
 
     // Update status via AJAX
+    html += "function fin(v) { return v !== undefined && v !== null && isFinite(v); }";
     html += "function updateStatus() {";
-    html += "  fetch('/status')";
+    html += "  fetch('/status', {cache: 'no-store'})";
     html += "    .then(response => response.json())";
     html += "    .then(data => {";
-    html += "      if (data.tempRoom !== undefined && !isNaN(data.tempRoom)) document.getElementById('tempRoom').textContent = data.tempRoom.toFixed(1) + '°C';";
+    html += "      if (fin(data.tempRoom)) document.getElementById('tempRoom').textContent = data.tempRoom.toFixed(1) + '°C';";
     html += "      else document.getElementById('tempRoom').textContent = '🚨 ПОМИЛКА';";
-    html += "      if (data.tempCarrier !== undefined && !isNaN(data.tempCarrier)) document.getElementById('tempCarrier').textContent = data.tempCarrier.toFixed(1) + '°C';";
+    html += "      if (fin(data.tempCarrier)) document.getElementById('tempCarrier').textContent = data.tempCarrier.toFixed(1) + '°C';";
     html += "      else document.getElementById('tempCarrier').textContent = '🚨 ПОМИЛКА';";
-    html += "      if (data.tempBME !== undefined && !isNaN(data.tempBME)) document.getElementById('tempBME').textContent = data.tempBME.toFixed(1) + '°C';";
+    html += "      if (fin(data.tempBME)) document.getElementById('tempBME').textContent = data.tempBME.toFixed(1) + '°C';";
     html += "      else document.getElementById('tempBME').textContent = '🚨 ПОМИЛКА';";
-    html += "      if (data.humidity !== undefined && !isNaN(data.humidity)) document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
+    html += "      if (fin(data.humidity)) document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
     html += "      else document.getElementById('humidity').textContent = '🚨 ПОМИЛКА';";
-    html += "      if (data.pressure !== undefined && !isNaN(data.pressure)) document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
-    html += "      if (data.co2Level !== undefined && !isNaN(data.co2Level)) {";
+    html += "      if (fin(data.pressure)) document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
+    html += "      if (fin(data.co2Level)) {";
     html += "        document.getElementById('co2Level').textContent = data.co2Level.toFixed(0) + ' ppm';";
     html += "        document.getElementById('co2Status').textContent = '✓ OK';";
     html += "      } else {";
     html += "        document.getElementById('co2Level').textContent = '🚨 ПОМИЛКА';";
     html += "        document.getElementById('co2Status').textContent = '✗ НЕ ВІДПОВІДАЄ';";
     html += "      }";
-    html += "      if (data.co2Temp !== undefined && !isNaN(data.co2Temp)) document.getElementById('co2Temp').textContent = data.co2Temp.toFixed(1) + '°C';";
-    html += "      if (data.co2Humidity !== undefined && !isNaN(data.co2Humidity)) document.getElementById('co2Hum').textContent = data.co2Humidity.toFixed(1) + '%';";
-    html += "      if (data.pumpPower !== undefined) { const el = document.getElementById('pumpPower'); if (el) el.textContent = Math.round(data.pumpPower) + '%'; }";
-    html += "      if (data.fanPower !== undefined) { const el = document.getElementById('fanPower'); if (el) el.textContent = Math.round(data.fanPower) + '%'; }";
-    html += "      if (data.extractorPower !== undefined) { const el = document.getElementById('extractorPower'); if (el) el.textContent = Math.round(data.extractorPower) + '%'; }";
+    html += "      if (fin(data.co2Temp)) document.getElementById('co2Temp').textContent = data.co2Temp.toFixed(1) + '°C';";
+    html += "      if (fin(data.co2Humidity)) document.getElementById('co2Hum').textContent = data.co2Humidity.toFixed(1) + '%';";
+    html += "      if (fin(data.pumpPower)) { const el = document.getElementById('pumpPower'); if (el) el.textContent = Math.round(data.pumpPower) + '%'; }";
+    html += "      if (fin(data.fanPower)) { const el = document.getElementById('fanPower'); if (el) el.textContent = Math.round(data.fanPower) + '%'; }";
+    html += "      if (fin(data.extractorPower)) { const el = document.getElementById('extractorPower'); if (el) el.textContent = Math.round(data.extractorPower) + '%'; }";
     html += "      if (data.mode) {";
     html += "        document.getElementById('mode').textContent = data.mode;";
     html += "        let modeIcon = '🤖';";
@@ -315,17 +316,17 @@ void handleRoot() {
     html += "  const command = input.value.trim();";
     html += "  if (!command) return;";
     html += "  const output = document.getElementById('commandOutput');";
-    html += "  output.innerHTML += '\\n> ' + command + '\\n[Виконується...]';";
+    html += "  output.textContent += '\\n> ' + command + '\\n[Виконується...]';";
     html += "  output.scrollTop = output.scrollHeight;";
     html += "  fetch('/command', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'cmd=' + encodeURIComponent(command) })";
     html += "    .then(response => response.text())";
     html += "    .then(text => {";
-    html += "      output.innerHTML = output.innerHTML.replace('[Виконується...]', text);";
+    html += "      output.textContent = output.textContent.replace('[Виконується...]', text);";
     html += "      output.scrollTop = output.scrollHeight;";
     html += "      input.value = '';";
     html += "      setTimeout(updateStatus, 1000);";
     html += "    })";
-    html += "    .catch(error => { output.innerHTML = output.innerHTML.replace('[Виконується...]', '❌ Помилка: ' + error); });";
+    html += "    .catch(error => { output.textContent = output.textContent.replace('[Виконується...]', '❌ Помилка: ' + error); });";
     html += "}";
 
     html += "function quickCommand(cmd) { document.getElementById('commandInput').value = cmd; executeCommand(); }";

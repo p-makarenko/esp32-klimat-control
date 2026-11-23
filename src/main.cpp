@@ -408,7 +408,9 @@ void emergencyStop() {
   
   setHeatingPower(0, 0, 0);
   digitalWrite(HUMIDIFIER_PIN, LOW);
-  moveServoSmooth(SERVO_CLOSED_ANGLE);
+  humidifierState.active = false;
+  ventState.moving = true;
+  moveServoSmooth(config.servoClosedAngle);
   
   heatingState.emergencyMode = true;
   heatingState.manualMode = false;

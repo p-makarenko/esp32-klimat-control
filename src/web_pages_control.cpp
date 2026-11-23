@@ -27,7 +27,7 @@ extern String getUkraineMarquee();
 
 void handleControlPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("Керування");
     html += "<div class='container'>";
@@ -223,9 +223,10 @@ void handleControlPage() {
     html += "  if (display) display.textContent = value + '%';";
     html += "  sendCmd(device + ' ' + value);";
     html += "}";
-    html += "function updatePump(v) { sendCmd('manual'); document.getElementById('pumpValue').textContent = v + '%'; sendCmd('pump ' + v); }";
-    html += "function updateFan(v) { sendCmd('manual'); document.getElementById('fanValue').textContent = v + '%'; sendCmd('fan ' + v); }";
-    html += "function updateExtractor(v) { sendCmd('manual'); document.getElementById('extractorValue').textContent = v + '%'; sendCmd('extractor ' + v); }";
+    html += "var _tP,_tF,_tE;";
+    html += "function updatePump(v) { document.getElementById('pumpValue').textContent = v + '%'; clearTimeout(_tP); _tP = setTimeout(function(){ sendCmd('manual'); sendCmd('pump ' + v); }, 150); }";
+    html += "function updateFan(v) { document.getElementById('fanValue').textContent = v + '%'; clearTimeout(_tF); _tF = setTimeout(function(){ sendCmd('manual'); sendCmd('fan ' + v); }, 150); }";
+    html += "function updateExtractor(v) { document.getElementById('extractorValue').textContent = v + '%'; clearTimeout(_tE); _tE = setTimeout(function(){ sendCmd('manual'); sendCmd('extractor ' + v); }, 150); }";
     html += "function updateModeButtons(activeMode) {";
     html += "  const btns = document.querySelectorAll('.mode-btn');";
     html += "  btns.forEach(btn => {";
@@ -257,12 +258,7 @@ void handleControlPage() {
     html += "  }";
     html += "}";
     html += "function toggleLockManual() {";
-    html += "  const checkbox = document.getElementById('lockManualMode');";
-    html += "  if (checkbox.checked) {";
-    html += "    sendCmd('lock_manual_on');";
-    html += "  } else {";
-    html += "    sendCmd('lock_manual_off');";
-    html += "  }";
+    html += "  sendCmd('lock');";
     html += "}";
     html += "</script>";
 

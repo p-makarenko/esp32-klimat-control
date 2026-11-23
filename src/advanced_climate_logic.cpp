@@ -856,10 +856,10 @@ void smartHeatingControl() {
     
     // Насос 0% у штатному режимі
     if (!heatingState.emergencyMode) {
-        if (tempCarrier < 30.0f) {
+        if (carrierValid && tempCarrier < 30.0f) {
             setPumpPercent(33);  // Циркуляція 33% при охолодженні теплоносія нижче 30°C
         } else {
-            setPumpPercent(0);   // Вимкнено, коли теплоносій прогрітий (>= 30°C)
+            setPumpPercent(0);   // Вимкнено, коли теплоносій прогрітий (>= 30°C) або датчик несправний
         }
     }
 
@@ -962,18 +962,22 @@ void smartCoolingControl() {
 
     // Вентилятор: чим тепліше - тим більше охолоджуємо
     int fanPower;
+    int midFan = (config.fanMinPercent + config.fanMaxPercent) / 2;
 
-    if (tempDiff > 2.0f) {
+    if (tempRoom <= config.tempMin) {
+        // Прохолодно - мінімальна циркуляція
+        fanPower = config.fanMinPercent;
+    } else if (tempDiff > 2.0f) {
         // Дуже жарко - максимальне охолодження
         fanPower = config.fanMaxPercent;
-    } else if (tempRoom < config.tempMin) {
+    } else if (tempRoom >= config.tempMax) {
         // Жарко - активне охолодження
-        fanPower = map(constrain(tempDiff * 100, 100, 200), 100, 200,
-                      (config.fanMinPercent + config.fanMaxPercent) / 2, config.fanMaxPercent);
-    } else if (tempRoom > config.tempMax) {
+        fanPower = map(constrain((int)(tempDiff * 100), 50, 200), 50, 200,
+                      midFan, config.fanMaxPercent);
+    } else if (tempDiff > 0.0f) {
         // Злегка тепло - помірне охолодження
-        fanPower = map(constrain(tempDiff * 100, 50, 100), 50, 100,
-                      config.fanMinPercent + 10, (config.fanMinPercent + config.fanMaxPercent) / 2);
+        fanPower = map(constrain((int)(tempDiff * 100), 0, 100), 0, 100,
+                      config.fanMinPercent, midFan);
     } else {
         // Температура в нормі - мінімальна циркуляція
         fanPower = config.fanMinPercent;
@@ -984,7 +988,7 @@ void smartCoolingControl() {
 
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
         Serial.printf("❄️ Режим охолодження: T=%.1f°C (діапазон %.1f-%.1f°C), Насос=0%%, Вентилятор=%d%%\n",
-                     tempRoom, targetTemp, fanPower);
+                     tempRoom, config.tempMin, config.tempMax, fanPower);
         lastPowerUpdate = now;
     }
 }
@@ -1014,14 +1018,14 @@ void advancedHumidityControl(float humidity, float tempRoom) {
         digitalWrite(HUMIDIFIER_PIN, HIGH);
         humidifierState.active = true;
         humidifierState.cyclesToday++;
-        Serial.printf("✓ Зволожувач: ВКЛ (Вологість: %.1f%, Ціль: %.1f%)\n", 
+        Serial.printf("✓ Зволожувач: ВКЛ (Вологість: %.1f%%, Ціль: %.1f%%)\n", 
                      humidity, adaptiveHumMin);
     } 
     else if (humidifierState.active && humidity > adaptiveHumMax) {
         digitalWrite(HUMIDIFIER_PIN, LOW);
         humidifierState.active = false;
         humidifierState.lastCycle = now;
-        Serial.printf("✓ Зволожувач: ВИМК (Вологість: %.1f%, Ціль: %.1f%)\n", 
+        Serial.printf("✓ Зволожувач: ВИМК (Вологість: %.1f%%, Ціль: %.1f%%)\n", 
                      humidity, adaptiveHumMax);
     }
 }
@@ -1487,7 +1491,8 @@ void checkFanMaxPowerEfficiency() {
     }
 
     unsigned long now = millis();
-    bool fanAtMax = (heatingState.fanPower >= config.fanMaxPercent);
+    uint8_t fanPercent = (uint8_t)((heatingState.fanPower * 100 + 127) / 255);
+    bool fanAtMax = (config.fanMaxPercent > 0 && fanPercent >= config.fanMaxPercent);
 
     if (fanAtMax) {
         // Вентилятор на максимумі
@@ -1495,7 +1500,7 @@ void checkFanMaxPowerEfficiency() {
             // Тільки що вийшов на максимум - запам'ятовуємо
             heatingState.fan_max_power_start_time = now;
             heatingState.fan_max_power_initial_temp = tempRoom;
-            Serial.printf("🔥 Вентилятор на максимумі (%u%%). Моніторинг ефективності...\n", heatingState.fanPower);
+            Serial.printf("🔥 Вентилятор на максимумі (%u%%). Моніторинг ефективності...\n", fanPercent);
         } else {
             // Перевіряємо чи пройшло 2 хвилини
             unsigned long timeAtMax = now - heatingState.fan_max_power_start_time;
@@ -1551,11 +1556,14 @@ void advancedLogicTask(void *parameter) {
 
     while (1) {
         float tempRoom = 0, tempCarrier = 0, humidity = 0;
+        bool roomValid = false, bmeValid = false;
 
         if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
             tempRoom = sensorData.tempRoom;
             tempCarrier = sensorData.tempCarrier;
             humidity = sensorData.humidity;
+            roomValid = sensorData.roomValid;
+            bmeValid = sensorData.bmeValid;
             xSemaphoreGive(getSensorMutex());
         }
 
@@ -1586,14 +1594,15 @@ void advancedLogicTask(void *parameter) {
             smartHeatingControl();
         }
 
-        // 🚨 АВАРІЙНИЙ РЕЖИМ: При відключенні 220В включаємо насос ТІЛЬКИ якщо температура низька
+        // 🚨 АВАРІЙНИЙ РЕЖИМ: При відключенні 220В включаємо насос ТІЛЬКИ якщо є валідний датчик і температура низька
         if (powerOutageState.emergencyHeatingActive) {
-            // Включаємо обігрів тільки якщо температура нижче мінімуму
-            if (tempRoom < config.tempMin) {
+            bool hasTemp = roomValid || bmeValid;
+            float effectiveTemp = roomValid ? tempRoom : (bmeValid ? getAdjustedBmeTemperature() : 99.0f);
+            if (hasTemp && effectiveTemp < config.tempMin) {
                 setPumpPercent(100);
                 setFanPercent(100);
             } else {
-                // Температура в нормі - вимикаємо системи для економії батареї
+                // Температура в нормі або датчики несправні - вимикаємо системи для економії батареї
                 setPumpPercent(0);
                 setFanPercent(0);
             }
@@ -1602,7 +1611,12 @@ void advancedLogicTask(void *parameter) {
         // ПРІОРИТЕТ 4: Адаптивне зниження порогів (якщо система не справляється)
         checkAdaptiveThresholds();
 
-        advancedHumidityControl(humidity, tempRoom);
+        if (bmeValid) {
+            advancedHumidityControl(humidity, roomValid ? tempRoom : getAdjustedBmeTemperature());
+        } else if (humidifierState.active) {
+            digitalWrite(HUMIDIFIER_PIN, LOW);
+            humidifierState.active = false;
+        }
 
         advancedUpdateExtractorTimer();
 

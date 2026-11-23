@@ -8,7 +8,7 @@
 #include "advanced_climate_logic.h"
 #include <time.h>
 
-// РћРіРѕР»РѕС€РµРЅРЅСЏ С„СѓРЅРєС†С–Р№ Р·Р°РґР°С‡
+// Оголошення функцій задач
 extern void sensorTask(void *parameter);
 extern void heatingTask(void *parameter);
 extern void ventilationTask(void *parameter);
@@ -18,7 +18,7 @@ extern void advancedLogicTask(void *parameter);
 extern void plantFanTask(void *parameter);
 
 float tempTrendBuffer[TREND_WINDOW_SIZE];
-// Р“Р»РѕР±Р°Р»СЊРЅС– РѕР±'С”РєС‚Рё
+// Глобальні об'єкти
 Preferences preferences;
 WebServer server(80);
 
@@ -32,7 +32,7 @@ TaskHandle_t advancedLogicTaskHandle = NULL;
 TaskHandle_t dataLoggerTaskHandle = NULL;
 TaskHandle_t plantFanTaskHandle = NULL;
 
-// РњКјСЋС‚РµРєСЃРё РґР»СЏ СЃРёРЅС…СЂРѕРЅС–Р·Р°С†С–С—
+// Мʼютекси для синхронізації
 SemaphoreHandle_t sensorMutex;
 SemaphoreHandle_t configMutex;
 SemaphoreHandle_t heatingMutex;
@@ -41,26 +41,26 @@ SemaphoreHandle_t timeMutex;
 SemaphoreHandle_t syncMutex;
 SemaphoreHandle_t ramBufferMutex;
 
-// РЎС‚Р°С‚РёС‡РЅС– Р·РјС–РЅРЅС– (С–РЅРєР°РїСЃСѓР»СЊРѕРІР°РЅС– РІ С†СЊРѕРјСѓ С„Р°Р№Р»С–)
+// Статичні змінні (інкапсульовані в цьому файлі)
 static unsigned long _lastStatusPrint = 0;
 static unsigned long _lastSerialCheck = 0;
 static unsigned long _lastTrendCheck = 0;
 static unsigned long _lastHistorySave = 0;
 static unsigned long _lastExtractorCheck = 0;
 
-// Р—РјС–РЅРЅС– РґР»СЏ С‡Р°СЃСѓ
+// Змінні для часу
 time_t currentTime = 0;
 struct tm timeInfo;
 static bool timeSynced = false;
 static unsigned long _lastTimeSync = 0;
 
 
-// Р”РѕРґР°РЅРѕ: Р·РјС–РЅРЅС– РґР»СЏ Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
+// Додано: змінні для аварійного режиму
 static unsigned long _emergencyStartTime = 0;
 static float _emergencyStartTempCarrier = 0;
 static float _emergencyStartTempRoom = 0;
 // ============================================================================
-// Р“Р•РўРўР•Р Р РўРђ РЎР•РўРўР•Р Р
+// ГЕТТЕРИ ТА СЕТТЕРИ
 // ============================================================================
 
 unsigned long getLastStatusPrint() {
@@ -111,7 +111,7 @@ void setLastTimeSync(unsigned long time) {
     _lastTimeSync = time;
 }
 
-// Р”РѕРґР°РЅРѕ: РіРµС‚С‚РµСЂРё/СЃРµС‚С‚РµСЂРё РґР»СЏ Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
+// Додано: геттери/сеттери для аварійного режиму
 unsigned long getEmergencyStartTime() {
     return _emergencyStartTime;
 }
@@ -137,34 +137,39 @@ void setEmergencyStartTempRoom(float temp) {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р РћР‘РћРўР Р— Р§РђРЎРћРњ
+// ФУНКЦІЇ ДЛЯ РОБОТИ З ЧАСОМ
 // ============================================================================
 
 // Очистити неправильні мережеві налаштування
 void resetNetworkSettings() {
-  preferences.begin("wifi", false);
+  preferences.begin("climate", false);
   preferences.putBool("useStaticIP", false);
-  preferences.putString("staticIP", "192.168.1.100");
-  preferences.putString("gateway", "192.168.1.1");
+  preferences.putString("staticIP", "");
+  preferences.putString("gateway", "");
   preferences.putString("subnet", "255.255.255.0");
   preferences.putString("dns", "8.8.8.8");
   preferences.end();
+  config.useStaticIP = false;
+  config.staticIP = "";
+  config.gateway = "";
+  config.subnet = "255.255.255.0";
+  config.dns = "8.8.8.8";
   Serial.println("✅ Мережеві налаштування скинуті на DHCP");
 }
 
 void initTime() {
-  // Serial.println("РЎРїСЂРѕР±СѓС”РјРѕ СЃРёРЅС…СЂРѕРЅС–Р·СѓРІР°С‚Рё С‡Р°СЃ...");  // RUS_REMOVED
+  // Serial.println("Спробуємо синхронізувати час...");  // RUS_REMOVED
   
-  // РСЃРїРѕР»СЊР·СѓРµРј РЅРµСЃРєРѕР»СЊРєРѕ NTP СЃРµСЂРІРµСЂРѕРІ РґР»СЏ РЅР°РґРµР¶РЅРѕСЃС‚Рё
+  // Используем несколько NTP серверов для надежности
   const char* ntpServers[] = {
-    "pool.ntp.org",           // РћСЃРЅРѕРІРЅРѕР№ РїСѓР»
-    "time.google.com",        // Google (РѕС‡РµРЅСЊ С‚РѕС‡РЅС‹Р№)
+    "pool.ntp.org",           // Основной пул
+    "time.google.com",        // Google (очень точный)
     "time.windows.com",       // Microsoft
     "ntp.ubuntu.com",         // Ubuntu
-    "0.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 1
-    "1.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 2
-    "2.ua.pool.ntp.org",      // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 3
-    "3.ua.pool.ntp.org"       // РЈРєСЂР°РёРЅСЃРєРёР№ СЃРµСЂРІРµСЂ 4
+    "0.ua.pool.ntp.org",      // Украинский сервер 1
+    "1.ua.pool.ntp.org",      // Украинский сервер 2
+    "2.ua.pool.ntp.org",      // Украинский сервер 3
+    "3.ua.pool.ntp.org"       // Украинский сервер 4
   };
   
   // POSIX timezone для Києва — автоматичне переключення літній/зимовий час
@@ -172,9 +177,9 @@ void initTime() {
   setenv("TZ", TZ_INFO, 1);
   tzset();
   
-  // Serial.print("РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р· NTP СЃРµСЂРІРµСЂР°РјРё...");  // RUS_REMOVED
+  // Serial.print("Синхронізація з NTP серверами...");  // RUS_REMOVED
   
-  int maxAttempts = 30;  // 30 СЃРµРєСѓРЅРґ РѕР¶РёРґР°РЅРёСЏ
+  int maxAttempts = 30;  // 30 секунд ожидания
   bool ntpSuccess = false;
   
   for (int i = 0; i < maxAttempts; i++) {
@@ -183,22 +188,22 @@ void initTime() {
       _lastTimeSync = millis();
       time(&currentTime);
       
-      // Serial.println("\nвњ“ Р§Р°СЃ СЃРёРЅС…СЂРѕРЅС–Р·РѕРІР°РЅРѕ С‡РµСЂРµР· NTP!");  // RUS_REMOVED
+      // Serial.println("\n✓ Час синхронізовано через NTP!");  // RUS_REMOVED
       Serial.print("Сервер: ");
       Serial.println(ntpServers[0]);
       Serial.printf("Отримано: %d-%02d-%02d %02d:%02d:%02d\n",
                     timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday,
                     timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
       
-      // РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РІСЂРµРјСЏ Р°РґРµРєРІР°С‚РЅРѕРµ (РЅРµ РІ РїСЂРѕС€Р»РѕРј РІРµРєРµ)
+      // Проверяем что время адекватное (не в прошлом веке)
       if (timeInfo.tm_year + 1900 >= 2024) {
-        // Serial.println("вњ“ Р§Р°СЃ РІР°Р»С–РґРЅРёР№ (РїС–СЃР»СЏ 2024 СЂРѕРєСѓ)");  // RUS_REMOVED
+        // Serial.println("✓ Час валідний (після 2024 року)");  // RUS_REMOVED
         ntpSuccess = true;
         break;
       } else {
-        // Serial.println("вљ  NTP РїРѕРІРµСЂРЅСѓРІ СЃС‚Р°СЂРµ С‡Р°СЃ, РїСЂРѕР±СѓС”РјРѕ С–РЅС€РёР№ СЃРµСЂРІРµСЂ...");  // RUS_REMOVED
+        // Serial.println("⚠ NTP повернув старе час, пробуємо інший сервер...");  // RUS_REMOVED
         
-        // РџСЂРѕР±СѓРµРј СЃР»РµРґСѓСЋС‰РёР№ СЃРµСЂРІРµСЂ
+        // Пробуем следующий сервер
         static int serverIndex = 1;
         configTime(0, 0,
           ntpServers[serverIndex % 8],
@@ -212,23 +217,23 @@ void initTime() {
     delay(1000);
     Serial.print(".");
     
-    // РљР°Р¶РґС‹Рµ 10 СЃРµРєСѓРЅРґ РјРµРЅСЏРµРј СЃРµСЂРІРµСЂ
+    // Каждые 10 секунд меняем сервер
     if (i > 0 && i % 10 == 0) {
       Serial.printf("\nСпроба %d/30, міняю сервер...\n", i);
     }
   }
   
   if (!ntpSuccess) {
-    // Serial.println("\nвљ  Р’СЃС– NTP СЃРµСЂРІРµСЂРё РЅРµ РІС–РґРїРѕРІС–РґР°СЋС‚СЊ");  // RUS_REMOVED
+    // Serial.println("\n⚠ Всі NTP сервери не відповідають");  // RUS_REMOVED
     
     // 
     struct tm tm;
-    tm.tm_year = 2024 - 1900;   // 2024 РіРѕРґ
-    tm.tm_mon = 2 - 1;          // Р¤РµРІСЂР°Р»СЊ (РµСЃР»Рё СЃРµР№С‡Р°СЃ С„РµРІСЂР°Р»СЊ)
-    tm.tm_mday = 18;            // 18 С‡РёСЃР»Рѕ
-    tm.tm_hour = 14;            // 14 С‡Р°СЃРѕРІ
-    tm.tm_min = 0;              // 0 РјРёРЅСѓС‚
-    tm.tm_sec = 0;              // 0 СЃРµРєСѓРЅРґ
+    tm.tm_year = 2024 - 1900;   // 2024 год
+    tm.tm_mon = 2 - 1;          // Февраль (если сейчас февраль)
+    tm.tm_mday = 18;            // 18 число
+    tm.tm_hour = 14;            // 14 часов
+    tm.tm_min = 0;              // 0 минут
+    tm.tm_sec = 0;              // 0 секунд
     tm.tm_isdst = -1;
     
     time_t t = mktime(&tm);
@@ -239,8 +244,8 @@ void initTime() {
     localtime_r(&currentTime, &timeInfo);
     timeSynced = true;
     
-    Serial.printf("вњ“ Р›РѕРєР°Р»СЊРЅРёР№ С‡Р°СЃ РІСЃС‚Р°РЅРѕРІР»РµРЅРѕ: %s\n", getTimeString().c_str());
-    // Serial.println("в„№ Р’РёРєРѕСЂРёСЃС‚Р°Р№С‚Рµ РІРµР±-С–РЅС‚РµСЂС„РµР№СЃ (/settime) РґР»СЏ С‚РѕС‡РЅРѕРіРѕ С‡Р°СЃСѓ");  // RUS_REMOVED
+    Serial.printf("✓ Локальний час встановлено: %s\n", getTimeString().c_str());
+    // Serial.println("ℹ Використайте веб-інтерфейс (/settime) для точного часу");  // RUS_REMOVED
   }
 }
 
@@ -255,14 +260,14 @@ void syncTime() {
       if (xSemaphoreTake(timeMutex, portMAX_DELAY)) {
         struct tm timeinfo;
         localtime_r(&currentTime, &timeinfo);
-        timeinfo.tm_isdst = -1; // РђРІС‚РѕРІРёР·РЅР°С‡РµРЅРЅСЏ Р»С–С‚РЅСЊРѕРіРѕ С‡Р°СЃСѓ
+        timeinfo.tm_isdst = -1; // Автовизначення літнього часу
         time_t adjustedTime = mktime(&timeinfo);
         struct timeval tv = {adjustedTime, 0};
         settimeofday(&tv, nullptr);
         xSemaphoreGive(timeMutex);
       }
       
-      // Serial.println("вњ“ Р§Р°СЃ РѕРЅРѕРІР»РµРЅРѕ");  // RUS_REMOVED
+      // Serial.println("✓ Час оновлено");  // RUS_REMOVED
     }
   }
 }
@@ -272,7 +277,7 @@ String getFormattedTime() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
+    // Получаем РЕАЛЬНОЕ текущее время
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -286,7 +291,7 @@ String getFormattedTime() {
     xSemaphoreGive(timeMutex);
     return String(timeStr);
   }
-  return "РџРѕРјРёР»РєР°";
+  return "Помилка";
 }
 
 String getDateString() {
@@ -294,7 +299,7 @@ String getDateString() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
+    // Получаем РЕАЛЬНОЕ текущее время
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -304,7 +309,7 @@ String getDateString() {
     xSemaphoreGive(timeMutex);
     return String(dateStr);
   }
-  return "РџРѕРјРёР»РєР° РґР°С‚Рё";
+  return "Помилка дати";
 }
 
 String getTimeString() {
@@ -312,7 +317,7 @@ String getTimeString() {
     time_t now;
     struct tm timeinfo;
     
-    // РџРѕР»СѓС‡Р°РµРј Р Р•РђР›Р¬РќРћР• С‚РµРєСѓС‰РµРµ РІСЂРµРјСЏ
+    // Получаем РЕАЛЬНОЕ текущее время
     time(&now);
     localtime_r(&now, &timeinfo);
     
@@ -322,10 +327,10 @@ String getTimeString() {
     xSemaphoreGive(timeMutex);
     return String(timeStr);
   }
-  return "РџРѕРјРёР»РєР° С‡Р°СЃСѓ";
+  return "Помилка часу";
 }
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ РљРћРќР¤Р†Р“РЈР РђР¦Р†Р‡
+// ФУНКЦІЇ КОНФІГУРАЦІЇ
 // ============================================================================
 
 void loadConfiguration() {
@@ -496,6 +501,14 @@ void saveConfiguration() {
   preferences.putBool("humAdapt", config.humidityConfig.adaptiveMode);
   
   // Налаштування адаптивного обігріву
+  preferences.putUChar("aAdaptMin", config.a_adaptive_min);
+  preferences.putUChar("aAdaptMax", config.a_adaptive_max);
+  preferences.putUChar("aNormMin", config.a_normal_range_min);
+  preferences.putUChar("aNormMax", config.a_normal_range_max);
+  preferences.putUChar("bStart", config.b_start_percent);
+  preferences.putUShort("trendWindow", config.trend_window_seconds);
+  preferences.putFloat("dropThresh", config.temp_drop_threshold);
+  preferences.putULong("heatCheck", config.heating_check_interval);
   preferences.putUChar("tempStep", config.adaptive_temp_step);
   preferences.putUChar("humStep", config.adaptive_hum_step);
   preferences.putUShort("adpActMin", config.adaptive_activation_time_min);
@@ -672,12 +685,12 @@ void updateTimeInfo() {
 }
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ РўР Р•РќР”РЈ РўР•РњРџР•Р РђРўРЈР Р
+// ФУНКЦІЇ ДЛЯ ТРЕНДУ ТЕМПЕРАТУРИ
 // ============================================================================
 
 
 // ============================================================================
-// Р¤РЈРќРљР¦Р†Р‡ Р”Р›РЇ Р”РћРЎРўРЈРџРЈ Р”Рћ Рњ'Р®РўР•РљРЎР†Р’
+// ФУНКЦІЇ ДЛЯ ДОСТУПУ ДО М'ЮТЕКСІВ
 // ============================================================================
 
 SemaphoreHandle_t getSensorMutex() {
@@ -720,11 +733,11 @@ void setCurrentTime(time_t t) {
     currentTime = t;
 }
 
-// Р”РѕРґР°РЅРѕ: С„СѓРЅРєС†С–СЏ РґР»СЏ РїРµСЂРµРІС–СЂРєРё Р°РІР°СЂС–Р№РЅРѕРіРѕ СЂРµР¶РёРјСѓ
+// Додано: функція для перевірки аварійного режиму
 void checkEmergencyTimeout() {
     if (heatingState.emergencyMode && getEmergencyStartTime() > 0) {
         unsigned long now = millis();
-        if (now - getEmergencyStartTime() > 120000) { // 2 С…РІРёР»РёРЅРё = 120000 РјСЃ
+        if (now - getEmergencyStartTime() > 120000) { // 2 хвилини = 120000 мс
             float tempCarrierDiff = sensorData.tempCarrier - getEmergencyStartTempCarrier();
             float tempRoomDiff = sensorData.tempRoom - getEmergencyStartTempRoom();
             
@@ -733,7 +746,7 @@ void checkEmergencyTimeout() {
                 digitalWrite(HUMIDIFIER_PIN, LOW);
                 heatingState.emergencyMode = false;
                 
-                // Serial.println("рџљЁ РђР’РђР РР™РќРР™ Р Р•Р–РРњ: РІРёРјРєРЅРµРЅРѕ С‡РµСЂРµР· РІС–РґСЃСѓС‚РЅС–СЃС‚СЊ РїСЂРѕРіСЂС–РІСѓ!");  // RUS_REMOVED
+                // Serial.println("🚨 АВАРИЙНИЙ РЕЖИМ: вимкнено через відсутність прогріву!");  // RUS_REMOVED
                 Serial.printf("  Р—Р±С–Р»СЊС€РµРЅРЅСЏ С‚РµРјРїРµСЂР°С‚СѓСЂРё: С‚РµРїР»РѕРЅРѕСЃС–Р№ +%.1fВC, РєС–РјРЅР°С‚Р° +%.1fВC\n", 
                               tempCarrierDiff, tempRoomDiff);
                 

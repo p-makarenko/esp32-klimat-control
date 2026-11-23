@@ -20,9 +20,8 @@ extern String getUkraineMarquee();
 // Базові стилі для всіх сторінок
 inline String getCommonCSS() {
     String css = "";
-    css += "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');";
     css += "* { box-sizing: border-box; }";
-    css += "body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }";
+    css += "body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; background: #f0f0f0; }";
     css += ".container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }";
     css += ".header { text-align: center; margin-bottom: 30px; }";
 
@@ -140,25 +139,39 @@ inline String getMobileCSS() {
 
 // Заголовок сторінки з кнопкою "Назад" зверху
 inline String getNavHeader(const String& title, const String& backUrl = "/") {
+    (void)backUrl;
     String html = "";
-    html += "<div style='display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;'>";
-    html += "<a href='" + backUrl + "' style='display: inline-flex; align-items: center; gap: 5px; padding: 10px 15px; background: #607D8B; color: white; text-decoration: none; border-radius: 5px; font-weight: 500; transition: background 0.2s;' onmouseover=\"this.style.background='#455A64'\" onmouseout=\"this.style.background='#607D8B'\">";
-    html += "<span style='font-size: 1.2em;'>&larr;</span> На головну";
-    html += "</a>";
-    html += "<h1 style='margin: 0; flex: 1;'>" + title + "</h1>";
-    html += "</div>";
+    html += "<style>"
+            ".topnav{position:sticky;top:0;z-index:100;display:flex;gap:6px;overflow-x:auto;white-space:nowrap;padding:8px;margin:-10px -10px 16px -10px;background:#263238;border-radius:0 0 10px 10px;box-shadow:0 2px 6px rgba(0,0,0,.3);-webkit-overflow-scrolling:touch}"
+            ".topnav a{flex:0 0 auto;padding:8px 14px;color:#cfd8dc;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;transition:background .2s}"
+            ".topnav a:hover{background:#37474f;color:#fff}"
+            ".topnav a.home{background:#4CAF50;color:#fff}"
+            ".topnav a.active{background:#1976D2;color:#fff}"
+            ".page-title{margin:0 0 20px 0}"
+            "</style>";
+    html += "<nav class='topnav' id='topnav'>"
+            "<a href='/' class='home'>🏠 Головна</a>"
+            "<a href='/control'>🎛️ Керування</a>"
+            "<a href='/settings'>⚙️ Налаштування</a>"
+            "<a href='/light'>💡 Світло</a>"
+            "<a href='/energy'>⚡ Енергія</a>"
+            "<a href='/history'>📈 Графіки</a>"
+            "<a href='/wifi'>📶 Wi-Fi</a>"
+            "<a href='/ota'>🔄 OTA</a>"
+            "<a href='/help'>📖 Довідка</a>"
+            "<a href='/debug'>🔧 Відладка</a>"
+            "</nav>";
+    html += "<script>(function(){var p=location.pathname,l=document.querySelectorAll('#topnav a');"
+            "for(var i=0;i<l.length;i++){var h=l[i].getAttribute('href');"
+            "if(h!=='/'&&p.indexOf(h)===0){l[i].classList.add('active');l[i].scrollIntoView({inline:'center',block:'nearest'});}}})();</script>";
+    html += "<h1 class='page-title'>" + title + "</h1>";
     return html;
 }
 
-// Footer з кнопкою навігації внизу
+// Єдина навігація вгорі сторінки; нижню кнопку прибрано (зворотна сумісність)
 inline String getNavFooter(const String& backUrl = "/", const String& backText = "На головну") {
-    String html = "";
-    html += "<div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;'>";
-    html += "<a href='" + backUrl + "' class='btn btn-success' style='display: inline-block; padding: 12px 30px; font-size: 16px;'>";
-    html += "&larr; " + backText;
-    html += "</a>";
-    html += "</div>";
-    return html;
+    (void)backUrl; (void)backText;
+    return "";
 }
 
 // Повна навігаційна панель (для головної сторінки)

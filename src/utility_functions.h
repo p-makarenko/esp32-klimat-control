@@ -1,4 +1,4 @@
-﻿#ifndef UTILITY_FUNCTIONS_H
+#ifndef UTILITY_FUNCTIONS_H
 #define UTILITY_FUNCTIONS_H
 
 #include <Arduino.h>

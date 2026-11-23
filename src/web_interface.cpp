@@ -322,6 +322,7 @@ void initWiFi() {
     server.on("/api/factory-reset", HTTP_POST, handleFactoryReset);
 
     server.on("/update", HTTP_GET, []() {
+        if (!checkAuth()) return;
         String html = "<!DOCTYPE html><html><head>";
         html += "<meta charset='UTF-8'>";
         html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
@@ -369,6 +370,7 @@ void initWiFi() {
     server.on("/update", HTTP_POST, handleOTAUploadResult, handleOTAUpload);
 
     server.on("/update-simple", HTTP_GET, []() {
+        if (!checkAuth()) return;
         String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Simple OTA</title></head><body>";
         html += "<h1>Simple OTA Upload</h1>";
         html += "<form method='POST' action='/update' enctype='multipart/form-data'>";
@@ -512,7 +514,7 @@ void handleOTAPage() {
     html += "<h3>Завантаження файлу</h3>";
     html += "<form id='otaForm' method='POST' action='/update' enctype='multipart/form-data'>";
     html += "<input type='file' name='update' accept='.bin' required style='margin-bottom:10px;'><br>";
-    html += "<button type='submit' class='btn' onclick='return confirmOTA()'>Завантажити прошивку</button>";
+    html += "<button type='submit' class='btn'>Завантажити прошивку</button>";
     html += "</form>";
 
     html += "<div id='progress' style='display:none; margin-top:20px;'>";
@@ -523,7 +525,7 @@ void handleOTAPage() {
     html += "</div>";
 
     html += "<h3 style='margin-top:30px;'>OTA пароль</h3>";
-    html += "<p style='font-size:14px;color:#888;'>Поточний пароль для Arduino IDE OTA: <code>" + getOTAPassword() + "</code></p>";
+    html += "<p style='font-size:14px;color:#888;'>Пароль Arduino IDE OTA встановлено (приховано з міркувань безпеки).</p>";
     html += "<input type='password' id='newOtaPassword' placeholder='Новий пароль (мін. 4 символи)'>";
     html += "<button class='btn' onclick='changeOtaPassword()'>Змінити пароль</button>";
 
@@ -537,7 +539,7 @@ void handleOTAPage() {
         html += "<p style='color:#4CAF50;'>Останній backup: ";
         if (backupStatus.valid) {
             html += String(backupStatus.size) + " bytes";
-            html += " - " + backupStatus.description;
+            html += " - " + htmlEscape(backupStatus.description);
             html += " <span style='color:#4CAF50;'>(CRC OK)</span>";
         } else {
             html += "<span style='color:#ff4444;'>ПОШКОДЖЕНИЙ</span>";
@@ -697,9 +699,13 @@ void handleOTAPasswordChange() {
 
     String body = server.arg("plain");
     JsonDocument doc;
-    deserializeJson(doc, body);
+    DeserializationError err = deserializeJson(doc, body);
+    if (err || !doc["password"].is<const char*>()) {
+        server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+        return;
+    }
 
-    String newPassword = doc["password"];
+    String newPassword = doc["password"].as<String>();
 
     if (newPassword.length() < 4) {
         server.send(400, "application/json", "{\"success\":false,\"error\":\"Password too short\"}");
@@ -778,6 +784,12 @@ void handleFactoryReset() {
 }
 
 void handleOTAUploadResult() {
+    if (!checkAuth()) return;
+    if (!isOTAInProgress()) {
+        server.send(400, "text/plain", "OTA not started");
+        return;
+    }
+    setOTAInProgress(false);
     bool success = !Update.hasError();
     String message = success ? "OK" : Update.errorString();
 

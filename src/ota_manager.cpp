@@ -24,18 +24,14 @@ static bool otaInitialized = false;
 // Час останньої перевірки WiFi під час OTA
 static unsigned long lastWiFiCheckDuringOTA = 0;
 
-// LED пін для індикації (використовуємо вбудований якщо є)
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 2
-#endif
-
-// ============================================================================
-// ДОПОМІЖНІ ФУНКЦІЇ
-// ============================================================================
-
+// LED пін для індикації (НЕ використовуємо GPIO 2, бо він зайнятий під I2C_SCL!)
 static void setOTALed(bool on) {
+#if defined(LED_BUILTIN) && (LED_BUILTIN != I2C_SCL) && (LED_BUILTIN != I2C_SDA)
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, on ? HIGH : LOW);
+#else
+    (void)on;
+#endif
 }
 
 static void blinkOTALed() {
@@ -106,6 +102,7 @@ bool initOTA() {
 
     // Callback на прогрес
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        if (total == 0) return;
         static unsigned int lastPercent = 0;
         unsigned int percent = (progress * 100) / total;
 
@@ -338,31 +335,31 @@ bool updateFromURL(const char* url, const char* expectedMD5) {
                 Serial.printf("Progress: %u%% (%u/%u bytes)\r", percent, written, contentLength);
                 blinkOTALed();
             }
+        }
 
-            // Перевіряємо WiFi кожні 5 секунд
-            if (now - lastWiFiCheck > OTA_WIFI_CHECK_MS) {
-                lastWiFiCheck = now;
+        // Перевіряємо WiFi та timeout незалежно від наявності байтів у буфері
+        unsigned long nowCheck = millis();
+        if (nowCheck - lastWiFiCheck > OTA_WIFI_CHECK_MS) {
+            lastWiFiCheck = nowCheck;
 
-                if (WiFi.status() != WL_CONNECTED) {
-                    Serial.println("\n❌ WiFi відключено!");
-                    otaStatus.errorMessage = "WiFi disconnected";
-                    Update.abort();
-                    http.end();
-                    resumeCriticalTasks();
-                    otaStatus.inProgress = false;
-                    return false;
-                }
+            if (WiFi.status() != WL_CONNECTED) {
+                Serial.println("\n❌ WiFi відключено!");
+                otaStatus.errorMessage = "WiFi disconnected";
+                Update.abort();
+                http.end();
+                resumeCriticalTasks();
+                otaStatus.inProgress = false;
+                return false;
+            }
 
-                // Перевірка timeout
-                if (now - otaStatus.startTime > OTA_TIMEOUT_MS) {
-                    Serial.println("\n❌ Timeout!");
-                    otaStatus.errorMessage = "Timeout";
-                    Update.abort();
-                    http.end();
-                    resumeCriticalTasks();
-                    otaStatus.inProgress = false;
-                    return false;
-                }
+            if (nowCheck - otaStatus.startTime > OTA_TIMEOUT_MS) {
+                Serial.println("\n❌ Timeout!");
+                otaStatus.errorMessage = "Timeout";
+                Update.abort();
+                http.end();
+                resumeCriticalTasks();
+                otaStatus.inProgress = false;
+                return false;
             }
         }
 
@@ -382,27 +379,18 @@ bool updateFromURL(const char* url, const char* expectedMD5) {
 
     Serial.println("\n\n✅ Завантаження завершено");
 
+    // Перевірка MD5 ДО Update.end(), щоб не перезавантажитися в биту прошивку
+    if (expectedMD5 != nullptr && strlen(expectedMD5) > 0) {
+        Update.setMD5(expectedMD5);
+    }
+
     // Завершення OTA
     if (!Update.end()) {
-        Serial.println("❌ Помилка завершення OTA");
-        otaStatus.errorMessage = "OTA end failed";
+        Serial.println("❌ Помилка завершення OTA (або невідповідність MD5)");
+        otaStatus.errorMessage = "OTA end / MD5 failed";
         resumeCriticalTasks();
         otaStatus.inProgress = false;
         return false;
-    }
-
-    // Перевірка MD5
-    if (expectedMD5 != nullptr && strlen(expectedMD5) > 0) {
-        String actualMD5 = Update.md5String();
-        if (!actualMD5.equalsIgnoreCase(expectedMD5)) {
-            Serial.println("⚠️  MD5 не співпадає!");
-            Serial.printf("  Очікуваний: %s\n", expectedMD5);
-            Serial.printf("  Отриманий:  %s\n", actualMD5.c_str());
-            otaStatus.errorMessage = "MD5 mismatch";
-            // Не abort - прошивка вже записана
-        } else {
-            Serial.println("✅ MD5 перевірено");
-        }
     }
 
     otaStatus.success = true;

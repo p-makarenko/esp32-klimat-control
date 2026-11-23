@@ -1,4 +1,4 @@
-﻿#include "system_core.h"
+#include "system_core.h"
 #include "actuator_manager.h"
 #include "advanced_climate_logic.h"
 #include "sensor_manager.h"

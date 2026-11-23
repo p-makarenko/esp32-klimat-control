@@ -26,7 +26,7 @@ extern void saveConfiguration();
 
 void handleServoPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("⚙ Калібрування серво");
     html += "<div class='container'>";
@@ -194,6 +194,7 @@ void handleServoPage() {
 // ============================================================================
 
 void handleServoAPI() {
+    if (!checkAuth()) return;
     if (!server.hasArg("cmd")) {
         server.send(400, "text/plain", "No command");
         return;

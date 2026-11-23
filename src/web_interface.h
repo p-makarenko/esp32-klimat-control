@@ -1,4 +1,4 @@
-﻿#ifndef WEB_INTERFACE_H
+#ifndef WEB_INTERFACE_H
 #define WEB_INTERFACE_H
 
 #include "system_core.h"

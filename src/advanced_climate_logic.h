@@ -1,4 +1,4 @@
-﻿#ifndef ADVANCED_CLIMATE_LOGIC_H
+#ifndef ADVANCED_CLIMATE_LOGIC_H
 #define ADVANCED_CLIMATE_LOGIC_H
 
 #include <Arduino.h>

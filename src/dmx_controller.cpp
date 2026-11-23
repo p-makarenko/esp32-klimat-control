@@ -25,7 +25,7 @@ void dmxInit() {
     int len = DmxSerial.readBytes(&rx, 1);
     Serial.printf("[DMX] UART тест: відправив=0xAA отримав=0x%02X len=%d\n", rx, len);
 
-    xTaskCreatePinnedToCore(dmxTask, "DMXTask", 2048, nullptr, 2, &dmxTaskHandle, 0);
+    xTaskCreatePinnedToCore(dmxTask, "DMXTask", 4096, nullptr, 2, &dmxTaskHandle, 0);
 
     Serial.printf("[DMX] init=OK TX=%d DE=%d addr=%d UART=%d\n",
         DMX_TX_PIN, DMX_DE_RE_PIN, DMX_START_ADDRESS, DMX_UART_NUM);
@@ -48,13 +48,12 @@ void dmxSetChannel(uint16_t channel, uint8_t value) {
 RGBWColor dmxGetCurrent() { return _current; }
 
 void dmxSendFrame() {
-    DmxSerial.end();
-    pinMode(DMX_TX_PIN, OUTPUT);
-    digitalWrite(DMX_TX_PIN, LOW);
-    delayMicroseconds(300);  // BREAK >250мкс
-    digitalWrite(DMX_TX_PIN, HIGH);
-    delayMicroseconds(16);   // MAB
-    DmxSerial.begin(250000, SERIAL_8N2, DMX_RX_PIN, DMX_TX_PIN);
+    // Апаратна генерація BREAK (~225 мкс LOW + MAB) без перестворення UART-драйвера
+    DmxSerial.flush();
+    DmxSerial.updateBaudRate(40000);
+    DmxSerial.write((uint8_t)0x00);
+    DmxSerial.flush();
+    DmxSerial.updateBaudRate(250000);
     DmxSerial.write(_dmxBuffer, 513);
     DmxSerial.flush();
 }
@@ -66,8 +65,8 @@ void dmxTask(void* parameter) {
         dmxSendFrame();
         count++;
         if (count % 100 == 0)
-            Serial.printf("[DMX] %u M=%d R=%d\n", count,
-                _dmxBuffer[DMX_START_ADDRESS], _dmxBuffer[DMX_START_ADDRESS + 1]);
+            Serial.printf("[DMX] %u R=%d G=%d B=%d M=%d\n", count,
+                _dmxBuffer[1], _dmxBuffer[2], _dmxBuffer[3], _dmxBuffer[4]);
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(DMX_UPDATE_INTERVAL));
     }
 }

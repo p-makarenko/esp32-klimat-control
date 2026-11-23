@@ -1,4 +1,4 @@
-﻿#include "sensor_manager.h"
+#include "sensor_manager.h"
 #include "system_core.h"
 #include <Arduino.h>
 
@@ -45,6 +45,7 @@ bool initTemperatureSensors() {
 bool initBME280() {
   Wire.begin(I2C_SDA, I2C_SCL);
   Wire.setClock(100000);
+  Wire.setTimeOut(50);
 
   delay(100);
 
@@ -73,18 +74,20 @@ void readTemperatureSensors() {
   float room = sensors.getTempC(tempRoomAddr);
   
   if (xSemaphoreTake(getSensorMutex(), portMAX_DELAY)) {
-    // Перевірка на помилкові значення DS18B20: -127, 85, та поза допустимим діапазоном
-    bool carrierOk = (carrier > -50.0f && carrier < 125.0f && carrier != -127.0f && carrier != 85.0f);
+    // Перевірка на помилкові значення DS18B20 (-127, поза діапазоном; для кімнати також 85.0°C)
+    bool carrierOk = (carrier > -50.0f && carrier < 125.0f && carrier != -127.0f);
     bool roomOk = (room > -50.0f && room < 125.0f && room != -127.0f && room != 85.0f);
     
-    // Лічильники помилок
+    // Лічильники помилок (обмежені зверху, щоб уникнути overflow uint8_t)
     static uint8_t carrierErrorCount = 0;
     static uint8_t roomErrorCount = 0;
+    static bool carrierEverValid = false;
+    static bool roomEverValid = false;
     const uint8_t MAX_ERRORS = 10; // 10 помилок підряд = аварія
     
     // Оновлюємо лічильники
     if (!carrierOk) {
-      carrierErrorCount++;
+      if (carrierErrorCount < MAX_ERRORS) carrierErrorCount++;
       if (carrierErrorCount == 1) {
         Serial.printf("⚠ Датчик теплоносія: помилка %.1f°C\n", carrier);
       } else if (carrierErrorCount >= MAX_ERRORS) {
@@ -95,11 +98,12 @@ void readTemperatureSensors() {
         Serial.println("✓ Датчик теплоносія відновлено");
       }
       carrierErrorCount = 0;
+      carrierEverValid = true;
       sensorData.tempCarrier = carrier;
     }
     
     if (!roomOk) {
-      roomErrorCount++;
+      if (roomErrorCount < MAX_ERRORS) roomErrorCount++;
       if (roomErrorCount == 1) {
         Serial.printf("⚠ Датчик кімнати: помилка %.1f°C\n", room);
       } else if (roomErrorCount >= MAX_ERRORS) {
@@ -110,12 +114,13 @@ void readTemperatureSensors() {
         Serial.println("✓ Датчик кімнати відновлено");
       }
       roomErrorCount = 0;
+      roomEverValid = true;
       sensorData.tempRoom = room;
     }
     
-    // Встановлюємо статус: валідний тільки якщо помилок менше порогу
-    sensorData.carrierValid = (carrierErrorCount < MAX_ERRORS);
-    sensorData.roomValid = (roomErrorCount < MAX_ERRORS);
+    // Встановлюємо статус: валідний тільки якщо хоч раз отримали дані і помилок менше порогу
+    sensorData.carrierValid = carrierEverValid && (carrierErrorCount < MAX_ERRORS);
+    sensorData.roomValid = roomEverValid && (roomErrorCount < MAX_ERRORS);
     sensorData.timestamp = millis();
     
     xSemaphoreGive(getSensorMutex());
@@ -134,12 +139,13 @@ void readBME280() {
     bool presOk = (!isnan(pres) && pres > 300.0f && pres < 1100.0f);
     bool allOk = (tempOk && humOk && presOk);
 
-    // Лічильник помилок
+    // Лічильник помилок (обмежений зверху, щоб уникнути overflow uint8_t)
     static uint8_t bmeErrorCount = 0;
+    static bool bmeEverValid = false;
     const uint8_t MAX_ERRORS = 10;
 
     if (!allOk) {
-      bmeErrorCount++;
+      if (bmeErrorCount < MAX_ERRORS) bmeErrorCount++;
       if (bmeErrorCount == 1) {
         Serial.printf("⚠ BME280 помилка: T=%.1f H=%.1f P=%.1f\n", temp, hum, pres);
       } else if (bmeErrorCount >= MAX_ERRORS) {
@@ -150,6 +156,7 @@ void readBME280() {
         Serial.println("✓ BME280 відновлено");
       }
       bmeErrorCount = 0;
+      bmeEverValid = true;
       // Оновлюємо тільки валідні значення
       if (tempOk) sensorData.tempBME = temp;
       if (humOk) sensorData.humidity = hum;
@@ -169,7 +176,7 @@ void readBME280() {
       }
     }
 
-    sensorData.bmeValid = (bmeErrorCount < MAX_ERRORS);
+    sensorData.bmeValid = bmeEverValid && (bmeErrorCount < MAX_ERRORS);
 
     xSemaphoreGive(getSensorMutex());
   }

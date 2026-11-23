@@ -25,7 +25,7 @@ extern Preferences preferences;
 
 void handleWiFiSettingsPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("Налаштування Wi-Fi");
 
@@ -167,10 +167,10 @@ void handleWiFiSettingsPage() {
     html += "<h2>Підключення до мережі</h2>";
 
     if (server.hasArg("error")) {
-        html += "<div class='status-message status-error'>❌ " + server.arg("error") + "</div>";
+        html += "<div class='status-message status-error'>❌ " + htmlEscape(server.arg("error")) + "</div>";
     }
     if (server.hasArg("success")) {
-        html += "<div class='status-message status-success'>✅ " + server.arg("success") + "</div>";
+        html += "<div class='status-message status-success'>✅ " + htmlEscape(server.arg("success")) + "</div>";
     }
 
     html += "<form id='wifiForm' method='POST' action='/save-wifi'>";
@@ -234,6 +234,7 @@ void handleScanWiFi() {
 // ============================================================================
 
 void handleSaveWiFiSettings() {
+    if (!checkAuth()) return;
     if (!checkCSRF()) {
         server.send(403, "text/plain", "❌ CSRF: Заборонено");
         return;
@@ -395,7 +396,7 @@ void handleWiFiPage() {
     html += "</div>";
     html += "<div class='form-group'>";
     html += "<label>Пароль:</label>";
-    html += "<input type='password' name='authPassword' value='" + config.authPassword + "' placeholder='Введіть пароль'>";
+    html += "<input type='password' name='authPassword' value='' placeholder='Залиште порожнім, щоб не змінювати'>";
     html += "</div>";
 
     html += "<div style='text-align: center;'>";
@@ -417,6 +418,7 @@ void handleWiFiPage() {
 // ============================================================================
 
 void handleSaveNetworkSettings() {
+    if (!checkAuth()) return;
     if (!checkCSRF()) {
         server.send(403, "text/plain", "❌ CSRF: Заборонено");
         return;

@@ -1,4 +1,4 @@
-﻿#include "data_storage.h"
+#include "data_storage.h"
 #include "system_core.h"
 #include <Arduino.h>
 #include "advanced_climate_logic.h"

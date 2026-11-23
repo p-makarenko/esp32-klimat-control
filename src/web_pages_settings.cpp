@@ -32,9 +32,10 @@ extern bool isTimeSynced();
 
 void handleSettingsPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("Налаштування системи");
+    html.reserve(24576);
     html += "<div class='container'>";
 
     // Навігація зверху
@@ -638,7 +639,6 @@ void handleSettingsPage() {
     // Кнопки збереження
     html += "<div style='margin-top: 30px;'>";
     html += "<button type='submit' class='btn'>💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>";
-    html += "<button type='button' class='btn btn-secondary' onclick='window.location.href=\"/\"'>← НА ГОЛОВНУ</button>";
     html += "</div>";
 
     html += "</form>";
@@ -752,7 +752,11 @@ void handleSettingsPage() {
 // ============================================================================
 
 void handleSaveSettings() {
-    if (!checkAuth() || !checkCSRF()) return;
+    if (!checkAuth()) return;
+    if (!checkCSRF()) {
+        server.send(403, "text/plain", "❌ CSRF: Заборонено");
+        return;
+    }
 
     if (xSemaphoreTake(getConfigMutex(), pdMS_TO_TICKS(1000)) == pdTRUE) {
         
@@ -789,9 +793,13 @@ void handleSaveSettings() {
         if (server.hasArg("tempCriticalLow"))  config.tempCriticalLow = server.arg("tempCriticalLow").toFloat();
         if (server.hasArg("tempEmergencyLow")) config.tempEmergencyLow = server.arg("tempEmergencyLow").toFloat();
 
-        // 5. ДАТЧИКИ ТА СИСТЕМА
-        if (server.hasArg("scd30Interval")) config.scd30MeasurementInterval = server.arg("scd30Interval").toInt();
-        if (server.hasArg("statusPeriod"))  config.statusPeriod = server.arg("statusPeriod").toInt() * 1000;
+        // 5. ДАТЧИКИ, АДАПТАЦІЯ ТА СИСТЕМА
+        if (server.hasArg("scd30Interval"))   config.scd30MeasurementInterval = server.arg("scd30Interval").toInt();
+        if (server.hasArg("statusPeriod"))    config.statusPeriod = server.arg("statusPeriod").toInt() * 1000;
+        if (server.hasArg("adaptiveActTime")) config.adaptive_activation_time_min = constrain(server.arg("adaptiveActTime").toInt(), 5, 180);
+        if (server.hasArg("adaptiveRecTime")) config.adaptive_recovery_time_min = constrain(server.arg("adaptiveRecTime").toInt(), 10, 360);
+        if (server.hasArg("adaptiveTempStep")) config.adaptive_temp_step = constrain(server.arg("adaptiveTempStep").toInt(), 1, 5);
+        if (server.hasArg("adaptiveHumStep"))  config.adaptive_hum_step = constrain(server.arg("adaptiveHumStep").toInt(), 1, 10);
 
         // 6. СЕРВОПРИВОД
         if (server.hasArg("servoClosed")) config.servoClosedAngle = server.arg("servoClosed").toInt();
@@ -841,6 +849,13 @@ void handleSaveSettings() {
 
         // Збереження конфігурації в Flash
         saveConfiguration();
+
+        // Миттєво оновлюємо стан реле 220В вентилятора (Pin 7) після збереження галочки
+        if (heatingState.fanPower > 0 && config.heaterFanRelayEnabled) {
+            digitalWrite(HEATER_FAN_RELAY_PIN, LOW);
+        } else {
+            digitalWrite(HEATER_FAN_RELAY_PIN, HIGH);
+        }
 
         xSemaphoreGive(getConfigMutex());
     }

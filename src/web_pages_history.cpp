@@ -30,7 +30,7 @@ extern String exportToCSV(const char* startDate, const char* endDate);
 
 void handleHistoryPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("📈 Історія даних", true); // true = includeChartJS
 
@@ -474,7 +474,8 @@ void handleHistoryPage() {
 // ============================================================================
 
 void handleHistoryData() {
-    if (WiFi.status() != WL_CONNECTED) {
+    if (!checkAuth()) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
         server.send(503, "application/json", "{\"error\":\"WiFi не підключено\"}");
         return;
     }
@@ -599,6 +600,7 @@ void handleHistoryData() {
 // ============================================================================
 
 void handleHistoryClearLogs() {
+    if (!checkAuth()) return;
     File f = SPIFFS.open(LOG_CURRENT_FILE, "w");
     if (f) { f.close(); }
 
@@ -618,7 +620,8 @@ void handleHistoryClearLogs() {
 }
 
 void handleHistoryStats() {
-    if (WiFi.status() != WL_CONNECTED) {
+    if (!checkAuth()) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
         server.send(503, "application/json", "{\"error\":\"WiFi не підключено\"}");
         return;
     }
@@ -634,7 +637,8 @@ void handleHistoryStats() {
     json += "\"archiveFilesCount\":" + String(stats.archiveFilesCount) + ",";
     json += "\"spiffsUsedBytes\":" + String(stats.spiffsUsedBytes) + ",";
     json += "\"spiffsTotalBytes\":" + String(stats.spiffsTotalBytes) + ",";
-    json += "\"spiffsUsedPercent\":" + String((stats.spiffsUsedBytes * 100.0) / stats.spiffsTotalBytes, 1);
+    float usedPct = (stats.spiffsTotalBytes > 0) ? ((stats.spiffsUsedBytes * 100.0f) / stats.spiffsTotalBytes) : 0.0f;
+    json += "\"spiffsUsedPercent\":" + String(usedPct, 1);
     json += "}";
 
     server.send(200, "application/json", json);
@@ -645,7 +649,8 @@ void handleHistoryStats() {
 // ============================================================================
 
 void handleHistoryExport() {
-    if (WiFi.status() != WL_CONNECTED) {
+    if (!checkAuth()) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) {
         server.send(503, "text/plain", "WiFi не підключено");
         return;
     }

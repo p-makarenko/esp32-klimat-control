@@ -72,38 +72,48 @@ void lightSchedulerSave() {
 }
 
 void lightSchedulerLoad() {
-    preferences.begin("light", true);
-    size_t len = preferences.getBytesLength("cfg");
+    Preferences prefs;
+    prefs.begin("light", true);
+    size_t len = prefs.getBytesLength("cfg");
     if (len == sizeof(_cfg)) {
-        preferences.getBytes("cfg", &_cfg, sizeof(_cfg));
+        prefs.getBytes("cfg", &_cfg, sizeof(_cfg));
+        if (_cfg.keyframeCount > LIGHT_KEYFRAME_COUNT) {
+            _cfg.keyframeCount = LIGHT_KEYFRAME_COUNT;
+        }
     } else {
         lightSchedulerLoadDefaultPreset();
     }
-    preferences.end();
+    prefs.end();
 }
 
 // ============================================================================
 // ОБЧИСЛЕННЯ RGBW ДЛЯ ЗАДАНОГО ЧАСУ
-// Лінійна інтерполяція між двома сусідніми keyframe
+// Лінійна інтерполяція між двома сусідніми keyframe (з підтримкою переходу через 00:00)
 // ============================================================================
 RGBWColor lightSchedulerCalculate(uint8_t hour, uint8_t minute) {
-    if (_cfg.keyframeCount == 0) return {0, 0, 0, 0};
+    uint8_t count = (_cfg.keyframeCount > LIGHT_KEYFRAME_COUNT) ? LIGHT_KEYFRAME_COUNT : _cfg.keyframeCount;
+    if (count == 0) return {0, 0, 0, 0};
 
     uint16_t nowMin = (uint16_t)hour * 60 + minute;
 
     int prevIdx = -1;
     int nextIdx = -1;
 
-    for (int i = 0; i < _cfg.keyframeCount; i++) {
+    for (int i = 0; i < count; i++) {
         uint16_t kMin = (uint16_t)_cfg.keyframes[i].hour * 60 + _cfg.keyframes[i].minute;
         if (kMin <= nowMin) prevIdx = i;
         else if (nextIdx == -1) nextIdx = i;
     }
 
-    if (prevIdx == -1) return {0, 0, 0, 0};
-    if (nextIdx == -1) {
-        auto& last = _cfg.keyframes[_cfg.keyframeCount - 1];
-        return {last.r, last.g, last.b, last.master};
+    // Підтримка нічних розкладів, що перетинають північ (00:00)
+    bool wrappedMidnight = false;
+    if (prevIdx == -1) {
+        prevIdx = count - 1;
+        nextIdx = 0;
+        wrappedMidnight = true;
+    } else if (nextIdx == -1) {
+        nextIdx = 0;
+        wrappedMidnight = true;
     }
 
     auto& prev = _cfg.keyframes[prevIdx];
@@ -122,10 +132,17 @@ RGBWColor lightSchedulerCalculate(uint8_t hour, uint8_t minute) {
     // Обидві точки ненульові → плавна інтерполяція
     uint16_t prevMin = (uint16_t)prev.hour * 60 + prev.minute;
     uint16_t nextMin = (uint16_t)next.hour * 60 + next.minute;
-    uint16_t span = nextMin - prevMin;
-    uint16_t elapsed = nowMin - prevMin;
+    uint16_t span = 0;
+    uint16_t elapsed = 0;
+    if (!wrappedMidnight && nextMin >= prevMin) {
+        span = nextMin - prevMin;
+        elapsed = (nowMin >= prevMin) ? (nowMin - prevMin) : 0;
+    } else {
+        span = (1440 - prevMin) + nextMin;
+        elapsed = (nowMin >= prevMin) ? (nowMin - prevMin) : ((1440 - prevMin) + nowMin);
+    }
 
-    float t = (span > 0) ? (float)elapsed / span : 1.0f;
+    float t = (span > 0) ? constrain((float)elapsed / span, 0.0f, 1.0f) : 1.0f;
 
     RGBWColor out;
     out.r      = (uint8_t)(prev.r      + t * ((int)next.r      - prev.r));

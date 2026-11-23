@@ -104,7 +104,17 @@ void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorP
     ledcWrite(PUMP_CHANNEL, pumpDuty);
     ledcWrite(FAN_CHANNEL, fanDuty);
     ledcWrite(EXTRACTOR_CHANNEL, extractorDuty);
-}void setPumpPercent(uint8_t percent) {
+
+    // Синхронізація стану (інакше веб показує застарілі значення)
+    if (xSemaphoreTake(getHeatingMutex(), pdMS_TO_TICKS(50))) {
+        heatingState.pumpPower = (uint8_t)pumpDuty;
+        heatingState.fanPower = (uint8_t)fanDuty;
+        heatingState.extractorPower = (uint8_t)extractorDuty;
+        xSemaphoreGive(getHeatingMutex());
+    }
+}
+
+void setPumpPercent(uint8_t percent) {
   // ⛔ Якщо насос повністю вимкнено у налаштуваннях — завжди 0%
   if (config.pumpDisabled) {
     if (xSemaphoreTake(getHeatingMutex(), portMAX_DELAY)) {
@@ -139,6 +149,11 @@ void setHeatingPower(uint8_t pumpPercent, uint8_t fanPercent, uint8_t extractorP
 }
 
 void pumpStartupRamp(uint8_t targetPercent) {
+  if (config.pumpDisabled) {
+    setPumpPercent(0);
+    return;
+  }
+
   if (heatingState.manualMode) {
     setPumpPercent(targetPercent);
     return;
@@ -267,49 +282,52 @@ void moveServoSmooth(int targetAngle) {
     return;
   }
 
-  if (targetAngle == ventState.currentAngle) {
+  for (int attempt = 0; attempt < 3; attempt++) {
+    if (targetAngle == ventState.currentAngle) {
+      ventState.open = (targetAngle == config.servoOpenAngle);
+      ventState.moving = false;
+      return;
+    }
+
+    if (!ventState.servoAttached) {
+      ventServo.attach(SERVO_PIN);
+      ventState.servoAttached = true;
+      delay(50);
+    }
+
+    int startAngle = ventState.currentAngle;
+    int step = (targetAngle > startAngle) ? 1 : -1;
+
+    for (int angle = startAngle; angle != targetAngle; angle += step) {
+      ventServo.write(angle);
+      delay(config.servoSpeed);
+    }
+
+    ventServo.write(targetAngle);
+    ventState.currentAngle = targetAngle;
     ventState.open = (targetAngle == config.servoOpenAngle);
+
+    delay(SERVO_DETACH_DELAY);
+    ventServo.detach();
+    pinMode(SERVO_PIN, OUTPUT);
+    digitalWrite(SERVO_PIN, LOW);
+    ventState.servoAttached = false;
     ventState.moving = false;
-    return;
-  }
-  
-  if (!ventState.servoAttached) {
-    ventServo.attach(SERVO_PIN);
-    ventState.servoAttached = true;
-    delay(50);
-  }
-  
-  int startAngle = ventState.currentAngle;
-  int step = (targetAngle > startAngle) ? 1 : -1;
-  
-  for (int angle = startAngle; angle != targetAngle; angle += step) {
-    ventServo.write(angle);
-    delay(config.servoSpeed);
-  }
-  
-  ventServo.write(targetAngle);
-  ventState.currentAngle = targetAngle;
-  ventState.open = (targetAngle == config.servoOpenAngle);
-  
-  delay(SERVO_DETACH_DELAY);
-  ventServo.detach();
-  pinMode(SERVO_PIN, OUTPUT);
-  digitalWrite(SERVO_PIN, LOW);
-  ventState.servoAttached = false;
-  ventState.moving = false;
 
-  if (ventState.calibrationMode) {
-    return;
-  }
+    if (ventState.calibrationMode) {
+      return;
+    }
 
-  bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
-  if (currentSwitchState != ventState.switchState) {
-    Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
-    ventState.switchState = currentSwitchState;
-    delay(50);
-    ventState.moving = true;
-    int newTargetAngle = (currentSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
-    moveServoSmooth(newTargetAngle);
+    bool currentSwitchState = digitalRead(VENT_SWITCH_PIN);
+    if (currentSwitchState != ventState.switchState) {
+      Serial.printf("⚠ УВАГА: Вимикач змінився під час руху серво! Стан: %d\n", currentSwitchState);
+      ventState.switchState = currentSwitchState;
+      delay(50);
+      ventState.moving = true;
+      targetAngle = (currentSwitchState == LOW) ? config.servoClosedAngle : config.servoOpenAngle;
+      continue;
+    }
+    break;
   }
 }
 

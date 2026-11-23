@@ -185,57 +185,60 @@ bool createBackup(const char* description) {
     prefs.begin(NS_CLIMATE, true);
 
     JsonObject climate = doc["climate"].to<JsonObject>();
+    climate["pumpDisabled"] = prefs.getBool("pumpDisabled", false);
+    climate["heaterFanRelayEnabled"] = prefs.getBool("htrFanRelay", HEATER_FAN_RELAY_ENABLED_DEFAULT);
     climate["tempMin"] = prefs.getFloat("tempMin", TEMP_MIN_THRESHOLD);
     climate["tempMax"] = prefs.getFloat("tempMax", TEMP_MAX_THRESHOLD);
     climate["tempVentMin"] = prefs.getFloat("tempVentMin", TEMP_VENT_MIN);
     climate["tempVentMax"] = prefs.getFloat("tempVentMax", TEMP_VENT_MAX);
-    climate["heatingEnabled"] = prefs.getBool("heatingEnabled", true);
-    climate["humidifierEnabled"] = prefs.getBool("humidifierEnabled", true);
+    climate["heatingEnabled"] = prefs.getBool("heating", true);
+    climate["humidifierEnabled"] = prefs.getBool("humidifier", true);
     climate["statusPeriod"] = prefs.getULong("statusPeriod", STATUS_PRINT_INTERVAL);
-    climate["pumpMinPercent"] = prefs.getUChar("pumpMinPercent", PUMP_MIN_DEFAULT);
-    climate["pumpMaxPercent"] = prefs.getUChar("pumpMaxPercent", PUMP_MAX_DEFAULT);
-    climate["fanMinPercent"] = prefs.getUChar("fanMinPercent", FAN_MIN_DEFAULT);
-    climate["fanMaxPercent"] = prefs.getUChar("fanMaxPercent", FAN_MAX_DEFAULT);
-    climate["extractorMinPercent"] = prefs.getUChar("extractorMinPer", EXTRACTOR_MIN_DEFAULT);
-    climate["extractorMaxPercent"] = prefs.getUChar("extractorMaxPer", EXTRACTOR_MAX_DEFAULT);
-    climate["servoClosedAngle"] = prefs.getInt("servoClosedAngle", SERVO_CLOSED_ANGLE);
-    climate["servoOpenAngle"] = prefs.getInt("servoOpenAngle", SERVO_OPEN_ANGLE);
+    climate["pumpMinPercent"] = prefs.getUChar("pumpMin", PUMP_MIN_DEFAULT);
+    climate["pumpMaxPercent"] = prefs.getUChar("pumpMax", PUMP_MAX_DEFAULT);
+    climate["fanMinPercent"] = prefs.getUChar("fanMin", FAN_MIN_DEFAULT);
+    climate["fanMaxPercent"] = prefs.getUChar("fanMax", FAN_MAX_DEFAULT);
+    climate["extractorMinPercent"] = prefs.getUChar("extractorMin", EXTRACTOR_MIN_DEFAULT);
+    climate["extractorMaxPercent"] = prefs.getUChar("extractorMax", EXTRACTOR_MAX_DEFAULT);
+    climate["servoClosedAngle"] = prefs.getInt("servoClosed", SERVO_CLOSED_ANGLE);
+    climate["servoOpenAngle"] = prefs.getInt("servoOpen", SERVO_OPEN_ANGLE);
     climate["servoSpeed"] = prefs.getInt("servoSpeed", 15);
-    climate["autoStatusEnabled"] = prefs.getBool("autoStatusEnabled", true);
+    climate["autoStatusEnabled"] = prefs.getBool("autoStatus", true);
     climate["useAuth"] = prefs.getBool("useAuth", false);
     climate["authLogin"] = prefs.getString("authLogin", "admin");
-    climate["authPassword"] = prefs.getString("authPassword", "admin");
+    climate["authPassword"] = prefs.getString("authPass", "admin");
     climate["otaPassword"] = prefs.getString("otaPassword", OTA_DEFAULT_PASSWORD);
-    climate["tempCriticalLow"] = prefs.getFloat("tempCriticalLow", TEMP_CRITICAL_LOW);
-    climate["tempEmergencyLow"] = prefs.getFloat("tempEmergencyLow", TEMP_EMERGENCY_LOW);
+    climate["tempCriticalLow"] = prefs.getFloat("tempCritLow", TEMP_CRITICAL_LOW);
+    climate["tempEmergencyLow"] = prefs.getFloat("tempEmergLow", TEMP_EMERGENCY_LOW);
 
     // Humidity config
     JsonObject humidity = climate["humidity"].to<JsonObject>();
-    humidity["minHumidity"] = prefs.getFloat("humMinHum", HUM_MIN_DEFAULT);
-    humidity["maxHumidity"] = prefs.getFloat("humMaxHum", HUM_MAX_DEFAULT);
-    humidity["tempCoefficient"] = prefs.getFloat("humTempCoeff", HUM_TEMP_COEFF);
-    humidity["enabled"] = prefs.getBool("humEnabled", true);
-    humidity["hysteresis"] = prefs.getUChar("humHysteresis", 5);
-    humidity["adaptiveMode"] = prefs.getBool("humAdaptive", false);
+    humidity["minHumidity"] = prefs.getFloat("humMin", HUM_MIN_DEFAULT);
+    humidity["maxHumidity"] = prefs.getFloat("humMax", HUM_MAX_DEFAULT);
+    humidity["tempCoefficient"] = prefs.getFloat("humCoeff", HUM_TEMP_COEFF);
+    humidity["enabled"] = prefs.getBool("humCtrl", true);
+    humidity["hysteresis"] = prefs.getUChar("humHyst", 3);
+    humidity["adaptiveMode"] = prefs.getBool("humAdapt", true);
 
     // Extractor timer
     JsonObject extractor = climate["extractorTimer"].to<JsonObject>();
-    extractor["enabled"] = prefs.getBool("extTimerEnabled", false);
-    extractor["onMinutes"] = prefs.getUShort("extTimerOnMin", EXTRACTOR_TIMER_DEFAULT_ON);
-    extractor["offMinutes"] = prefs.getUShort("extTimerOffMin", EXTRACTOR_TIMER_DEFAULT_OFF);
-    extractor["powerPercent"] = prefs.getUChar("extTimerPower", EXTRACTOR_TIMER_DEFAULT_POWER);
+    extractor["enabled"] = prefs.getBool("extTimer", false);
+    extractor["onMinutes"] = prefs.getUShort("extOnMin", EXTRACTOR_TIMER_DEFAULT_ON);
+    extractor["offMinutes"] = prefs.getUShort("extOffMin", EXTRACTOR_TIMER_DEFAULT_OFF);
+    extractor["powerPercent"] = prefs.getUChar("extPower", EXTRACTOR_TIMER_DEFAULT_POWER);
 
-    prefs.end();
-
-    // === WIFI NAMESPACE ===
-    prefs.begin(NS_WIFI, true);
-
+    // Мережеві налаштування (зберігаються в NS_CLIMATE)
     JsonObject wifi = doc["wifi"].to<JsonObject>();
     wifi["useStaticIP"] = prefs.getBool("useStaticIP", false);
     wifi["staticIP"] = prefs.getString("staticIP", "");
     wifi["gateway"] = prefs.getString("gateway", "");
     wifi["subnet"] = prefs.getString("subnet", "255.255.255.0");
     wifi["dns"] = prefs.getString("dns", "8.8.8.8");
+
+    prefs.end();
+
+    // === WIFI NAMESPACE ===
+    prefs.begin(NS_WIFI, true);
     wifi["netCount"] = prefs.getInt("netCount", 0);
 
     // Збережені мережі
@@ -434,45 +437,55 @@ bool restoreBackup() {
     prefs.clear();
 
     JsonObject climate = doc["climate"];
+    prefs.putBool("pumpDisabled", climate["pumpDisabled"] | false);
+    prefs.putBool("htrFanRelay", climate["heaterFanRelayEnabled"] | HEATER_FAN_RELAY_ENABLED_DEFAULT);
     prefs.putFloat("tempMin", climate["tempMin"] | TEMP_MIN_THRESHOLD);
     prefs.putFloat("tempMax", climate["tempMax"] | TEMP_MAX_THRESHOLD);
     prefs.putFloat("tempVentMin", climate["tempVentMin"] | TEMP_VENT_MIN);
     prefs.putFloat("tempVentMax", climate["tempVentMax"] | TEMP_VENT_MAX);
-    prefs.putBool("heatingEnabled", climate["heatingEnabled"] | true);
-    prefs.putBool("humidifierEnabled", climate["humidifierEnabled"] | true);
+    prefs.putBool("heating", climate["heatingEnabled"] | true);
+    prefs.putBool("humidifier", climate["humidifierEnabled"] | true);
     prefs.putULong("statusPeriod", climate["statusPeriod"] | STATUS_PRINT_INTERVAL);
-    prefs.putUChar("pumpMinPercent", climate["pumpMinPercent"] | PUMP_MIN_DEFAULT);
-    prefs.putUChar("pumpMaxPercent", climate["pumpMaxPercent"] | PUMP_MAX_DEFAULT);
-    prefs.putUChar("fanMinPercent", climate["fanMinPercent"] | FAN_MIN_DEFAULT);
-    prefs.putUChar("fanMaxPercent", climate["fanMaxPercent"] | FAN_MAX_DEFAULT);
-    prefs.putUChar("extractorMinPer", climate["extractorMinPercent"] | EXTRACTOR_MIN_DEFAULT);
-    prefs.putUChar("extractorMaxPer", climate["extractorMaxPercent"] | EXTRACTOR_MAX_DEFAULT);
-    prefs.putInt("servoClosedAngle", climate["servoClosedAngle"] | SERVO_CLOSED_ANGLE);
-    prefs.putInt("servoOpenAngle", climate["servoOpenAngle"] | SERVO_OPEN_ANGLE);
+    prefs.putUChar("pumpMin", climate["pumpMinPercent"] | PUMP_MIN_DEFAULT);
+    prefs.putUChar("pumpMax", climate["pumpMaxPercent"] | PUMP_MAX_DEFAULT);
+    prefs.putUChar("fanMin", climate["fanMinPercent"] | FAN_MIN_DEFAULT);
+    prefs.putUChar("fanMax", climate["fanMaxPercent"] | FAN_MAX_DEFAULT);
+    prefs.putUChar("extractorMin", climate["extractorMinPercent"] | EXTRACTOR_MIN_DEFAULT);
+    prefs.putUChar("extractorMax", climate["extractorMaxPercent"] | EXTRACTOR_MAX_DEFAULT);
+    prefs.putInt("servoClosed", climate["servoClosedAngle"] | SERVO_CLOSED_ANGLE);
+    prefs.putInt("servoOpen", climate["servoOpenAngle"] | SERVO_OPEN_ANGLE);
     prefs.putInt("servoSpeed", climate["servoSpeed"] | 15);
-    prefs.putBool("autoStatusEnabled", climate["autoStatusEnabled"] | true);
+    prefs.putBool("autoStatus", climate["autoStatusEnabled"] | true);
     prefs.putBool("useAuth", climate["useAuth"] | false);
     prefs.putString("authLogin", climate["authLogin"] | "admin");
-    prefs.putString("authPassword", climate["authPassword"] | "admin");
+    prefs.putString("authPass", climate["authPassword"] | "admin");
     prefs.putString("otaPassword", climate["otaPassword"] | OTA_DEFAULT_PASSWORD);
-    prefs.putFloat("tempCriticalLow", climate["tempCriticalLow"] | TEMP_CRITICAL_LOW);
-    prefs.putFloat("tempEmergencyLow", climate["tempEmergencyLow"] | TEMP_EMERGENCY_LOW);
+    prefs.putFloat("tempCritLow", climate["tempCriticalLow"] | TEMP_CRITICAL_LOW);
+    prefs.putFloat("tempEmergLow", climate["tempEmergencyLow"] | TEMP_EMERGENCY_LOW);
 
     // Humidity config
     JsonObject humidity = climate["humidity"];
-    prefs.putFloat("humMinHum", humidity["minHumidity"] | HUM_MIN_DEFAULT);
-    prefs.putFloat("humMaxHum", humidity["maxHumidity"] | HUM_MAX_DEFAULT);
-    prefs.putFloat("humTempCoeff", humidity["tempCoefficient"] | HUM_TEMP_COEFF);
-    prefs.putBool("humEnabled", humidity["enabled"] | true);
-    prefs.putUChar("humHysteresis", humidity["hysteresis"] | 5);
-    prefs.putBool("humAdaptive", humidity["adaptiveMode"] | false);
+    prefs.putFloat("humMin", humidity["minHumidity"] | HUM_MIN_DEFAULT);
+    prefs.putFloat("humMax", humidity["maxHumidity"] | HUM_MAX_DEFAULT);
+    prefs.putFloat("humCoeff", humidity["tempCoefficient"] | HUM_TEMP_COEFF);
+    prefs.putBool("humCtrl", humidity["enabled"] | true);
+    prefs.putUChar("humHyst", humidity["hysteresis"] | 3);
+    prefs.putBool("humAdapt", humidity["adaptiveMode"] | true);
 
     // Extractor timer
     JsonObject extractor = climate["extractorTimer"];
-    prefs.putBool("extTimerEnabled", extractor["enabled"] | false);
-    prefs.putUShort("extTimerOnMin", extractor["onMinutes"] | EXTRACTOR_TIMER_DEFAULT_ON);
-    prefs.putUShort("extTimerOffMin", extractor["offMinutes"] | EXTRACTOR_TIMER_DEFAULT_OFF);
-    prefs.putUChar("extTimerPower", extractor["powerPercent"] | EXTRACTOR_TIMER_DEFAULT_POWER);
+    prefs.putBool("extTimer", extractor["enabled"] | false);
+    prefs.putUShort("extOnMin", extractor["onMinutes"] | EXTRACTOR_TIMER_DEFAULT_ON);
+    prefs.putUShort("extOffMin", extractor["offMinutes"] | EXTRACTOR_TIMER_DEFAULT_OFF);
+    prefs.putUChar("extPower", extractor["powerPercent"] | EXTRACTOR_TIMER_DEFAULT_POWER);
+
+    // Статична IP (зберігається в NS_CLIMATE)
+    JsonObject wifi = doc["wifi"];
+    prefs.putBool("useStaticIP", wifi["useStaticIP"] | false);
+    prefs.putString("staticIP", wifi["staticIP"] | "");
+    prefs.putString("gateway", wifi["gateway"] | "");
+    prefs.putString("subnet", wifi["subnet"] | "255.255.255.0");
+    prefs.putString("dns", wifi["dns"] | "8.8.8.8");
 
     // Оновлюємо версію конфігурації
     prefs.putUChar("configMajor", CONFIG_VERSION_MAJOR);
@@ -483,13 +496,6 @@ bool restoreBackup() {
     // === ВІДНОВЛЕННЯ WIFI NAMESPACE ===
     prefs.begin(NS_WIFI, false);
     prefs.clear();
-
-    JsonObject wifi = doc["wifi"];
-    prefs.putBool("useStaticIP", wifi["useStaticIP"] | false);
-    prefs.putString("staticIP", wifi["staticIP"] | "");
-    prefs.putString("gateway", wifi["gateway"] | "");
-    prefs.putString("subnet", wifi["subnet"] | "255.255.255.0");
-    prefs.putString("dns", wifi["dns"] | "8.8.8.8");
 
     JsonArray networks = wifi["networks"];
     int netCount = networks.size();
@@ -618,27 +624,27 @@ String exportConfigJSON() {
     climate["tempMax"] = prefs.getFloat("tempMax", TEMP_MAX_THRESHOLD);
     climate["tempVentMin"] = prefs.getFloat("tempVentMin", TEMP_VENT_MIN);
     climate["tempVentMax"] = prefs.getFloat("tempVentMax", TEMP_VENT_MAX);
-    climate["heatingEnabled"] = prefs.getBool("heatingEnabled", true);
-    climate["humidifierEnabled"] = prefs.getBool("humidifierEnabled", true);
-    climate["pumpMinPercent"] = prefs.getUChar("pumpMinPercent", PUMP_MIN_DEFAULT);
-    climate["pumpMaxPercent"] = prefs.getUChar("pumpMaxPercent", PUMP_MAX_DEFAULT);
-    climate["fanMinPercent"] = prefs.getUChar("fanMinPercent", FAN_MIN_DEFAULT);
-    climate["fanMaxPercent"] = prefs.getUChar("fanMaxPercent", FAN_MAX_DEFAULT);
-    climate["servoClosedAngle"] = prefs.getInt("servoClosedAngle", SERVO_CLOSED_ANGLE);
-    climate["servoOpenAngle"] = prefs.getInt("servoOpenAngle", SERVO_OPEN_ANGLE);
+    climate["heatingEnabled"] = prefs.getBool("heating", true);
+    climate["humidifierEnabled"] = prefs.getBool("humidifier", true);
+    climate["pumpMinPercent"] = prefs.getUChar("pumpMin", PUMP_MIN_DEFAULT);
+    climate["pumpMaxPercent"] = prefs.getUChar("pumpMax", PUMP_MAX_DEFAULT);
+    climate["fanMinPercent"] = prefs.getUChar("fanMin", FAN_MIN_DEFAULT);
+    climate["fanMaxPercent"] = prefs.getUChar("fanMax", FAN_MAX_DEFAULT);
+    climate["servoClosedAngle"] = prefs.getInt("servoClosed", SERVO_CLOSED_ANGLE);
+    climate["servoOpenAngle"] = prefs.getInt("servoOpen", SERVO_OPEN_ANGLE);
     climate["useAuth"] = prefs.getBool("useAuth", false);
     climate["authLogin"] = prefs.getString("authLogin", "admin");
-    climate["authPassword"] = prefs.getString("authPassword", "admin");
-
-    prefs.end();
-
-    // WiFi namespace
-    prefs.begin(NS_WIFI, true);
+    climate["authPassword"] = "********"; // Не експортуємо пароль відкритим текстом
 
     JsonObject wifi = doc["wifi"].to<JsonObject>();
     wifi["useStaticIP"] = prefs.getBool("useStaticIP", false);
     wifi["staticIP"] = prefs.getString("staticIP", "");
     wifi["gateway"] = prefs.getString("gateway", "");
+
+    prefs.end();
+
+    // WiFi namespace
+    prefs.begin(NS_WIFI, true);
 
     int netCount = prefs.getInt("netCount", 0);
     JsonArray networks = wifi["networks"].to<JsonArray>();
@@ -685,14 +691,14 @@ bool importConfigJSON(const String& json) {
         if (!climate["tempMax"].isNull()) prefs.putFloat("tempMax", climate["tempMax"]);
         if (!climate["tempVentMin"].isNull()) prefs.putFloat("tempVentMin", climate["tempVentMin"]);
         if (!climate["tempVentMax"].isNull()) prefs.putFloat("tempVentMax", climate["tempVentMax"]);
-        if (!climate["heatingEnabled"].isNull()) prefs.putBool("heatingEnabled", climate["heatingEnabled"]);
-        if (!climate["humidifierEnabled"].isNull()) prefs.putBool("humidifierEnabled", climate["humidifierEnabled"]);
-        if (!climate["pumpMinPercent"].isNull()) prefs.putUChar("pumpMinPercent", climate["pumpMinPercent"]);
-        if (!climate["pumpMaxPercent"].isNull()) prefs.putUChar("pumpMaxPercent", climate["pumpMaxPercent"]);
-        if (!climate["fanMinPercent"].isNull()) prefs.putUChar("fanMinPercent", climate["fanMinPercent"]);
-        if (!climate["fanMaxPercent"].isNull()) prefs.putUChar("fanMaxPercent", climate["fanMaxPercent"]);
-        if (!climate["servoClosedAngle"].isNull()) prefs.putInt("servoClosedAngle", climate["servoClosedAngle"]);
-        if (!climate["servoOpenAngle"].isNull()) prefs.putInt("servoOpenAngle", climate["servoOpenAngle"]);
+        if (!climate["heatingEnabled"].isNull()) prefs.putBool("heating", climate["heatingEnabled"]);
+        if (!climate["humidifierEnabled"].isNull()) prefs.putBool("humidifier", climate["humidifierEnabled"]);
+        if (!climate["pumpMinPercent"].isNull()) prefs.putUChar("pumpMin", climate["pumpMinPercent"]);
+        if (!climate["pumpMaxPercent"].isNull()) prefs.putUChar("pumpMax", climate["pumpMaxPercent"]);
+        if (!climate["fanMinPercent"].isNull()) prefs.putUChar("fanMin", climate["fanMinPercent"]);
+        if (!climate["fanMaxPercent"].isNull()) prefs.putUChar("fanMax", climate["fanMaxPercent"]);
+        if (!climate["servoClosedAngle"].isNull()) prefs.putInt("servoClosed", climate["servoClosedAngle"]);
+        if (!climate["servoOpenAngle"].isNull()) prefs.putInt("servoOpen", climate["servoOpenAngle"]);
     }
 
     prefs.end();
@@ -828,14 +834,14 @@ void migrateConfigVersion(uint8_t fromMajor, uint8_t fromMinor) {
             Serial.println("  Додано: otaPassword");
         }
 
-        if (!prefs.isKey("tempCriticalLow")) {
-            prefs.putFloat("tempCriticalLow", TEMP_CRITICAL_LOW);
-            Serial.println("  Додано: tempCriticalLow");
+        if (!prefs.isKey("tempCritLow")) {
+            prefs.putFloat("tempCritLow", TEMP_CRITICAL_LOW);
+            Serial.println("  Додано: tempCritLow");
         }
 
-        if (!prefs.isKey("tempEmergencyLow")) {
-            prefs.putFloat("tempEmergencyLow", TEMP_EMERGENCY_LOW);
-            Serial.println("  Додано: tempEmergencyLow");
+        if (!prefs.isKey("tempEmergLow")) {
+            prefs.putFloat("tempEmergLow", TEMP_EMERGENCY_LOW);
+            Serial.println("  Додано: tempEmergLow");
         }
 
         prefs.end();

@@ -1,2 +1,0 @@
-// Прототип функції
-float getAdjustedBmeTemperature();

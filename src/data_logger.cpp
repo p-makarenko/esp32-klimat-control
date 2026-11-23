@@ -582,7 +582,13 @@ void cleanOldLogs() {
     return;
   }
 
-  unsigned long cutoffTime = getCurrentTimestamp() - (LOG_RETENTION_DAYS * 24 * 60 * 60);
+  unsigned long nowTs = getCurrentTimestamp();
+  const unsigned long retentionSec = (unsigned long)LOG_RETENTION_DAYS * 24UL * 60UL * 60UL;
+  if (nowTs < 1700000000UL || nowTs <= retentionSec) {
+    Serial.println("ℹ️  Час NTP ще не синхронізовано — очищення старих архівів відкладено");
+    return;
+  }
+  unsigned long cutoffTime = nowTs - retentionSec;
   uint8_t deletedCount = 0;
 
   File root = SPIFFS.open("/");
@@ -590,20 +596,25 @@ void cleanOldLogs() {
     File file = root.openNextFile();
     while (file) {
       String fileName = file.name();
+      bool deleted = false;
       if (fileName.indexOf("archive_") >= 0) {
         int startIdx = fileName.indexOf("archive_") + 8;
         int endIdx = fileName.indexOf(".csv");
-        String timestampStr = fileName.substring(startIdx, endIdx);
+        String timestampStr = (endIdx > startIdx) ? fileName.substring(startIdx, endIdx) : "";
         unsigned long fileTimestamp = timestampStr.toInt();
 
         if (fileTimestamp > 0 && fileTimestamp < cutoffTime) {
           file.close();
-          SPIFFS.remove(fileName);
-          Serial.printf("  Видалено: %s\n", fileName.c_str());
+          String fullPath = fileName.startsWith("/") ? fileName : ("/" + fileName);
+          SPIFFS.remove(fullPath);
+          Serial.printf("  Видалено: %s\n", fullPath.c_str());
           deletedCount++;
+          deleted = true;
         }
       }
-      file.close();
+      if (!deleted) {
+        file.close();
+      }
       file = root.openNextFile();
     }
     root.close();
@@ -663,7 +674,7 @@ void printLoggerInfo() {
   Serial.printf("  SPIFFS: %u / %u байт (%.1f%%)\n",
                 stats.spiffsUsedBytes,
                 stats.spiffsTotalBytes,
-                (stats.spiffsUsedBytes * 100.0) / stats.spiffsTotalBytes);
+                stats.spiffsTotalBytes > 0 ? (stats.spiffsUsedBytes * 100.0) / stats.spiffsTotalBytes : 0.0);
   Serial.printf("  Останній запис RAM: %lu мс тому\n",
                 millis() - stats.lastLogTimeRAM);
   Serial.printf("  Останній запис SPIFFS: %lu мс тому\n\n",

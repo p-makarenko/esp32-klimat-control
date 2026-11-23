@@ -12,7 +12,7 @@
 
 #define LOG_INTERVAL_RAM        60000     // Запис в RAM кожну хвилину (1 хв)
 #define LOG_INTERVAL_SPIFFS     300000    // Запис в SPIFFS кожні 5 хвилин (агреговані дані)
-#define LOG_FILE_MAX_SIZE       150000    // Максимальний розмір файлу (~150 КБ)
+#define LOG_FILE_MAX_SIZE       70000     // Максимальний розмір файлу (~70 КБ, щоб 2 файли + backup + energy влазили в 192 КБ)
 #define LOG_MAX_FILES           1         // 1 файл = весь простір для даних без ротації
 #define LOG_RETENTION_DAYS      14        // Зберігати дані за 14 днів
 

@@ -22,7 +22,7 @@ extern String getUkraineMarquee();
 
 void handleHelpPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("📖 Довідка");
     html += "<div class='container'>";
@@ -186,7 +186,7 @@ void handleHelpPage() {
 
 void handleDebugPage() {
     if (!checkAuth()) return;
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
     String html = getHtmlHead("🔧 Відладка");
     html += "<div class='container'>";

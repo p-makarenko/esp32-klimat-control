@@ -104,6 +104,7 @@ void handleLightPage() {
     html += "<button type='submit' class='btn btn-success'>Зберегти розклад</button>";
     html += "<a href='/light/preset' class='btn' style='background:#9c27b0;color:white'>Скинути пресет</a>";
     html += "</div></form></div>";
+    html += "</div>"; // container
 
     html += getNavFooter();
     html += getHtmlFooter();

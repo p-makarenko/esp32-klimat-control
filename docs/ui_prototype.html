@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Klimat Kontrol — Прототип UI (ESP32-S3)</title>
+
+<!-- =========================================================================
+     СПІЛЬНИЙ CSS ДЛЯ ІНТЕГРАЦІЇ В src/web_common.h (ціль: <= 6 КБ)
+     Без зовнішніх бібліотек, CDN і Google Fonts. Mobile-first + Dark/Light.
+     ========================================================================= -->
+<style id="common-css">
+:root{
+  --bg:#0b0f17;--surf:#131926;--surf2:#1b2335;--brd:#243047;
+  --txt:#f1f5f9;--mut:#94a3b8;--acc:#38bdf8;--acc-h:#0ea5e9;
+  --ok:#10b981;--warn:#f59e0b;--err:#ef4444;--temp:#fb7185;--hum:#38bdf8;--co2:#34d399;
+  --r:12px;--sh:0 4px 20px rgba(0,0,0,.35)
+}
+[data-theme="light"]{
+  --bg:#f1f5f9;--surf:#ffffff;--surf2:#f8fafc;--brd:#e2e8f0;
+  --txt:#0f172a;--mut:#64748b;--acc:#0284c7;--acc-h:#0369a1;
+  --ok:#059669;--warn:#d97706;--err:#dc2626;--temp:#e11d48;--hum:#0284c7;--co2:#059669;
+  --sh:0 2px 12px rgba(15,23,42,.08)
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:16px}
+h1,h2,h3{margin:0 0 12px;font-weight:600;letter-spacing:-.01em}
+h1{font-size:1.45rem}h2{font-size:1.15rem}h3{font-size:1rem}
+.mut{color:var(--mut);font-size:.875rem}
+.num{font-variant-numeric:tabular-nums}
+
+/* Єдина липка навігація */
+.topnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--surf);border-bottom:1px solid var(--brd);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.topnav::-webkit-scrollbar{display:none}
+.topnav a,.topnav button.nav-i{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;color:var(--mut);text-decoration:none;font-size:.875rem;font-weight:500;border:1px solid transparent;background:transparent;cursor:pointer;transition:.15s}
+.topnav a:hover,.topnav button.nav-i:hover{color:var(--txt);background:var(--surf2)}
+.topnav a.active,.topnav button.nav-i.active{color:#fff;background:var(--acc-h);border-color:var(--acc)}
+.topnav .brand{font-weight:700;color:var(--txt);margin-right:6px;padding:6px 10px;border-radius:8px;background:var(--surf2);border:1px solid var(--brd);flex:0 0 auto;font-size:.875rem}
+.topnav .sp{flex:1 1 auto}
+.theme-btn{flex:0 0 auto;padding:7px 11px;border-radius:8px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);cursor:pointer;font-size:.9rem}
+
+/* Сітки та картки */
+.grid{display:grid;gap:14px}
+.g-4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g-3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.kpi{position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--c,var(--acc))}
+.kpi-val{font-size:2rem;font-weight:700;line-height:1.15;margin:4px 0;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:.82rem;color:var(--mut);display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--brd)}
+
+/* Бейджі та алерти */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:.75rem;font-weight:600;background:var(--surf2);border:1px solid var(--brd);color:var(--mut)}
+.b-ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.b-warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.b-err{color:var(--err);border-color:color-mix(in srgb,var(--err) 40%,transparent);background:color-mix(in srgb,var(--err) 12%,transparent)}
+.alert{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--r);margin-bottom:16px;border:1px solid var(--err);background:color-mix(in srgb,var(--err) 14%,var(--surf));color:var(--txt)}
+.alert-ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surf))}
+
+/* Кнопки та чіпси */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:8px;border:1px solid transparent;font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:.15s;background:var(--acc-h);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.98)}
+.btn-s{background:var(--surf2);color:var(--txt);border-color:var(--brd)}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-warn{background:var(--warn);color:#111}
+.btn-err{background:var(--err);color:#fff}
+.btn-sm{padding:6px 11px;font-size:.8rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* Прогрес-бари (Потужність A/B/C та OTA) */
+.bar{height:8px;border-radius:99px;background:var(--surf2);overflow:hidden;border:1px solid var(--brd)}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--c,var(--acc));transition:width .25s}
+.bar-lg{height:18px}
+
+/* Слайдери, тумблери, форми */
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:99px;background:var(--surf2);border:1px solid var(--brd);outline:none;margin:12px 0}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--c,var(--acc));border:3px solid var(--surf);box-shadow:0 0 0 1px var(--brd);cursor:pointer}
+.slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--c,var(--acc));border:3px solid var(--surf);cursor:pointer}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.82rem;font-weight:500;color:var(--mut)}
+input[type=text],input[type=number],input[type=password],input[type=time],input[type=file],select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);font-size:.95rem;outline:none}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 20%,transparent)}
+.sw{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw-t{width:44px;height:24px;border-radius:99px;background:var(--surf2);border:1px solid var(--brd);position:relative;transition:.2s;flex:0 0 auto}
+.sw-t::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--mut);transition:.2s}
+.sw input:checked+.sw-t{background:var(--ok);border-color:var(--ok)}
+.sw input:checked+.sw-t::after{transform:translateX(20px);background:#fff}
+
+/* Сегменти та вкладки */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:8px 14px;border-radius:8px;border:1px solid var(--brd);background:var(--surf);color:var(--mut);font-size:.875rem;font-weight:500;cursor:pointer}
+.tab.active{background:var(--acc-h);color:#fff;border-color:var(--acc)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px;background:var(--surf2);border:1px solid var(--brd);border-radius:10px}
+.seg button{padding:10px;border:none;border-radius:7px;background:transparent;color:var(--mut);font-weight:600;font-size:.875rem;cursor:pointer;transition:.15s}
+.seg button.active{background:var(--acc-h);color:#fff}
+
+/* Консоль команд */
+.term{background:#070a10;color:#cbd5e1;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.82rem;padding:12px;border-radius:8px;border:1px solid var(--brd);min-height:90px;max-height:190px;overflow-y:auto;white-space:pre-wrap}
+.chip{padding:6px 11px;border-radius:6px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);font-size:.8rem;cursor:pointer}
+.chip:hover{border-color:var(--acc)}
+
+/* Зона ризику та toast */
+.danger-zone{border-color:color-mix(in srgb,var(--err) 55%,var(--brd))}
+.toast{position:fixed;bottom:18px;right:18px;z-index:200;padding:11px 16px;border-radius:10px;background:var(--ok);color:#fff;font-weight:600;font-size:.875rem;box-shadow:var(--sh);opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* Адаптивність */
+@media(max-width:768px){
+  .wrap{padding:12px}
+  .g-4{grid-template-columns:1fr 1fr}
+  .g-2,.g-3{grid-template-columns:1fr}
+  .kpi-val{font-size:1.65rem}
+  input,select,textarea{font-size:16px}
+}
+@media(max-width:480px){
+  .g-4{grid-template-columns:1fr}
+  .btn-m-full{width:100%}
+}
+</style>
+
+<!-- Допоміжні стилі ЛИШЕ для демо-прототипу (у прошивку не переносяться) -->
+<style>
+.page{display:none}.page.active{display:block}
+.subtab-pane{display:none}.subtab-pane.active{display:block}
+.proto-bar{margin-top:24px;padding:12px 16px;border-radius:var(--r);border:1px dashed var(--brd);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font-size:.82rem;color:var(--mut)}
+.chart-mock{width:100%;height:200px;display:block}
+</style>
+</head>
+<body>
+
+<!-- ЄДИНА ВЕРХНЯ НАВІГАЦІЯ -->
+<nav class="topnav" id="topnav">
+  <span class="brand">🌡️ Klimat <span style="color:var(--acc)">v4.2</span></span>
+  <button class="nav-i active" data-page="home">🏠 Головна</button>
+  <button class="nav-i" data-page="control">🎛️ Керування</button>
+  <button class="nav-i" data-page="settings">⚙️ Налаштування</button>
+  <button class="nav-i" data-page="energy">⚡ Енергія</button>
+  <button class="nav-i" data-page="ota">🔄 OTA</button>
+  <span class="sp"></span>
+  <button class="theme-btn" id="themeBtn" title="Змінити тему">☀️ Світла</button>
+</nav>
+
+<main class="wrap">
+
+  <!-- ==================== 1. ГОЛОВНА (/) ==================== -->
+  <section class="page active" id="p-home">
+    <div class="card-h" style="margin-bottom:14px">
+      <div>
+        <h1 style="margin:0">Огляд системи</h1>
+        <span class="mut">IP: 192.168.1.45 · klimat.local · Оновлено щойно</span>
+      </div>
+      <div class="row">
+        <span class="badge b-ok">● Авто-режим</span>
+        <button class="btn btn-s btn-sm" id="toggleAlertBtn">🚨 Тест аварії 220В</button>
+      </div>
+    </div>
+
+    <!-- Аварійний банер (прихований за замовчуванням, вмикається кнопкою тесту) -->
+    <div class="alert" id="emergencyBanner" style="display:none">
+      <div>
+        <strong>🚨 ВІДСУТНІСТЬ 220В!</strong>
+        <div class="mut">Напруга: 0.0 В · Система перейшла на резервне живлення, виконавчі механізми обмежено.</div>
+      </div>
+      <button class="btn btn-err btn-sm" onclick="document.getElementById('emergencyBanner').style.display='none'">Приховати</button>
+    </div>
+
+    <!-- KPI картки датчиків -->
+    <div class="grid g-4" style="margin-bottom:14px">
+      <div class="card kpi" style="--c:var(--temp)">
+        <div class="card-h">
+          <span class="mut">🌡️ Температура</span>
+          <span class="badge b-ok">Норма</span>
+        </div>
+        <div class="kpi-val num">23.4 <span style="font-size:1rem;font-weight:500">°C</span></div>
+        <div class="kpi-sub"><span>Ціль: 23.0 °C</span><span>Теплоносій: 38.2°</span></div>
+      </div>
+
+      <div class="card kpi" style="--c:var(--hum)">
+        <div class="card-h">
+          <span class="mut">💧 Вологість</span>
+          <span class="badge b-ok">Норма</span>
+        </div>
+        <div class="kpi-val num">58 <span style="font-size:1rem;font-weight:500">%</span></div>
+        <div class="kpi-sub"><span>Ціль: 55–65%</span><span>Зволожувач: ВИМК</span></div>
+      </div>
+
+      <div class="card kpi" style="--c:var(--co2)">
+        <div class="card-h">
+          <span class="mut">💨 CO₂ (SCD30)</span>
+          <span class="badge b-warn">Середній</span>
+        </div>
+        <div class="kpi-val num">840 <span style="font-size:1rem;font-weight:500">ppm</span></div>
+        <div class="kpi-sub"><span>Поріг: 1000 ppm</span><span>Вентиляція: 25%</span></div>
+      </div>
+
+      <div class="card kpi" style="--c:var(--warn)">
+        <div class="card-h">
+          <span class="mut">⚡ Мережа 220В</span>
+          <span class="badge b-ok">231 В</span>
+        </div>
+        <div class="kpi-val num">412 <span style="font-size:1rem;font-weight:500">Вт</span></div>
+        <div class="kpi-sub"><span>Струм: 1.85 А</span><span>За добу: 4.6 кВт·год</span></div>
+      </div>
+    </div>
+
+    <!-- Виконавчі пристрої + Статус системи -->
+    <div class="grid g-2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-h">
+          <h2 style="margin:0">⚙️ Потужність механізмів</h2>
+          <button class="btn btn-s btn-sm" onclick="goPage('control')">Керувати →</button>
+        </div>
+        <div class="grid" style="gap:12px">
+          <div>
+            <div class="card-h" style="margin-bottom:5px"><span>🔵 Насос (A)</span><strong class="num" id="homeA">35%</strong></div>
+            <div class="bar"><i id="barA" style="width:35%;--c:#38bdf8"></i></div>
+          </div>
+          <div>
+            <div class="card-h" style="margin-bottom:5px"><span>🟠 Вентилятор (B)</span><strong class="num" id="homeB">60%</strong></div>
+            <div class="bar"><i id="barB" style="width:60%;--c:#f59e0b"></i></div>
+          </div>
+          <div>
+            <div class="card-h" style="margin-bottom:5px"><span>🟢 Витяжка (C)</span><strong class="num" id="homeC">25%</strong></div>
+            <div class="bar"><i id="barC" style="width:25%;--c:#10b981"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2 style="margin:0">💡 Стан модулів</h2>
+          <span class="mut">Аптайм: 4д 12г 18хв</span>
+        </div>
+        <div class="grid" style="gap:10px">
+          <div class="card-h" style="margin:0;padding:8px 10px;background:var(--surf2);border-radius:8px">
+            <span>💡 Освітлення (розклад 07:00–21:00)</span><span class="badge b-ok">УВІМК</span>
+          </div>
+          <div class="card-h" style="margin:0;padding:8px 10px;background:var(--surf2);border-radius:8px">
+            <span>🪟 Заслінка серво</span><span class="badge">Відкрито 45°</span>
+          </div>
+          <div class="card-h" style="margin:0;padding:8px 10px;background:var(--surf2);border-radius:8px">
+            <span>☁️ Google Sheets Sync</span><span class="badge b-ok">Ок (3 хв тому)</span>
+          </div>
+          <div class="card-h" style="margin:0;padding:8px 10px;background:var(--surf2);border-radius:8px">
+            <span>📶 Wi-Fi RSSI / Вільна RAM</span><span class="badge num">-58 dBm · 142 КБ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Командна консоль -->
+    <div class="card">
+      <div class="card-h">
+        <h2 style="margin:0">💬 Командна консоль</h2>
+        <button class="btn btn-s btn-sm" onclick="document.getElementById('cmdOut').textContent='Консоль очищено.'">Очистити</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <input type="text" id="cmdIn" placeholder="Введіть команду (наприклад: status, temp, wifi, help)..." style="flex:1 1 240px">
+        <button class="btn btn-m-full" id="cmdSend">Виконати</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <button class="chip" data-cmd="status">status</button>
+        <button class="chip" data-cmd="temp">temp</button>
+        <button class="chip" data-cmd="wifi">wifi</button>
+        <button class="chip" data-cmd="mem">mem</button>
+        <button class="chip" data-cmd="help">help</button>
+      </div>
+      <div class="term" id="cmdOut">[00:35:01] Система готова. Натисніть швидку кнопку або введіть команду.</div>
+    </div>
+  </section>
+
+  <!-- ==================== 2. КЕРУВАННЯ (/control) ==================== -->
+  <section class="page" id="p-control">
+    <h1>🎛️ Панель керування</h1>
+
+    <!-- Міні-датчики -->
+    <div class="grid g-4" style="margin-bottom:14px">
+      <div class="card"><span class="mut">🏠 Кімната</span><div class="kpi-val num" style="font-size:1.5rem">23.4°C</div></div>
+      <div class="card"><span class="mut">🔥 Теплоносій</span><div class="kpi-val num" style="font-size:1.5rem">38.2°C</div></div>
+      <div class="card"><span class="mut">🌡️ BME280</span><div class="kpi-val num" style="font-size:1.5rem">23.1°C</div></div>
+      <div class="card"><span class="mut">💧 Вологість</span><div class="kpi-val num" style="font-size:1.5rem">58%</div></div>
+    </div>
+
+    <!-- Режим роботи -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h">
+        <h2 style="margin:0">Режим роботи системи</h2>
+        <span class="badge b-ok" id="modeBadge">Автоматичний</span>
+      </div>
+      <div class="seg" id="modeSeg">
+        <button class="active" data-mode="Автоматичний">🤖 Авто</button>
+        <button data-mode="Ручний">✋ Ручний</button>
+        <button data-mode="Форсаж">⚡ Форсаж</button>
+      </div>
+    </div>
+
+    <!-- Слайдери A / B / C -->
+    <div class="grid g-3" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-h">
+          <h3 style="margin:0">🔵 Насос (A)</h3>
+          <strong class="num" style="font-size:1.25rem;color:#38bdf8" id="valA">35%</strong>
+        </div>
+        <input type="range" class="slider" min="0" max="100" value="35" style="--c:#38bdf8" data-target="A">
+        <div class="row" style="justify-content:space-between">
+          <button class="chip" onclick="setSlider('A',0)">0%</button>
+          <button class="chip" onclick="setSlider('A',35)">35%</button>
+          <button class="chip" onclick="setSlider('A',70)">70%</button>
+          <button class="chip" onclick="setSlider('A',100)">100%</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3 style="margin:0">🟠 Вентилятор (B)</h3>
+          <strong class="num" style="font-size:1.25rem;color:#f59e0b" id="valB">60%</strong>
+        </div>
+        <input type="range" class="slider" min="0" max="100" value="60" style="--c:#f59e0b" data-target="B">
+        <div class="row" style="justify-content:space-between">
+          <button class="chip" onclick="setSlider('B',0)">0%</button>
+          <button class="chip" onclick="setSlider('B',30)">30%</button>
+          <button class="chip" onclick="setSlider('B',60)">60%</button>
+          <button class="chip" onclick="setSlider('B',100)">100%</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3 style="margin:0">🟢 Витяжка (C)</h3>
+          <strong class="num" style="font-size:1.25rem;color:#10b981" id="valC">25%</strong>
+        </div>
+        <input type="range" class="slider" min="0" max="100" value="25" style="--c:#10b981" data-target="C">
+        <div class="row" style="justify-content:space-between">
+          <button class="chip" onclick="setSlider('C',0)">0%</button>
+          <button class="chip" onclick="setSlider('C',25)">25%</button>
+          <button class="chip" onclick="setSlider('C',60)">60%</button>
+          <button class="chip" onclick="setSlider('C',100)">100%</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Швидкі перемикачі -->
+    <div class="card">
+      <h2>Швидкі перемикачі</h2>
+      <div class="grid g-3">
+        <label class="sw"><input type="checkbox" checked onchange="toast('Освітлення перемкнуто')"><span class="sw-t"></span><span>💡 Основне освітлення</span></label>
+        <label class="sw"><input type="checkbox" onchange="toast('Зволожувач перемкнуто')"><span class="sw-t"></span><span>💧 Зволожувач</span></label>
+        <label class="sw"><input type="checkbox" checked onchange="toast('Природний вітер перемкнуто')"><span class="sw-t"></span><span>🍃 Природний вітер</span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. НАЛАШТУВАННЯ (/settings) ==================== -->
+  <section class="page" id="p-settings">
+    <div class="card-h">
+      <h1 style="margin:0">⚙️ Налаштування системи</h1>
+      <button class="btn btn-ok" onclick="toast('Налаштування збережено!')">💾 Зберегти</button>
+    </div>
+
+    <!-- Вкладки замість довгого полотна з 15 секцій -->
+    <div class="tabs" id="settingsTabs">
+      <button class="tab active" data-tab="st-climate">🌡️ Клімат і CO₂</button>
+      <button class="tab" data-tab="st-devices">🔧 Пристрої та Серво</button>
+      <button class="tab" data-tab="st-wifi">📶 Wi-Fi і Мережа</button>
+      <button class="tab" data-tab="st-logs">☁️ Логи та Час</button>
+    </div>
+
+    <!-- Вкладка 1: Клімат -->
+    <div class="subtab-pane active" id="st-climate">
+      <div class="grid g-2">
+        <div class="card">
+          <h3>🌡️ Температура</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Цільова температура (°C)</label><input type="number" step="0.1" value="23.0"></div>
+            <div class="field"><label>Гістерезис (°C)</label><input type="number" step="0.1" value="0.5"></div>
+            <div class="field"><label>Поріг форсажу (°C)</label><input type="number" step="0.5" value="28.0"></div>
+            <div class="field"><label>Сезонний режим</label>
+              <select><option>❄️ Зима (обігрів)</option><option>☀️ Літо (охолодження)</option><option>🔄 Авто</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>💧 Вологість та CO₂</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Мін. вологість (%)</label><input type="number" value="50"></div>
+            <div class="field"><label>Макс. вологість (%)</label><input type="number" value="65"></div>
+            <div class="field"><label>Поріг CO₂ (ppm)</label><input type="number" value="1000"></div>
+            <div class="field"><label>Аварійний CO₂ (ppm)</label><input type="number" value="1500"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка 2: Пристрої -->
+    <div class="subtab-pane" id="st-devices">
+      <div class="grid g-2">
+        <div class="card">
+          <h3>🔧 Обмеження потужності (Авто)</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Насос A (Мін / Макс %)</label><input type="text" value="15 / 100"></div>
+            <div class="field"><label>Вентилятор B (Мін / Макс %)</label><input type="text" value="10 / 90"></div>
+            <div class="field"><label>Витяжка C (Мін / Макс %)</label><input type="text" value="0 / 100"></div>
+            <div class="field"><label>Таймер витяжки (хв)</label><input type="number" value="15"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🎯 Калібрування серво</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Кут «Закрито» (°)</label><input type="number" value="0"></div>
+            <div class="field"><label>Кут «Відкрито» (°)</label><input type="number" value="90"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn btn-s btn-sm" onclick="toast('Тест серво: Закрито')">Тест 0°</button>
+            <button class="btn btn-s btn-sm" onclick="toast('Тест серво: Відкрито')">Тест 90°</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка 3: Wi-Fi (об'єднання /wifi і /wifi-settings) -->
+    <div class="subtab-pane" id="st-wifi">
+      <div class="grid g-2">
+        <div class="card">
+          <div class="card-h"><h3 style="margin:0">📶 Підключення Wi-Fi</h3><span class="badge b-ok">Підключено</span></div>
+          <div class="grid" style="gap:10px">
+            <div class="field"><label>Мережа (SSID)</label><input type="text" value="Home_WiFi_5G"></div>
+            <div class="field"><label>Пароль Wi-Fi</label><input type="password" value="••••••••"></div>
+            <button class="btn btn-s btn-sm" onclick="toast('Сканування мереж... Знайдено 4 мережі')">🔍 Сканувати мережі</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🌐 Статична IP та Безпека</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Статична IP</label><input type="text" value="192.168.1.45"></div>
+            <div class="field"><label>Шлюз (Gateway)</label><input type="text" value="192.168.1.1"></div>
+            <div class="field"><label>mDNS ім'я</label><input type="text" value="klimat.local" disabled></div>
+            <div class="field"><label>Пароль веб-панелі</label><input type="password" placeholder="Новий пароль"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка 4: Логи і Час -->
+    <div class="subtab-pane" id="st-logs">
+      <div class="grid g-2">
+        <div class="card">
+          <h3>☁️ Логування та Google Sheets</h3>
+          <div class="grid g-2" style="gap:10px">
+            <div class="field"><label>Запис у SPIFFS (сек)</label><input type="number" value="300"></div>
+            <div class="field"><label>Відправка в Sheets (сек)</label><input type="number" value="600"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🕒 Час системи (NTP)</h3>
+          <p class="mut" style="margin-top:0">Поточний час: <strong style="color:var(--txt)">23.11.2026 00:35:12 (UTC+2)</strong></p>
+          <button class="btn btn-s btn-sm" onclick="toast('Час синхронізовано з NTP')">🔄 Синхронізувати зараз</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 4. ЕНЕРГІЯ (/energy) ==================== -->
+  <section class="page" id="p-energy">
+    <div class="card-h">
+      <h1 style="margin:0">⚡ Енергоконтролер (PZEM-004T)</h1>
+      <button class="btn btn-s btn-sm" onclick="toast('Лічильник енергії скинуто')">Скинути лічильник</button>
+    </div>
+
+    <div class="grid g-4" style="margin-bottom:14px">
+      <div class="card kpi" style="--c:var(--warn)"><span class="mut">Напруга</span><div class="kpi-val num">231.4 <small style="font-size:.9rem">В</small></div></div>
+      <div class="card kpi" style="--c:var(--acc)"><span class="mut">Струм</span><div class="kpi-val num">1.85 <small style="font-size:.9rem">А</small></div></div>
+      <div class="card kpi" style="--c:var(--temp)"><span class="mut">Потужність</span><div class="kpi-val num">412 <small style="font-size:.9rem">Вт</small></div></div>
+      <div class="card kpi" style="--c:var(--ok)"><span class="mut">Спожито</span><div class="kpi-val num">14.82 <small style="font-size:.9rem">кВт·год</small></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2 style="margin:0">Графік потужності (демо SVG · у прошивці Chart.js)</h2>
+        <div class="row">
+          <button class="chip">1г</button><button class="chip" style="border-color:var(--acc);color:var(--acc)">24г</button><button class="chip">7д</button>
+        </div>
+      </div>
+      <svg class="chart-mock" viewBox="0 0 600 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="45" x2="600" y2="45" stroke="var(--brd)" stroke-dasharray="4"/>
+        <line x1="0" y1="90" x2="600" y2="90" stroke="var(--brd)" stroke-dasharray="4"/>
+        <line x1="0" y1="135" x2="600" y2="135" stroke="var(--brd)" stroke-dasharray="4"/>
+        <path d="M0,130 C60,125 90,80 150,85 C210,90 250,40 320,55 C390,70 430,95 490,65 C540,40 570,75 600,68 L600,180 L0,180 Z" fill="url(#g1)"/>
+        <path d="M0,130 C60,125 90,80 150,85 C210,90 250,40 320,55 C390,70 430,95 490,65 C540,40 570,75 600,68" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ==================== 5. OTA ТА BACKUP (/ota) ==================== -->
+  <section class="page" id="p-ota">
+    <h1>🔄 OTA Оновлення та Backup</h1>
+
+    <div class="grid g-2" style="margin-bottom:14px">
+      <div class="card">
+        <h2>📦 Оновлення прошивки (.bin)</h2>
+        <p class="mut">Перед прошивкою автоматично створюється резервна копія конфігурації.</p>
+        <div class="field" style="margin-bottom:12px">
+          <label>Файл прошивки (firmware.bin)</label>
+          <input type="file" accept=".bin">
+        </div>
+        <div class="bar bar-lg" style="margin-bottom:12px"><i id="otaBar" style="width:0%;--c:var(--ok)"></i></div>
+        <div class="row">
+          <button class="btn" id="demoOtaBtn">⬆️ Демо завантаження OTA</button>
+          <span class="mut num" id="otaPct">0%</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>💾 Резервні копії конфігурації</h2>
+        <p class="mut">Останній backup: <span style="color:var(--ok)">2 418 байт · Auto backup</span></p>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-ok btn-sm" onclick="toast('Backup створено')">Створити Backup</button>
+          <button class="btn btn-warn btn-sm" onclick="toast('Відновлення з Backup...')">Відновити</button>
+          <button class="btn btn-s btn-sm" onclick="toast('Експорт JSON почато')">Export JSON</button>
+          <button class="btn btn-s btn-sm" onclick="toast('Імпорт JSON')">Import JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card danger-zone">
+      <div class="card-h" style="margin-bottom:6px">
+        <h2 style="margin:0;color:var(--err)">⚠️ Зона ризику (Factory Reset)</h2>
+        <button class="btn btn-err btn-sm" onclick="toast('Демо: запит підтвердження скидання')">Скинути до заводських</button>
+      </div>
+      <span class="mut">Видаляє всі налаштування Wi-Fi, калібрування та пороги клімату. Потребує підтвердження.</span>
+    </div>
+  </section>
+
+  <!-- Інформаційна панель прототипу -->
+  <div class="proto-bar">
+    <span>🧪 <strong>Інтерактивний прототип</strong> · Відкрийте DevTools (F12 → Mobile 375px) для перевірки мобільної версії</span>
+    <span id="cssSizeInfo" class="num"></span>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Перемикання сторінок
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  document.querySelectorAll('#topnav .nav-i').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+}
+document.querySelectorAll('#topnav .nav-i').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
+
+// Перемикач теми Dark / Light
+const themeBtn=document.getElementById('themeBtn');
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  themeBtn.textContent=t==='dark'?'☀️ Світла':'🌙 Темна';
+  localStorage.setItem('kk-theme',t);
+}
+applyTheme(localStorage.getItem('kk-theme')||'dark');
+themeBtn.addEventListener('click',()=>applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'));
+
+// Toast
+let tt;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// Тест аварії 220В
+document.getElementById('toggleAlertBtn').addEventListener('click',()=>{
+  const b=document.getElementById('emergencyBanner');
+  b.style.display=b.style.display==='none'?'flex':'none';
+});
+
+// Слайдери A/B/C
+function setSlider(k,v){
+  const inp=document.querySelector('input[data-target="'+k+'"]');
+  inp.value=v;
+  document.getElementById('val'+k).textContent=v+'%';
+  document.getElementById('home'+k).textContent=v+'%';
+  document.getElementById('bar'+k).style.width=v+'%';
+}
+document.querySelectorAll('.slider').forEach(s=>s.addEventListener('input',e=>setSlider(e.target.dataset.target,e.target.value)));
+
+// Сегменти режимів
+document.querySelectorAll('#modeSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('modeBadge').textContent=b.dataset.mode;
+  toast('Режим: '+b.dataset.mode);
+}));
+
+// Вкладки налаштувань
+document.querySelectorAll('#settingsTabs .tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('#settingsTabs .tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.subtab-pane').forEach(p=>p.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById(t.dataset.tab).classList.add('active');
+}));
+
+// Демо-консоль команд
+const replies={
+  status:'[OK] Режим: АВТО | T: 23.4°C | H: 58% | CO2: 840ppm | 220V: 231.4V',
+  temp:'Кімната: 23.4°C | Теплоносій: 38.2°C | BME280: 23.1°C',
+  wifi:'SSID: Home_WiFi_5G | IP: 192.168.1.45 | RSSI: -58 dBm',
+  mem:'Free Heap: 142 KB | Min Heap: 118 KB | SPIFFS: 412/1500 KB',
+  help:'Команди: status, temp, wifi, mem, restart, fan <0-100>'
+};
+function runCmd(c){
+  const out=document.getElementById('cmdOut');
+  const k=c.trim().toLowerCase();
+  if(!k)return;
+  out.textContent+='\n> '+c+'\n'+(replies[k]||'Команду "'+c+'" виконано.');
+  out.scrollTop=out.scrollHeight;
+}
+document.getElementById('cmdSend').addEventListener('click',()=>{const i=document.getElementById('cmdIn');runCmd(i.value);i.value='';});
+document.getElementById('cmdIn').addEventListener('keydown',e=>{if(e.key==='Enter'){runCmd(e.target.value);e.target.value='';}});
+document.querySelectorAll('.chip[data-cmd]').forEach(c=>c.addEventListener('click',()=>runCmd(c.dataset.cmd)));
+
+// Демо OTA прогрес
+document.getElementById('demoOtaBtn').addEventListener('click',()=>{
+  let p=0;const bar=document.getElementById('otaBar'),pct=document.getElementById('otaPct');
+  const iv=setInterval(()=>{
+    p+=8;if(p>=100){p=100;clearInterval(iv);toast('OTA оновлення завершено (демо)');}
+    bar.style.width=p+'%';pct.textContent=p+'%';
+  },120);
+});
+
+// Підрахунок точного розміру спільного CSS
+const cssLen=new Blob([document.getElementById('common-css').textContent]).size;
+document.getElementById('cssSizeInfo').textContent='Розмір спільного CSS: '+(cssLen/1024).toFixed(2)+' КБ ('+cssLen+' байт)';
+</script>
+</body>
+</html>

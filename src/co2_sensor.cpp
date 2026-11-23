@@ -23,6 +23,7 @@ bool initSCD30() {
   // Ініціалізуємо окремий I2C для SCD30 (GPIO4=SDA, GPIO5=SCL)
   scd30Wire.begin(SCD30_I2C_SDA, SCD30_I2C_SCL);
   scd30Wire.setClock(100000);  // 100 kHz для SCD30
+  scd30Wire.setTimeOut(50);
 
   // Ініціалізуємо сам датчик
   scd30.begin(scd30Wire, SCD30_I2C_ADDR);
@@ -89,13 +90,12 @@ void readSCD30() {
     return;
   }
 
-  // Оновлюємо глобальні змінні
-  co2_level = (uint16_t)co2;
-  temperature = temp;
-  humidity = humidity_raw;
-
-  // Валідація даних
-  if (co2_level > 0 && co2_level < 5000 && temperature > -40 && temperature < 85) {
+  // Валідація даних (перевірка NaN до приведення типу)
+  if (!isnan(co2) && !isnan(temp) && !isnan(humidity_raw) &&
+      co2 > 0.0f && co2 < 5000.0f && temp > -40.0f && temp < 85.0f) {
+    co2_level = (uint16_t)co2;
+    temperature = temp;
+    humidity = humidity_raw;
     co2_valid = true;
   } else {
     co2_valid = false;
