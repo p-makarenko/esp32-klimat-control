@@ -4,8 +4,8 @@
 #include "system_core.h"
 #include "utility_functions.h"  // Додайте цей інклуд
 
-// Змінні історії даних
-extern HistoryData history[HISTORY_BUFFER_SIZE];
+// Змінні історії даних (legacy буфер)
+extern HistoryData history[LEGACY_HISTORY_SIZE];
 extern int historyIndex;
 extern bool historyInitialized;
 

@@ -5,7 +5,7 @@
 #include "utility_functions.h"
 
 // Глобальні змінні
-HistoryData history[HISTORY_BUFFER_SIZE];
+HistoryData history[LEGACY_HISTORY_SIZE];
 int historyIndex = 0;
 bool historyInitialized = false;
 
@@ -40,7 +40,7 @@ void addToHistory() {
     history[historyIndex].extractorPower = (heatingState.extractorPower * 100) / 255;
     history[historyIndex].mode = getCurrentMode();
     
-    historyIndex = (historyIndex + 1) % HISTORY_BUFFER_SIZE;
+    historyIndex = (historyIndex + 1) % LEGACY_HISTORY_SIZE;
     if (!historyInitialized && historyIndex == 0) {
       historyInitialized = true;
     }

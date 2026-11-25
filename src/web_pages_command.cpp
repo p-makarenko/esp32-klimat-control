@@ -12,6 +12,7 @@
 #include "actuator_manager.h"
 #include "global_declarations.h"
 #include "google_sheets_sync.h"
+#include "plant_fan.h"
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -74,6 +75,7 @@ String processWebCommand(const String& cmd) {
         // Скидаємо стан аварії при переході в AUTO
         powerOutageState.detected = false;
         powerOutageState.emergencyHeatingActive = false;
+        plantFanClearManual();
         return "✅ Режим: АВТОМАТИЧНИЙ";
     }
     else if (lowerCmd == "manual") {
@@ -229,6 +231,15 @@ String processWebCommand(const String& cmd) {
         percent = constrain(percent, 0, 100);
         setExtractorPercent(percent);
         return "✅ Витяжка: " + String(percent) + "% [РУЧНИЙ]";
+    }
+    else if (lowerCmd == "plant auto") {
+        plantFanClearManual();
+        return "✅ Вітер рослин: АВТО";
+    }
+    else if (lowerCmd.startsWith("plant ")) {
+        int percent = constrain(cmd.substring(6).toInt(), 0, 100);
+        plantFanSetManual((uint8_t)percent);
+        return "✅ Вітер рослин: " + String(percent) + "% [РУЧНИЙ]";
     }
 
     // ========================================================================

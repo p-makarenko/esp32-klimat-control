@@ -43,6 +43,7 @@ struct TC421ScheduleConfig {
     uint8_t eodIrDurMin;       // EOD Far-Red "сигнал сну" після заходу (0..45 хв)
     uint8_t eodIrPct;          // Потужність EOD Far-Red (0..100%)
     uint8_t ecoMaxPercent;     // Макс. потужність під час ЕКО/блекауту (0=вимкн, напр. 15%)
+    uint8_t dayBaseIrPct;      // Фонова денна потужність CH4 між піками (0..50%, напр. 3-5%)
 };
 
 struct TC421State {

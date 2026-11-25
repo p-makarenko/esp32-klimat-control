@@ -581,6 +581,16 @@ void loadPowerSaveConfig() {
   config.fanSmooth.minOffSec            = ps.getUShort("fsMinOff", 60);
   config.fanSmooth.keepLowInsteadOfStop = ps.getBool("fsKeepLow", true);
 
+  // Розумне керування насосом за швидкістю нагріву
+  config.smartPump.enabled         = ps.getBool("spEn", true);
+  config.smartPump.workPercent     = ps.getUChar("spWorkPct", 33);
+  config.smartPump.evalWindowSec   = ps.getUShort("spEvalSec", 180);
+  config.smartPump.minTempRise     = ps.getFloat("spMinRise", 0.15f);
+  config.smartPump.carrierStopTemp = ps.getFloat("spCarStop", 36.0f);
+  config.smartPump.carrierLowTemp  = ps.getFloat("spCarLow", 30.0f);
+  config.smartPump.minRunSec       = ps.getUShort("spMinRun", 60);
+  config.smartPump.minOffSec       = ps.getUShort("spMinOff", 120);
+
   // Профіль енергозбереження / Блекаут (ECO)
   config.powerSave.activationMode       = ps.getUChar("ecoActMode", ECO_MODE_AUTO);
   config.powerSave.outageConfirmSec     = ps.getUShort("ecoOutSec", 6);
@@ -633,6 +643,16 @@ void savePowerSaveConfig() {
   ps.putUShort("fsMinRun", config.fanSmooth.minRunSec);
   ps.putUShort("fsMinOff", config.fanSmooth.minOffSec);
   ps.putBool("fsKeepLow",  config.fanSmooth.keepLowInsteadOfStop);
+
+  // Розумне керування насосом
+  ps.putBool("spEn",        config.smartPump.enabled);
+  ps.putUChar("spWorkPct",  config.smartPump.workPercent);
+  ps.putUShort("spEvalSec", config.smartPump.evalWindowSec);
+  ps.putFloat("spMinRise",  config.smartPump.minTempRise);
+  ps.putFloat("spCarStop",  config.smartPump.carrierStopTemp);
+  ps.putFloat("spCarLow",   config.smartPump.carrierLowTemp);
+  ps.putUShort("spMinRun",  config.smartPump.minRunSec);
+  ps.putUShort("spMinOff",  config.smartPump.minOffSec);
 
   ps.putUChar("ecoActMode",  config.powerSave.activationMode);
   ps.putUShort("ecoOutSec",  config.powerSave.outageConfirmSec);
@@ -794,7 +814,7 @@ void createTasks() {
   xTaskCreatePinnedToCore(
     webTask,           // Функція задачі
     "WebTask",         // Назва
-    8192,              // Розмір стеку
+    12288,             // Розмір стеку (збільшено з 8192 для chunked HTTP/SPIFFS/JSON)
     NULL,              // Параметри
     2,                 // Пріоритет (підвищено для швидкого веб)
     &webTaskHandle,    // Handle

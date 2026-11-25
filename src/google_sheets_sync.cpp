@@ -75,31 +75,47 @@ bool syncToGoogleSheets() {
     return false;
   }
 
+  int rssi = WiFi.RSSI();
+  if (rssi < -85 || rssi == 0) {
+    Serial.printf("⚠️ [Sync] Слабкий сигнал Wi-Fi (%d dBm), синхронізацію відкладено\n", rssi);
+    syncStats.lastSyncTime = millis();
+    return false;
+  }
+
   if (syncStats.syncInProgress) {
     Serial.println("⚠️ [Sync] Вже виконується");
     return false;
   }
 
-  // 2. Перевірка вільної пам'яті ДО початку
-  // При 360 записів: ~12KB для буфера + ~50KB для SSL handshake = ~62KB мінімум
+  // 2. Перевірка вільної пам'яті та найбільшого суцільного блоку ДО початку
+  // SSL handshake потребує ~50-60KB суцільної внутрішньої RAM, плюс запас для вебсервера
   uint32_t freeHeap = ESP.getFreeHeap();
-  uint32_t requiredHeap = (HISTORY_BUFFER_SIZE * sizeof(DataRecord)) + 50000;
+  uint32_t maxAlloc = ESP.getMaxAllocHeap();
+  uint16_t bufCap = getRamBufferCapacity();
+  if (bufCap == 0) {
+    Serial.println("⚠️ [Sync] Буфер історії не ініціалізовано");
+    return false;
+  }
+  bool usePsram = psramFound();
 
-  if (freeHeap < 40000) {  // Жорстка межа — критично мало для SSL
-    Serial.printf("❌ [Sync] Критично мало RAM! Free: %u KB\n", freeHeap / 1000);
+  if (freeHeap < 75000 || maxAlloc < 55000) {
+    Serial.printf("❌ [Sync] Мало RAM для безпечного SSL! Free: %u B, MaxBlock: %u B\n", freeHeap, maxAlloc);
+    syncStats.lastSyncTime = millis();
     syncStats.failedSyncs++;
     return false;
   }
 
-  Serial.printf("💾 [Sync] Heap: %u вільно, %u потрібно\n", freeHeap, requiredHeap);
+  Serial.printf("💾 [Sync] Heap: %u вільно (MaxBlock: %u), буфер у %s (%u записів)\n",
+                freeHeap, maxAlloc, usePsram ? "PSRAM" : "RAM", bufCap);
 
   syncStats.syncInProgress = true;
   Serial.println("\n📤 [Sync] Початок сесії...");
 
-  // 3. Виділення пам'яті
-  DataRecord* buffer = (DataRecord*)malloc(HISTORY_BUFFER_SIZE * sizeof(DataRecord));
+  // 3. Виділення пам'яті (у PSRAM, щоб не зачіпати основну RAM для SSL)
+  size_t bufBytes = (size_t)bufCap * sizeof(DataRecord);
+  DataRecord* buffer = usePsram ? (DataRecord*)ps_malloc(bufBytes) : (DataRecord*)malloc(bufBytes);
   if (!buffer) {
-    Serial.println("❌ [Sync] malloc failed!");
+    Serial.println("❌ [Sync] malloc/ps_malloc failed!");
     syncStats.syncInProgress = false;
     return false;
   }
@@ -193,31 +209,50 @@ bool syncToGoogleSheets() {
   Serial.printf("📊 [Sync] Готуємо до відправки %u записів (Seq %lu -> %lu)\n",
                 recordsToSend, buffer[0].sequenceNumber, buffer[recordsToSend-1].sequenceNumber);
 
-  // 5.5 Якщо записів багато і мало пам'яті - обмежуємо кількість
+  // 5.5 Якщо буфер у внутрішній RAM — стискаємо перед SSL (у PSRAM не чіпаємо, щоб не перенести в DRAM)
+  if (!usePsram && recordsToSend > 0 && recordsToSend < bufCap) {
+    DataRecord* shrunk = (DataRecord*)realloc(buffer, recordsToSend * sizeof(DataRecord));
+    if (shrunk) {
+      buffer = shrunk;
+    }
+  }
+
+  // Якщо записів багато і мало пам'яті - обмежуємо кількість
   uint32_t heapBeforeSSL = ESP.getFreeHeap();
+  uint32_t maxAllocBeforeSSL = ESP.getMaxAllocHeap();
   const uint16_t MAX_RECORDS_LOW_MEM = 150;  // Максимум при низькій пам'яті
 
-  if (heapBeforeSSL < 55000 && recordsToSend > MAX_RECORDS_LOW_MEM) {
+  if (heapBeforeSSL < 65000 || maxAllocBeforeSSL < 50000) {
+    Serial.printf("⚠️ [Sync] Недостатньо RAM перед SSL (Free: %u B, MaxBlock: %u B) — скасовано\n",
+                  heapBeforeSSL, maxAllocBeforeSSL);
+    free(buffer);
+    syncStats.lastSyncTime = millis();
+    syncStats.syncInProgress = false;
+    syncStats.failedSyncs++;
+    return false;
+  }
+
+  if (heapBeforeSSL < 75000 && recordsToSend > MAX_RECORDS_LOW_MEM) {
     Serial.printf("⚠️ [Sync] Низька пам'ять (%u KB), обмежуємо до %u записів\n",
                   heapBeforeSSL / 1000, MAX_RECORDS_LOW_MEM);
     recordsToSend = MAX_RECORDS_LOW_MEM;
   }
 
   // 6. Підготовка SSL
-  Serial.printf("💾 [Sync] Heap перед SSL: %u bytes\n", heapBeforeSSL);
+  Serial.printf("💾 [Sync] Heap перед SSL: %u bytes (MaxBlock: %u)\n", heapBeforeSSL, maxAllocBeforeSSL);
 
   WiFiClientSecure sslClient;
   sslClient.setInsecure(); // Для тестів ок, для проду краще certs
-  sslClient.setTimeout(20000); // Збільшено до 20 сек
+  sslClient.setTimeout(12000); // 12 сек — щоб не блокувати loop надовго при слабкому Wi-Fi
 
   Serial.println("🔐 [Sync] Підключення до script.google.com:443...");
   if (!sslClient.connect("script.google.com", 443)) {
-    char sslErrorBuf[128];
+    char sslErrorBuf[128] = {0};
     int sslError = sslClient.lastError(sslErrorBuf, sizeof(sslErrorBuf));
     Serial.println("❌ [Sync] Google connection failed");
-    Serial.printf("🔒 [Sync] SSL error: %d - %s\n", sslError, sslErrorBuf);
+    Serial.printf("🔒 [Sync] SSL error: %d - %s\n", sslError, sslErrorBuf[0] ? sslErrorBuf : "none");
     Serial.printf("📶 [Sync] WiFi RSSI: %d dBm\n", WiFi.RSSI());
-    Serial.printf("💾 [Sync] Free heap: %u bytes\n", ESP.getFreeHeap());
+    Serial.printf("💾 [Sync] Free heap: %u bytes (MaxBlock: %u)\n", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
     Serial.printf("📊 [Sync] Min free heap: %u bytes\n", ESP.getMinFreeHeap());
 
     // Діагностика типових помилок
@@ -240,14 +275,16 @@ bool syncToGoogleSheets() {
     uint16_t currentBatchSize = (recordsToSend - offset) > SYNC_BATCH_SIZE ?
                                  SYNC_BATCH_SIZE : (recordsToSend - offset);
 
-    // Перепідключаємо SSL перед кожним пакетом (Google закриває з'єднання після відповіді)
-    sslClient.stop();
-    delay(200);
-    yield();
-    if (!sslClient.connect("script.google.com", 443)) {
-        Serial.println("❌ [Sync] Reconnect failed");
-        syncStats.failedSyncs++;
-        break;
+    // Перепідключаємо SSL лише перед наступними пакетами (перший пакет використовує вже відкрите з'єднання)
+    if (offset > 0) {
+      sslClient.stop();
+      delay(200);
+      yield();
+      if (!sslClient.connect("script.google.com", 443)) {
+          Serial.println("❌ [Sync] Reconnect failed");
+          syncStats.failedSyncs++;
+          break;
+      }
     }
 
     if (sendBatchToSheets(&sslClient, &buffer[offset], currentBatchSize)) {

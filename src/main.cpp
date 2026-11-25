@@ -56,24 +56,82 @@ PowerOutageState powerOutageState = {
 
 extern int historyIndex;
 extern bool historyInitialized;
-extern HistoryData history[HISTORY_BUFFER_SIZE];
+extern HistoryData history[LEGACY_HISTORY_SIZE];
 
 extern bool compactMode;
 
 // Оголошення функцій
 void handleSerialInput();
 
+// Діагностика перезавантажень (доступна у веб-інтерфейсі /debug та /status)
+static uint32_t g_bootCount = 0;
+static uint32_t g_crashCount = 0;
+static int g_lastResetReason = 0;
+static int g_lastCrashReason = 0;
+static String g_lastCrashTime = "";
+static bool g_crashTimePending = false;
+
+const char* resetReasonToStr(int r) {
+  switch ((esp_reset_reason_t)r) {
+    case ESP_RST_POWERON:   return "POWERON (увімкнення живлення)";
+    case ESP_RST_EXT:       return "EXT (зовнішній пін)";
+    case ESP_RST_SW:        return "SW (програмний ESP.restart / OTA)";
+    case ESP_RST_PANIC:     return "PANIC (аварійний краш / OOM / Exception)";
+    case ESP_RST_INT_WDT:   return "INT_WDT (переривання Watchdog)";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT (зависання задачі Watchdog)";
+    case ESP_RST_WDT:       return "WDT (інший Watchdog)";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP (вихід зі сну)";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT (просадка живлення)";
+    case ESP_RST_SDIO:      return "SDIO";
+    default:                return "UNKNOWN (невідомо)";
+  }
+}
+
+bool isCrashResetReason(int r) {
+  return r == ESP_RST_PANIC || r == ESP_RST_INT_WDT ||
+         r == ESP_RST_TASK_WDT || r == ESP_RST_WDT || r == ESP_RST_BROWNOUT;
+}
+
+uint32_t getDiagBootCount()       { return g_bootCount; }
+uint32_t getDiagCrashCount()      { return g_crashCount; }
+int getDiagLastResetReason()      { return g_lastResetReason; }
+int getDiagLastCrashReason()      { return g_lastCrashReason; }
+String getDiagLastCrashTime()     { return g_lastCrashTime; }
+
 // НАЛАШТУВАННЯ СИСТЕМИ
 void setup() {
   Serial.begin(115200);
   delay(500);  // Даємо час Serial ініціалізуватись
 
-  // Логування причини перезавантаження
+  // Логування та збереження причини перезавантаження в NVS
   esp_reset_reason_t resetReason = esp_reset_reason();
+  g_lastResetReason = (int)resetReason;
+  {
+    Preferences diagPrefs;
+    if (diagPrefs.begin("sys_diag", false)) {
+      g_bootCount = diagPrefs.getULong("boots", 0) + 1;
+      g_crashCount = diagPrefs.getULong("crashes", 0);
+      g_lastCrashReason = diagPrefs.getInt("crashRsn", 0);
+      g_lastCrashTime = diagPrefs.getString("crashTs", "немає");
+      diagPrefs.putULong("boots", g_bootCount);
+      diagPrefs.putInt("lastRsn", g_lastResetReason);
+      if (isCrashResetReason(g_lastResetReason)) {
+        g_crashCount++;
+        g_lastCrashReason = g_lastResetReason;
+        g_crashTimePending = true;
+        diagPrefs.putULong("crashes", g_crashCount);
+        diagPrefs.putInt("crashRsn", g_lastCrashReason);
+      }
+      diagPrefs.end();
+    }
+  }
+
   Serial.println("\n");
+  Serial.printf("🔍 Завантаження #%lu | Причина: %s (код %d)\n",
+                (unsigned long)g_bootCount, resetReasonToStr(g_lastResetReason), g_lastResetReason);
   if (resetReason == ESP_RST_TASK_WDT) {
     Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ WATCHDOG (Task WDT) ⚠️⚠️⚠️");
-  } else if (resetReason == ESP_RST_WDT) {
+  } else if (resetReason == ESP_RST_WDT || resetReason == ESP_RST_INT_WDT) {
     Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ WATCHDOG ⚠️⚠️⚠️");
   } else if (resetReason == ESP_RST_PANIC) {
     Serial.println("⚠️⚠️⚠️ ПЕРЕЗАВАНТАЖЕННЯ ЧЕРЕЗ PANIC ⚠️⚠️⚠️");
@@ -89,6 +147,12 @@ void setup() {
   Serial.printf("║  📅 Зібрано:      %-20s %-12s║\n", BUILD_DATE, BUILD_TIME);
   Serial.printf("║  📝 Рядків:       %-33d║\n", TOTAL_CODE_LINES);
   Serial.printf("║  💾 Розмір:       %-29d KB ║\n", FIRMWARE_SIZE_KB);
+  if (psramFound()) {
+    Serial.printf("║  🧠 PSRAM:        %u KB вільно / %u KB всього       \n",
+                  ESP.getFreePsram() / 1024, ESP.getPsramSize() / 1024);
+  } else {
+    Serial.println("║  🧠 PSRAM:        не виявлено (fallback RAM)          ║");
+  }
   Serial.println("╚════════════════════════════════════════════════════════╝");
   
   initMutexes();
@@ -110,6 +174,15 @@ void setup() {
   
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ЧАСУ ===");
   initTime();
+  if (g_crashTimePending && isTimeSynced()) {
+    g_lastCrashTime = getDateString() + " " + getTimeString();
+    Preferences diagPrefs;
+    if (diagPrefs.begin("sys_diag", false)) {
+      diagPrefs.putString("crashTs", g_lastCrashTime);
+      diagPrefs.end();
+    }
+    g_crashTimePending = false;
+  }
   
   Serial.println("\n=== ІНІЦІАЛІЗАЦІЯ ДАТЧИКІВ ===");
   if (!initTemperatureSensors()) {
@@ -351,16 +424,17 @@ void loop() {
           }
           
           if (WiFi.status() == WL_CONNECTED) {
-            // Перезапускаємо NetBIOS та mDNS
+            // Вимикаємо сон Wi-Fi та перезапускаємо NetBIOS і mDNS
             delay(500);
+            WiFi.setSleep(false);
             WiFi.setHostname("klimat");
             NBNS.begin("klimat");
             if (MDNS.begin("klimat")) {
               delay(100);
               MDNS.addService("http", "tcp", 80);
             }
-            // Перезапускаємо веб-сервер
-            server.begin();
+            // Безпечно перезапускаємо веб-сервер у його власному потоці webTask
+            requestWebServerRestart();
             
             // Виводимо інформацію про перепідключення
             Serial.println("\n╔════════════════════════════════════════════════════════╗");
@@ -395,6 +469,9 @@ void printSystemInfo() {
   Serial.println("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀");
   Serial.printf("  IP адреса: %s\n", WiFi.localIP().toString().c_str());
   Serial.printf("  Вільна пам'ять: %lu KB\n", ESP.getFreeHeap() / 1024);
+  if (psramFound()) {
+    Serial.printf("  PSRAM: %u KB вільно / %u KB всього\n", ESP.getFreePsram() / 1024, ESP.getPsramSize() / 1024);
+  }
   Serial.printf("  Час роботи: %lu сек\n", millis() / 1000);
   Serial.printf("  Записів в історії: %d\n", historyIndex);
   Serial.printf("  Режим Serial: %s\n", compactMode ? "Компактний" : "Розширений");

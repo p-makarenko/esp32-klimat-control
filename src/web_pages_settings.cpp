@@ -138,95 +138,168 @@ void handleSettingsPage() {
     html += "</div>";
     html += "</div>"; // tab0
 
-   // TAB 1: ПРИСТРОЇ
+    // TAB 1: ПРИСТРОЇ
     html += "<div class='tab-content' id='tab1'>";
-    html += "<div class='section'>";
-    html += "<h3>🔧 ОБМЕЖЕННЯ ПРИСТРОЇВ (автоматичний режим)</h3>";
-    
-    // Блок насоса
+    html += "<p style='color:var(--m);font-size:13px;margin:0 0 12px 0;'>💡 Наведіть курсор (або натисніть) на значок <span class='tip' tabindex='0' data-tip='Тут зʼявляються детальні пояснення до кожного параметра пристроїв'>?</span> біля будь-якого пункту, щоб побачити детальне пояснення.</p>";
+
+    // ========================================================================
+    // СЕКЦІЯ 1: УСІ НАЛАШТУВАННЯ НАСОСА В ОДНОМУ МІСЦІ
+    // ========================================================================
+    html += "<div id='auditSetBox' class='info-banner' style='display:none;border-left-color:#14b8a6;margin-bottom:14px'></div>";
+    html += "<script>(async function(){try{const p=await(await fetch('/audit/profile')).json();if(!p||!p.saved||!p.dev||Object.keys(p.dev).length===0)return;"
+            "let s=`<b>🔬 Рекомендації енергоаудиту (${p.ts||''}):</b><br>`;"
+            "if(p.dev.pump)s+=`• 💧 Насос: економний макс. <b>${p.dev.pump.optPct}%</b> (~${p.dev.pump.optW} Вт; на 100% = ${p.dev.pump.maxW} Вт) <button type='button' class='quick-btn' style='padding:3px 8px' onclick=\"var el=document.querySelector('input[name=pumpMax]');if(el){el.value=${p.dev.pump.optPct};el.focus();}\">✨ Підставити в Макс.</button><br>`;"
+            "if(p.dev.ext)s+=`• 💨 Витяжка: реком. <b>${p.dev.ext.optPct}%</b> (~${p.dev.ext.optW} Вт${p.dev.ext.flat?', після 40% Вати майже не ростуть — вигідніше швидше й коротше':''}) <button type='button' class='quick-btn' style='padding:3px 8px' onclick=\"var el=document.querySelector('input[name=extPower]');if(el){el.value=${p.dev.ext.optPct};el.focus();}\">✨ Підставити в Потужн.</button><br>`;"
+            "if(p.dev.fan)s+=`• 🔥 Вентилятор (100%): ~${p.dev.fan.maxW} Вт `;"
+            "if(p.dev.plant)s+=`• 🌿 Вітер рослин (100%): ~${p.dev.plant.maxW} Вт `;"
+            "if(p.dev.hum)s+=`• 🌫️ Зволожувач: ~${p.dev.hum.w} Вт`;"
+            "const b=document.getElementById('auditSetBox');b.innerHTML=s;b.style.display='block';"
+            "}catch(e){}})();</script>";
+    html += "<div class='section' style='border-left-color: #38bdf8;'>";
+    html += "<h3>💧 НАСОС (потужність, пуск та розумне керування)</h3>";
+
     html += "<div class='form-group'>";
-    html += "<label>Мінімум насоса (%):</label>";
+    html += "<label><input type='checkbox' name='pumpDisabled' " + String(config.pumpDisabled ? "checked" : "") + "> ⛔ Повністю вимкнути насос (Блокування) <span class='tip' tabindex='0' data-tip='Повне апаратне блокування: насос завжди триматиметься на 0% у всіх режимах (авто, форсаж, аварія, ЕКО та ручний). Зручно для обслуговування або теплої пори року.'>?</span></label>";
+    html += "</div>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімум насоса (%) <span class='tip' tabindex='0' data-tip='Нижня межа ШІМ в автоматичному режимі. Якщо автоматика подає >0%, але менше цього порогу, потужність підтягнеться до цього мінімуму, щоб насос не зупинявся і не гудів.'>?</span>:</label>";
     html += "<input type='number' name='pumpMin' value='" + String(config.pumpMinPercent) + "' min='0' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Максимум насоса (%):</label>";
+    html += "<label>Максимум насоса (%) <span class='tip' tabindex='0' data-tip='Верхня стеля потужності насоса в автоматичному режимі. Обмежує максимальний потік, шум та споживання електроенергії.'>?</span>:</label>";
     html += "<input type='number' name='pumpMax' value='" + String(config.pumpMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
+    html += "</div>";
+
     html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
     html += "<div class='form-group'>";
-    html += "<label>🚀 Пускова потужність насоса (%):</label>";
+    html += "<label>🚀 Пускова потужність (%) <span class='tip' tabindex='0' data-tip='Стартовий поштовх (Kickstart) при запуску насоса з 0%. Наприклад, якщо робоча потужність 33%, спочатку подається 45%, щоб крильчатка гарантовано зрушила з місця, а потім плавно знижується до робочої.'>?</span>:</label>";
     html += "<input type='number' name='pumpStartPct' value='" + String(config.pumpStartPercent) + "' min='20' max='100'>";
-    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>При старті з 0% спочатку подається ця потужність (напр. 45%), потім знижується до цільової (напр. 33%)</small>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>⏱️ Час пуску насоса (сек):</label>";
+    html += "<label>⏱️ Час пуску (сек) <span class='tip' tabindex='0' data-tip='Скільки секунд тримати пускову потужність при старті з 0% перед переходом на робочі оберти. Зазвичай достатньо 2–3 сек. 0 = вимкнути пусковий імпульс.'>?</span>:</label>";
     html += "<input type='number' name='pumpStartSec' value='" + String(config.pumpStartDurationSec) + "' min='0' max='15'>";
-    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Тривалість стартового імпульсу (0 = вимкнути)</small>";
     html += "</div>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label><input type='checkbox' name='pumpDisabled' " + String(config.pumpDisabled ? "checked" : "") + "> ⛔ Повністю вимкнути насос (Блокування)</label>";
-    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>При увімкненні насос буде повністю заблоковано (0%) у всіх режимах</small>";
     html += "</div>";
 
-    // Блок вентилятора обігріву
-    html += "<div class='form-group' style='margin-top: 25px;'>";
-    html += "<label>Мінімум вентилятора обігріву (%):</label>";
-    html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
-    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>Мінімальна швидкість для стабільної роботи вентилятора</small>";
+    html += "<hr style='border:0;border-top:1px solid var(--b);margin:14px 0;'>";
+    html += "<p style='color: var(--m); font-size: 13.5px; margin: 0 0 12px 0;'><strong>🧠 Розумний режим за швидкістю нагріву:</strong> насос не вмикається зайвий раз, якщо кімната і так набирає температуру з потрібною швидкістю. Підключається лише коли тепла в радіаторі вже не вистачає.</p>";
+
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='spEn' " + String(config.smartPump.enabled ? "checked" : "") + "> Увімкнути розумний режим насоса (по швидкості нагріву) <span class='tip' tabindex='0' data-tip='Коли УВІМКНЕНО: під час обігріву спочатку працює лише вентилятор. Якщо температура кімнати росте достатньо швидко — насос стоїть на 0%. Якщо приріст за вікно оцінки менший за поріг — насос підключається. Коли ВИМКНЕНО: працює простий режим по порогу теплоносія нижче.'>?</span></label>";
+    html += "</div>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>⚙️ Робоча потужність (%) <span class='tip' tabindex='0' data-tip='Швидкість, на якій насос підкачує теплоносій у штатному режимі (типово 33%). Автоматично обмежується межами «Мінімум/Максимум насоса» вище та використовує пусковий імпульс.'>?</span>:</label>";
+    html += "<input type='number' name='spWorkPct' value='" + String(config.smartPump.workPercent) + "' min='10' max='100'>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Максимум вентилятора обігріву (%):</label>";
+    html += "<label>⏱️ Вікно оцінки нагріву (сек) <span class='tip' tabindex='0' data-tip='Період спостереження за температурою кімнати без насоса (типово 180 сек = 3 хв). Після старту вентилятора або зупинки насоса система чекає цей час, а потім перевіряє, на скільки виросла температура кімнати.'>?</span>:</label>";
+    html += "<input type='number' name='spEvalSec' value='" + String(config.smartPump.evalWindowSec) + "' min='30' max='900'>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>📈 Мін. приріст T за вікно (°C) <span class='tip' tabindex='0' data-tip='Мінімальне зростання температури кімнати за «Вікно оцінки», якого достатньо, щоб НЕ вмикати насос (напр. 0.15°C за 3 хв = 0.5°C за 10 хв). Якщо виросло менше — вмикається насос. Якщо кімната падає на ≥0.25°C — насос підхоплює достроково через 30с.'>?</span>:</label>";
+    html += "<input type='number' step='0.05' name='spMinRise' value='" + String(config.smartPump.minTempRise, 2) + "' min='0.02' max='2.00'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>🛑 Стоп по теплоносію (°C) <span class='tip' tabindex='0' data-tip='Коли насос підкачав гарячу воду і датчик теплоносія досяг цієї температури (та минув «Мін. час роботи»), насос вимикається, щоб уникнути перегріву (синусоїди) і дати вентилятору зняти тепло. Вкажіть 0, щоб насос працював аж до досягнення макс. температури кімнати.'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='spCarStop' value='" + String(config.smartPump.carrierStopTemp, 1) + "' min='0' max='70'>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>⏳ Мін. час роботи (сек) <span class='tip' tabindex='0' data-tip='Мінімальний час безперервної роботи насоса після вмикання (типово 60 с), щоб встигнути прогнати гарячу воду в радіатор і не смикати мотор короткими імпульсами. (При досягненні макс. T кімнати вимикається одразу).'>?</span>:</label>";
+    html += "<input type='number' name='spMinRun' value='" + String(config.smartPump.minRunSec) + "' min='10' max='600'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>⏸️ Мін. пауза (сек) <span class='tip' tabindex='0' data-tip='Мінімальний час відпочинку насоса після вимкнення перед можливим повторним пуском (антициклювання, типово 120 с). Захищає насос від частих стартів.'>?</span>:</label>";
+    html += "<input type='number' name='spMinOff' value='" + String(config.smartPump.minOffSec) + "' min='10' max='900'>";
+    html += "</div>";
+    html += "</div>";
+
+    html += "<div class='form-group'>";
+    html += "<label>🌡️ Поріг теплоносія для простого режиму (°C) <span class='tip' tabindex='0' data-tip='Працює ТІЛЬКИ якщо знята галочка «Увімкнути розумний режим насоса». Насос вмикається, коли теплоносій остигне нижче цієї температури (типово 30°C), і вимикається, коли прогріється на +2°C вище.'>?</span>:</label>";
+    html += "<input type='number' step='0.5' name='spCarLow' value='" + String(config.smartPump.carrierLowTemp, 1) + "' min='15' max='60'>";
+    html += "</div>";
+    html += "</div>"; // end pump section
+
+    // ========================================================================
+    // СЕКЦІЯ 2: ВЕНТИЛЯТОР ОБІГРІВУ (обмеження, реле та плавний режим)
+    // ========================================================================
+    html += "<div class='section' style='border-left-color: #10b981;'>";
+    html += "<h3>🌊 ВЕНТИЛЯТОР ОБІГРІВУ (обмеження та плавна робота)</h3>";
+    html += "<p style='color: var(--m); font-size: 13.5px; margin-top: 0;'>Налаштування обертів, реле живлення 220В та плавного розгону/гальмування для економії ресурсу мотора.</p>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімум вентилятора (%) <span class='tip' tabindex='0' data-tip='Найнижчі оберти, на яких вентилятор стабільно крутиться без зупинки та гулу в автоматичному режимі.'>?</span>:</label>";
+    html += "<input type='number' name='fanMin' value='" + String(config.fanMinPercent) + "' min='0' max='30'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимум вентилятора (%) <span class='tip' tabindex='0' data-tip='Максимальна дозволена швидкість вентилятора обігріву в автоматичному режимі.'>?</span>:</label>";
     html += "<input type='number' name='fanMax' value='" + String(config.fanMaxPercent) + "' min='0' max='100'>";
     html += "</div>";
-    
-    // Нова галочка реле 220В вентилятора
-    html += "<div class='form-group'>";
-    html += "<label><input type='checkbox' name='heaterFanRelay' " + String(config.heaterFanRelayEnabled ? "checked" : "") + "> 🔌 Увімкнути живлення 220В вентилятора (Реле Pin 7)</label>";
-    html += "<small style='color: var(--m); display: block; margin-top: 5px;'>При знятті галочки реле вентилятора буде заблоковано в STAN OFF</small>";
     html += "</div>";
 
-    // Блок витяжки
-    html += "<div class='form-group' style='margin-top: 25px;'>";
-    html += "<label>Мінімум витяжки (%):</label>";
-    html += "<input type='number' name='extractorMin' value='" + String(config.extractorMinPercent) + "' min='0' max='100'>";
-    html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Максимум витяжки (%):</label>";
-    html += "<input type='number' name='extractorMax' value='" + String(config.extractorMaxPercent) + "' min='0' max='100'>";
+    html += "<label><input type='checkbox' name='heaterFanRelay' " + String(config.heaterFanRelayEnabled ? "checked" : "") + "> 🔌 Увімкнути живлення 220В вентилятора (Реле Pin 7) <span class='tip' tabindex='0' data-tip='Дозвіл на вмикання реле живлення 220В вентилятора обігріву. Якщо зняти галочку — реле завжди буде вимкнене (безпечне блокування мотора).'>?</span></label>";
     html += "</div>";
 
+    html += "<hr style='border:0;border-top:1px solid var(--b);margin:14px 0;'>";
+
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='fsEn' " + String(config.fanSmooth.enabled ? "checked" : "") + "> Увімкнути плавний режим вентилятора <span class='tip' tabindex='0' data-tip='Запобігає різким стрибкам ШІМ та частим пускам/зупинкам вентилятора у всіх автоматичних режимах.'>?</span></label>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label><input type='checkbox' name='fsKeepLow' " + String(config.fanSmooth.keepLowInsteadOfStop ? "checked" : "") + "> Тримати низькі оберти замість стопу біля верхньої межі <span class='tip' tabindex='0' data-tip='У зоні від T_макс до T_макс + гістерезис вентилятор тримає мінімальні оберти замість повної зупинки. Це дає рівнішу температуру та менше пускових струмів.'>?</span></label>";
     html += "</div>";
 
-    // Секція плавної роботи вентилятора обігріву (у всіх режимах)
-    html += "<div class='section' style='border-left-color: #10b981;'>";
-    html += "<h3>🌊 ПЛАВНА РОБОТА ВЕНТИЛЯТОРА (економія та ресурс)</h3>";
-    html += "<p style='color: var(--m); font-size: 13.5px; margin-top: 0;'>Запобігає частим пускам/зупинкам, зменшує пускові струми та економить електроенергію й ресурс мотора у всіх автоматичних режимах.</p>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
     html += "<div class='form-group'>";
-    html += "<label><input type='checkbox' name='fsEn' " + String(config.fanSmooth.enabled ? "checked" : "") + "> Увімкнути плавний режим вентилятора</label>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label><input type='checkbox' name='fsKeepLow' " + String(config.fanSmooth.keepLowInsteadOfStop ? "checked" : "") + "> Тримати низькі оберти замість стопу біля верхньої межі</label>";
-    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Постійні 15–25% споживають у 4–6 разів менше, ніж часті старти, і тримають рівну температуру</small>";
-    html += "</div>";
-    html += "<div class='form-group'>";
-    html += "<label>Гістерезис вентилятора (°C):</label>";
+    html += "<label>Гістерезис вентилятора (°C) <span class='tip' tabindex='0' data-tip='Зона нечутливості біля верхньої межі температури (типово 0.5°C), щоб вентилятор не клацав туди-сюди при коливанні температури на 0.1°C.'>?</span>:</label>";
     html += "<input type='number' step='0.1' name='fsHyst' value='" + String(config.fanSmooth.hysteresis, 1) + "' min='0.1' max='3.0'>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Макс. швидкість зміни обертів (%/сек):</label>";
+    html += "<label>Макс. зміна обертів (%/сек) <span class='tip' tabindex='0' data-tip='Обмеження швидкості розгону та гальмування вентилятора (рекомендовано 3–8 %/сек). Менше значення = плавніша робота.'>?</span>:</label>";
     html += "<input type='number' name='fsStep' value='" + String(config.fanSmooth.maxStepPerSec) + "' min='1' max='50'>";
-    html += "<small style='color: var(--m); display: block; margin-top: 4px;'>Менше = плавніший розгін/гальмування (рекомендовано 3–8 %/сек)</small>";
     html += "</div>";
+    html += "</div>";
+
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
     html += "<div class='form-group'>";
-    html += "<label>Мін. час роботи перед зупинкою (сек):</label>";
+    html += "<label>Мін. час роботи перед стопом (сек) <span class='tip' tabindex='0' data-tip='Після запуску вентилятор працює не менше цього часу (окрім критичного перегріву +1.5°C вище норми).'>?</span>:</label>";
     html += "<input type='number' name='fsMinRun' value='" + String(config.fanSmooth.minRunSec) + "' min='0' max='600'>";
     html += "</div>";
     html += "<div class='form-group'>";
-    html += "<label>Мін. час паузи перед повторним пуском (сек):</label>";
+    html += "<label>Мін. пауза перед пуском (сек) <span class='tip' tabindex='0' data-tip='Мінімальна пауза після зупинки вентилятора перед наступним увімкненням (антициклювання).'>?</span>:</label>";
     html += "<input type='number' name='fsMinOff' value='" + String(config.fanSmooth.minOffSec) + "' min='0' max='600'>";
     html += "</div>";
     html += "</div>";
+    html += "</div>"; // end fan section
+
+    // ========================================================================
+    // СЕКЦІЯ 3: ВИТЯЖКА (обмеження потужності)
+    // ========================================================================
+    html += "<div class='section'>";
+    html += "<h3>🌀 ВИТЯЖКА (обмеження потужності)</h3>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;'>";
+    html += "<div class='form-group'>";
+    html += "<label>Мінімум витяжки (%) <span class='tip' tabindex='0' data-tip='Мінімальна потужність ШІМ для стабільного старту та роботи витяжки в автоматичному режимі.'>?</span>:</label>";
+    html += "<input type='number' name='extractorMin' value='" + String(config.extractorMinPercent) + "' min='0' max='100'>";
+    html += "</div>";
+    html += "<div class='form-group'>";
+    html += "<label>Максимум витяжки (%) <span class='tip' tabindex='0' data-tip='Максимальна дозволена потужність витяжки в автоматичному режимі.'>?</span>:</label>";
+    html += "<input type='number' name='extractorMax' value='" + String(config.extractorMaxPercent) + "' min='0' max='100'>";
+    html += "</div>";
+    html += "</div>";
+    html += "</div>"; // end extractor section
     html += "</div>"; // tab1
     flushChunk();
 
@@ -1110,6 +1183,16 @@ void handleSaveSettings() {
         if (server.hasArg("fsStep"))   config.fanSmooth.maxStepPerSec = constrain(server.arg("fsStep").toInt(), 1, 50);
         if (server.hasArg("fsMinRun")) config.fanSmooth.minRunSec     = constrain(server.arg("fsMinRun").toInt(), 0, 600);
         if (server.hasArg("fsMinOff")) config.fanSmooth.minOffSec     = constrain(server.arg("fsMinOff").toInt(), 0, 600);
+
+        // 11б. РОЗУМНЕ КЕРУВАННЯ НАСОСОМ
+        config.smartPump.enabled = server.hasArg("spEn");
+        if (server.hasArg("spWorkPct")) config.smartPump.workPercent     = constrain(server.arg("spWorkPct").toInt(), 10, 100);
+        if (server.hasArg("spEvalSec")) config.smartPump.evalWindowSec   = constrain(server.arg("spEvalSec").toInt(), 30, 900);
+        if (server.hasArg("spMinRise")) config.smartPump.minTempRise     = constrain(server.arg("spMinRise").toFloat(), 0.02f, 2.0f);
+        if (server.hasArg("spCarStop")) config.smartPump.carrierStopTemp = constrain(server.arg("spCarStop").toFloat(), 0.0f, 70.0f);
+        if (server.hasArg("spCarLow"))  config.smartPump.carrierLowTemp  = constrain(server.arg("spCarLow").toFloat(), 15.0f, 60.0f);
+        if (server.hasArg("spMinRun"))  config.smartPump.minRunSec       = constrain(server.arg("spMinRun").toInt(), 10, 600);
+        if (server.hasArg("spMinOff"))  config.smartPump.minOffSec       = constrain(server.arg("spMinOff").toInt(), 10, 900);
 
         // 12. ПРОФІЛЬ ЕНЕРГОЗБЕРЕЖЕННЯ / БЛЕКАУТ (ECO)
         if (server.hasArg("ecoActMode")) config.powerSave.activationMode = constrain(server.arg("ecoActMode").toInt(), 0, 2);

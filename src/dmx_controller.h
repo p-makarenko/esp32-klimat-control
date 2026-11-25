@@ -20,7 +20,7 @@
 // ============================================================================
 #define DMX_TX_PIN      40      // Вільний GPIO (підключити до DI MAX485)
 #define DMX_RX_PIN      41      // Вільний GPIO (loopback тест)
-#define DMX_DE_RE_PIN   37      // MAX485 DE пін
+#define DMX_DE_RE_PIN   42      // MAX485 DE пін (перенесено з GPIO 37, бо GPIO 35-37 зайняті Octal PSRAM на ESP32-S3 N16R8!)
 #define DMX_UART_NUM    1       // UART1 — вільний
 
 // ============================================================================

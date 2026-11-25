@@ -34,6 +34,7 @@ static TC421ScheduleConfig makePreset(TC421Preset preset) {
     memset(&c, 0, sizeof(c));
     c.enabled = true;
     c.ecoMaxPercent = 15; // Мінімальна підтримка фотоперіоду під час блекауту
+    c.dayBaseIrPct  = 5;  // М'який природний фон IR вдень між піками (3-5%)
 
     switch (preset) {
         case TC421_PRESET_VEG: // Вегетація 18/6 (06:00 -> 00:00)
@@ -126,6 +127,7 @@ static void sanitizeSchedule(TC421ScheduleConfig& c) {
     c.eodIrDurMin   = constrain(c.eodIrDurMin, 0, 45);
     c.eodIrPct      = constrain(c.eodIrPct, 0, 100);
     c.ecoMaxPercent = constrain(c.ecoMaxPercent, 0, 100);
+    c.dayBaseIrPct  = constrain(c.dayBaseIrPct, 0, 50);
 }
 
 // ============================================================================
@@ -147,13 +149,20 @@ static void tc421LoadNVS() {
 
     for (uint8_t p = 0; p < TC421_PROFILE_COUNT; p++) {
         String key = "prof" + String(p);
-        if (prefs.getBytesLength(key.c_str()) == sizeof(TC421ScheduleConfig)) {
+        size_t blen = prefs.getBytesLength(key.c_str());
+        if (blen == sizeof(TC421ScheduleConfig)) {
             prefs.getBytes(key.c_str(), &_profiles[p], sizeof(TC421ScheduleConfig));
             sanitizeSchedule(_profiles[p]);
             if (strlen(_profiles[p].name) == 0) {
                 TC421ScheduleConfig def = makePreset((TC421Preset)p);
                 strncpy(_profiles[p].name, def.name, sizeof(_profiles[p].name) - 1);
             }
+        } else if (blen == sizeof(TC421ScheduleConfig) - 1) {
+            // Безпечна міграція зі старого формату без втрати налаштувань
+            memset(&_profiles[p], 0, sizeof(TC421ScheduleConfig));
+            prefs.getBytes(key.c_str(), &_profiles[p], blen);
+            _profiles[p].dayBaseIrPct = 5;
+            sanitizeSchedule(_profiles[p]);
         } else {
             _profiles[p] = makePreset((TC421Preset)p);
         }
@@ -244,7 +253,19 @@ void tc421CalculateAt(const TC421ScheduleConfig& cfg, uint16_t minuteOfDay, uint
         }
     }
 
-    // 2. CH4 (IR + UV): три біологічних вікна (беремо максимум із них)
+    // 2. CH4 (IR + UV): денний фон + три біологічних піки (беремо максимум із них)
+    // 2.0. Фонова денна підсвітка IR між піками (плавний вхід на світанку, спад на заході)
+    if (cfg.dayBaseIrPct > 0 && t >= 0 && t < dayLen) {
+        float env = 1.0f;
+        if (t < srDur && srDur > 0) {
+            env = smoothStep01((float)t / (float)srDur);
+        } else if (t >= ssStart && ssDur > 0) {
+            env = 1.0f - smoothStep01((float)(t - ssStart) / (float)ssDur);
+        }
+        float v = cfg.dayBaseIrPct * env;
+        if (v > fIrUv) fIrUv = v;
+    }
+
     // 2а. Світанковий імпульс IR (ефект Емерсона)
     if (cfg.dawnIrDurMin > 0 && cfg.dawnIrPct > 0 && t >= 0 && t < (int)cfg.dawnIrDurMin) {
         float p = (float)t / (float)cfg.dawnIrDurMin;
@@ -707,6 +728,14 @@ bool tc421ResumeSchedule() {
     return ok;
 }
 
+// Потокобезпечне читання локального часу (без глобального timeInfo)
+static bool tc421GetLocalTime(struct tm& outTm) {
+    time_t nowTs = time(nullptr);
+    if (nowTs < 1700000000) return false; // час ще не валідний (до 2023 р.)
+    localtime_r(&nowTs, &outTm);
+    return true;
+}
+
 bool tc421SyncTime() {
     if (_tc421Mutex == nullptr) return false;
     if (xSemaphoreTake(_tc421Mutex, pdMS_TO_TICKS(3000)) != pdTRUE) return false;
@@ -719,22 +748,22 @@ bool tc421SyncTime() {
         return false;
     }
 
-    struct tm* t = getTimeInfo();
-    if (t == nullptr) {
+    struct tm localTm;
+    if (!tc421GetLocalTime(localTm)) {
         xSemaphoreGive(_tc421Mutex);
         return false;
     }
 
     uint8_t pkt[TC421_PACKET_SIZE];
     uint8_t resp[TC421_PACKET_SIZE];
-    tc421BuildTimeSyncPacket(pkt, t, _state.mac);
+    tc421BuildTimeSyncPacket(pkt, &localTm, _state.mac);
     bool ok = tc421SendPacket(pkt, resp, 600);
     if (ok && resp[4] == 133) {
         _state.found = true;
         _state.lastSeenMs = millis();
         Serial.printf("[TC421] Час синхронізовано: %04d-%02d-%02d %02d:%02d:%02d\n",
-                      t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-                      t->tm_hour, t->tm_min, t->tm_sec);
+                      localTm.tm_year + 1900, localTm.tm_mon + 1, localTm.tm_mday,
+                      localTm.tm_hour, localTm.tm_min, localTm.tm_sec);
     }
     xSemaphoreGive(_tc421Mutex);
     return ok;
@@ -834,13 +863,13 @@ void tc421SchedulerUpdate(bool forceSend) {
         return;
     }
 
-    struct tm* t = getTimeInfo();
-    if (t == nullptr) {
+    struct tm localTm;
+    if (!tc421GetLocalTime(localTm)) {
         xSemaphoreGive(_tc421Mutex);
         return;
     }
 
-    uint16_t minOfDay = (uint16_t)t->tm_hour * 60 + (uint16_t)t->tm_min;
+    uint16_t minOfDay = (uint16_t)localTm.tm_hour * 60 + (uint16_t)localTm.tm_min;
     uint8_t calc[4];
     tc421CalculateAt(_sched, minOfDay, calc, eco);
 
@@ -853,7 +882,7 @@ void tc421SchedulerUpdate(bool forceSend) {
     if (changed) {
         if (tc421SendChannelsLocked(vals, false)) {
             Serial.printf("[TC421] Автопілот %02d:%02d%s -> R=%d%% W=%d%% Y=%d%% IR/UV=%d%%\n",
-                          t->tm_hour, t->tm_min, eco ? " (ЕКО)" : "",
+                          localTm.tm_hour, localTm.tm_min, eco ? " (ЕКО)" : "",
                           vals[0], vals[1], vals[2], vals[3]);
         }
     }

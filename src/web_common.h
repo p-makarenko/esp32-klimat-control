@@ -28,13 +28,14 @@ inline String getCommonCSS() {
     css += ".header{text-align:center;margin-bottom:22px}";
     css += ".page-title{margin:0 0 18px}";
 
-    // Єдина липка навігація
-    css += ".topnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:6px;overflow-x:auto;white-space:nowrap;padding:8px 10px;margin:-6px -6px 18px;background:var(--s2);border:1px solid var(--b);border-radius:12px;box-shadow:var(--sh);scrollbar-width:none;-webkit-overflow-scrolling:touch}";
-    css += ".topnav::-webkit-scrollbar{display:none}";
-    css += ".topnav a,.theme-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:7px 12px;color:var(--m);text-decoration:none;border-radius:8px;font-size:13.5px;font-weight:500;border:1px solid transparent;background:transparent;cursor:pointer;transition:.15s}";
+    // Єдина липка навігація (посилання прокручуються, перемикач теми завжди закріплений праворуч)
+    css += ".topnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:6px;padding:7px 8px;margin:-6px -6px 18px;background:var(--s2);border:1px solid var(--b);border-radius:12px;box-shadow:var(--sh)}";
+    css += ".topnav-links{display:flex;align-items:center;gap:4px;flex:1 1 auto;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:thin;-webkit-overflow-scrolling:touch}";
+    css += ".topnav-links::-webkit-scrollbar{height:4px}.topnav-links::-webkit-scrollbar-thumb{background:var(--b);border-radius:4px}";
+    css += ".topnav a,.theme-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:6px 9px;color:var(--m);text-decoration:none;border-radius:8px;font-size:13px;font-weight:500;border:1px solid transparent;background:transparent;cursor:pointer;transition:.15s;white-space:nowrap}";
     css += ".topnav a:hover,.theme-btn:hover{background:var(--s);color:var(--t);border-color:var(--b)}";
     css += ".topnav a.active{background:var(--ah);color:#fff;border-color:var(--a)}";
-    css += ".theme-btn{margin-left:auto;background:var(--s);color:var(--t);border-color:var(--b);font-weight:600}";
+    css += ".theme-btn{background:var(--s);color:var(--t);border-color:var(--b);font-weight:600}";
 
     // Кнопки
     css += ".btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--ah);color:#fff;padding:10px 16px;border:1px solid transparent;border-radius:9px;cursor:pointer;margin:4px;transition:.15s;font-weight:600;font-size:14px;text-decoration:none}";
@@ -128,17 +129,21 @@ inline String getNavHeader(const String& title, const String& backUrl = "/") {
     (void)backUrl;
     String html = "";
     html += "<nav class='topnav' id='topnav'>"
+            "<div class='topnav-links'>"
             "<a href='/'>🏠 Головна</a>"
             "<a href='/control'>🎛️ Керування</a>"
             "<a href='/settings'>⚙️ Налаштування</a>"
             "<a href='/tc421'>🔆 Фітолампа</a>"
             "<a href='/light'>💡 DMX</a>"
             "<a href='/energy'>⚡ Енергія</a>"
+            "<a href='/audit'>🔬 Аудит</a>"
             "<a href='/history'>📈 Графіки</a>"
             "<a href='/wifi'>📶 Wi-Fi</a>"
             "<a href='/ota'>🔄 OTA</a>"
+            "<a href='/tablet'>🎙️ Степан</a>"
             "<a href='/help'>📖 Довідка</a>"
             "<a href='/debug'>🔧 Відладка</a>"
+            "</div>"
             "<button type='button' class='theme-btn' onclick='kkToggleTheme()' title='Змінити тему'>☀️ Світла</button>"
             "</nav>";
     html += "<script>(function(){var p=location.pathname,l=document.querySelectorAll('#topnav a');"
@@ -162,11 +167,13 @@ inline String getMainNavigation() {
     html += "<a href='/control' class='nav-btn'>🎛️ Керування</a>";
     html += "<a href='/settings' class='nav-btn'>⚙️ Налаштування</a>";
     html += "<a href='/energy' class='nav-btn' style='border-left-color:#f59e0b'>⚡ Енергоконтролер</a>";
+    html += "<a href='/audit' class='nav-btn' style='border-left-color:#14b8a6'>🔬 Енергоаудит</a>";
     html += "<a href='/tc421' class='nav-btn' style='border-left-color:#10b981'>🔆 Фітолампа TC421</a>";
     html += "<a href='/light' class='nav-btn' style='border-left-color:#fbbf24'>💡 DMX Освітлення</a>";
     html += "<a href='/history' class='nav-btn' style='border-left-color:#ec4899'>📈 Графіки</a>";
     html += "<a href='/wifi' class='nav-btn' style='border-left-color:#38bdf8'>📶 Wi-Fi</a>";
     html += "<a href='/ota' class='nav-btn' style='border-left-color:#06b6d4'>🔄 OTA та Backup</a>";
+    html += "<a href='/tablet' class='nav-btn' style='border-left-color:#34d399'>🎙️ Екран «Степан»</a>";
     html += "<a href='/help' class='nav-btn' style='border-left-color:#a855f7'>📖 Довідка</a>";
     html += "<a href='/debug' class='nav-btn' style='border-left-color:#64748b'>🔧 Відладка</a>";
     html += "</div>";

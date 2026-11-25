@@ -1,0 +1,17 @@
+﻿[19:36:04] === Switching TC421 -> STA ('KlimatLight') ===
+[19:36:04] Will return PC Wi-Fi to: 'Redmi Note 14'
+[19:36:04] Connecting PC to Smart-539874...
+[19:36:08] Connected to TC421! Current status: {"ver":"v1.7.008","mode":2,"assid":"Smart-539874","aip":"192.168.4.1","amac":"4C9D24539874","ssid":"KlimatLight","stats":0,"signal":0,"mac":"489D24539874","wchn":1,"iwep":"","amask":"255.255.255.0","swep":"12345678","sdhcp":1,"ip":"0.0.0.0","smask":"0.0.0.0","sgw":"0.0.0.0","sdns":"0.0.0.0","baud":6,"sserver":"192.168.1.146","type":1,"port":5000,"timeout":5000,"wuser":"admin","wkey":"admin"}
+[19:36:08] Sending POST /system/set.php -> KlimatLight...
+[19:36:13] POST response: 
+[19:36:13] Reconnecting PC Wi-Fi back to 'Redmi Note 14'...
+[19:36:16] Back on 'Redmi Note 14'!
+[19:36:16] Waiting 8s for TC421 to connect to KlimatLight...
+[19:36:24] Triggering ESP32 discover: http://klimat.local/tc421/discover
+[19:36:28] ESP32 /tc421/api/status: {"found":true,"liveMode":false,"autoEnabled":false,"ecoNow":true,"ch":[46,0,0,0],"power":0.0,"voltage":0.0,"current":0.00,"pzemOk":false}
+[19:36:28] Visible SSIDs:
+SSID 1 : Redmi Note 14
+SSID 2 : A36 РєРѕСЂРёСЃС‚СѓРІР°С‡Р° Р—Р°
+SSID 3 : KlimatLight
+SSID 4 : Smart-539874
+[19:36:28] === Done ===

@@ -18,6 +18,11 @@ static bool          timerState         = false;
 static unsigned long timerPhaseStart   = 0;
 static bool          breezeResetNeeded = false;  // скинути фазу при зміні конфігу
 
+static bool          manualOverride     = false;
+static uint8_t       manualPowerPct     = 0;
+static unsigned long manualStartTime    = 0;
+static const unsigned long MANUAL_TIMEOUT_MS = 900000UL; // 15 хв безпечного автоповернення
+
 static unsigned long breezePhaseStart = 0;
 static unsigned long breezePhaseDur   = 0;
 static uint8_t       breezeBasePct    = 0;
@@ -125,6 +130,19 @@ static void stepBreeze() {
 extern bool isQuietModeActive();
 
 static void updateFan() {
+    if (manualOverride) {
+        if (millis() - manualStartTime > MANUAL_TIMEOUT_MS) {
+            manualOverride = false;
+            Serial.println("🌿 Вітер рослин: автоповернення після 15 хв ручного режиму");
+        } else {
+            // У ручному режимі виставляємо точний PWM без примусового minStartPercent
+            currentPowerPct = constrain(manualPowerPct, 0, 100);
+            ledcWrite(PLANT_FAN_CHANNEL, map(currentPowerPct, 0, 100, 0, 255));
+            timerState = (currentPowerPct > 0);
+            return;
+        }
+    }
+
     if (isQuietModeActive()) {
         if (currentPowerPct > 0) {
             applyPower(0);
@@ -320,14 +338,14 @@ void plantFanLoad() {
     prefs.begin("plant_fan", true);
 
     PlantFanTimer& t = config.plantFanTimer;
-    t.enabled        = prefs.getBool("enabled",       false);
+    t.enabled        = prefs.getBool("enabled",       PLANT_FAN_TIMER_DEFAULT_ENABLED);
     t.breezeEnabled  = prefs.getBool("breezeEnabled",  false);
     t.onMinutes      = prefs.getUShort("onMin",       PLANT_FAN_TIMER_DEFAULT_ON);
-    t.onSeconds      = prefs.getUShort("onSec",       0);
+    t.onSeconds      = prefs.getUShort("onSec",       PLANT_FAN_TIMER_DEFAULT_ON_SEC);
     t.offMinutes     = prefs.getUShort("offMin",      PLANT_FAN_TIMER_DEFAULT_OFF);
-    t.offSeconds     = prefs.getUShort("offSec",      0);
+    t.offSeconds     = prefs.getUShort("offSec",      PLANT_FAN_TIMER_DEFAULT_OFF_SEC);
     t.powerPercent   = prefs.getUChar("power",        PLANT_FAN_TIMER_DEFAULT_POWER);
-    t.minStartPercent = prefs.getUChar("minStart",    60);
+    t.minStartPercent = prefs.getUChar("minStart",    PLANT_FAN_TIMER_DEFAULT_MIN_START);
 
     BreezeConfig& b = config.breezeConfig;
     b.baseSpeedMin = prefs.getUChar("brzBaseMin",  BREEZE_BASE_MIN);
@@ -339,4 +357,18 @@ void plantFanLoad() {
     b.calmMaxSec   = prefs.getUShort("brzCalmMax", BREEZE_CALM_MAX_SEC);
 
     prefs.end();
+}
+
+void plantFanSetManual(uint8_t percent) {
+    manualOverride = true;
+    manualPowerPct = constrain(percent, 0, 100);
+    manualStartTime = millis();
+    currentPowerPct = manualPowerPct;
+    ledcWrite(PLANT_FAN_CHANNEL, map(currentPowerPct, 0, 100, 0, 255));
+    timerState = (currentPowerPct > 0);
+}
+
+void plantFanClearManual() {
+    manualOverride = false;
+    manualPowerPct = 0;
 }

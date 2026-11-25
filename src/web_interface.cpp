@@ -80,8 +80,25 @@ bool checkCSRF() {
 // ІНІЦІАЛІЗАЦІЯ WI-FI ТА ВЕБ-СЕРВЕРА
 // ============================================================================
 
+static volatile bool webServerStarted = false;
+static volatile bool webServerRestartRequested = false;
+
+void requestWebServerRestart() {
+    if (webServerStarted) {
+        webServerRestartRequested = true;
+    }
+}
+
 void initWiFi() {
     WiFi.mode(WIFI_STA);
+    WiFi.setSleep(false);  // Вимикаємо modem sleep — стабільніші вхідні HTTP/ping на хотспотах
+    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
+        (void)info;
+        if (event == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
+            WiFi.setSleep(false);
+            requestWebServerRestart();
+        }
+    });
     WiFi.disconnect(true);
     delay(100);
 
@@ -241,6 +258,7 @@ void initWiFi() {
 
         // Піднімаємо постійну локальну AP-мережу для TC421 (AP+STA, підмережа 192.168.10.x)
         WiFi.mode(WIFI_AP_STA);
+        WiFi.setSleep(false);
         WiFi.softAPConfig(IPAddress(192, 168, 10, 1), IPAddress(192, 168, 10, 1), IPAddress(255, 255, 255, 0));
         WiFi.softAP(LIGHT_AP_SSID, LIGHT_AP_PASSWORD, WiFi.channel(), 0, MAX_CLIENTS);
         Serial.printf("🔆 AP для TC421 запущено: SSID='%s' IP=%s (канал %d)\n",
@@ -252,6 +270,7 @@ void initWiFi() {
         WiFi.disconnect(true);
         delay(100);
         WiFi.mode(WIFI_AP);
+        WiFi.setSleep(false);
         WiFi.softAPConfig(IPAddress(192, 168, 10, 1), IPAddress(192, 168, 10, 1), IPAddress(255, 255, 255, 0));
         WiFi.softAP(LIGHT_AP_SSID, LIGHT_AP_PASSWORD, WIFI_CHANNEL, 0, MAX_CLIENTS);
 
@@ -295,6 +314,7 @@ void initWiFi() {
 
     server.on("/help", HTTP_GET, handleHelpPage);
     server.on("/debug", HTTP_GET, handleDebugPage);
+    server.on("/tablet", HTTP_GET, handleTabletPage);
 
     server.on("/history", HTTP_GET, handleHistoryPage);
     server.on("/history/data", HTTP_GET, handleHistoryData);
@@ -329,9 +349,18 @@ void initWiFi() {
     server.on("/tc421/manual", HTTP_POST, handleTC421Manual);
     server.on("/tc421/api/manual", HTTP_ANY, handleTC421ApiManual);
     server.on("/tc421/api/status", HTTP_GET, handleTC421ApiStatus);
+    server.on("/tc421/api/auto", HTTP_ANY, handleTC421ApiAuto);
     server.on("/tc421/off", HTTP_GET, handleTC421Off);
     server.on("/tc421/internal", HTTP_GET, handleTC421Internal);
     server.on("/tc421/synctime", HTTP_GET, handleTC421SyncTime);
+
+    // Вбудований енерго- та світловий аудит (зі смартфона через Phyphox)
+    server.on("/audit", HTTP_GET, handleAuditPage);
+    server.on("/audit/phyphox", HTTP_GET, handleAuditPhyphoxProxy);
+    server.on("/audit/profile", HTTP_GET, handleAuditProfileGet);
+    server.on("/audit/profile", HTTP_POST, handleAuditProfilePost);
+    server.on("/audit/data", HTTP_GET, handleAuditDataGet);
+    server.on("/audit/data", HTTP_POST, handleAuditDataPost);
 
     // Режим тиші (автоматичне вимкнення вентиляторів і зволожувача при роботі мікрофона)
     server.on("/api/quiet", HTTP_ANY, []() {
@@ -422,6 +451,7 @@ void initWiFi() {
     });
 
     server.begin();
+    webServerStarted = true;
     Serial.println("  Web OTA доступний на /update");
 }
 
@@ -989,6 +1019,13 @@ void webTask(void *parameter) {
 
     while (1) {
         esp_task_wdt_reset();
+        if (webServerRestartRequested) {
+            webServerRestartRequested = false;
+            server.stop();
+            vTaskDelay(pdMS_TO_TICKS(50));
+            server.begin();
+            Serial.println("🔄 WebServer безпечно перезапущено після оновлення Wi-Fi");
+        }
         server.handleClient();
         vTaskDelay(pdMS_TO_TICKS(10));
     }

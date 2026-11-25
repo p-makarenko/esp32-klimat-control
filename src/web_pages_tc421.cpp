@@ -49,11 +49,26 @@ void handleTC421Page() {
     EnergyMeasurements em = getEnergyMeasurements();
     bool ecoNow = isEcoModeActive();
 
-    struct tm* nowTm = getTimeInfo();
-    int curMinute = (nowTm != nullptr) ? (nowTm->tm_hour * 60 + nowTm->tm_min) : -1;
+    time_t nowTs = time(nullptr);
+    int curMinute = -1;
+    if (nowTs >= 1700000000) {
+        struct tm localTm;
+        localtime_r(&nowTs, &localTm);
+        curMinute = localTm.tm_hour * 60 + localTm.tm_min;
+    }
+
+    // Використовуємо chunked transfer (по частинах), щоб не виділяти суцільний 35 КБ буфер у RAM
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "text/html; charset=utf-8", "");
 
     String html = getHtmlHead("Фітолампа TC421");
-    html.reserve(18000);
+    auto flushChunk = [&]() {
+        if (html.length() > 0) {
+            server.sendContent(html);
+            html = "";
+        }
+    };
+    flushChunk();
     html += "<style>"
             ".tc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:12px 0}"
             ".tc-tile{background:var(--s);border:1px solid var(--b);border-top:3px solid var(--a);border-radius:10px;padding:12px;text-align:center}"
@@ -135,7 +150,7 @@ void handleTC421Page() {
     html += "<b>🎛️ Ручне керування (миттєва реакція)</b>";
     html += "<span id='liveToast' class='tc-toast'></span>";
     html += "</div>";
-    html += "<div class='tc-hint'>Тягни будь-який повзунок — яскравість лампи змінюється одразу без перезавантаження сторінки. Автопілот при цьому стає на паузу.</div>";
+    html += "<div class='tc-hint'><b>Режими:</b> <b>▶ Автопілот ESP32</b> — основна робота за твоїм графіком нижче (світанок/захід/IR+UV/ЕКО). Коли тягнеш повзунок — вмикається <b>Ручний режим</b> (автопілот на паузі); після тесту натисни «▶ Автопілот ESP32», щоб повернути графік. <b>Внутр. розклад TC421</b> — стара програма з телефонного додатку.</div>";
 
     // Панель поточної потужності в Ватах + дельта
     html += "<div class='tc-watt-bar'>";
@@ -143,6 +158,7 @@ void handleTC421Page() {
             (em.error ? String("—") : (String(em.power, 1) + " Вт")) + "</b> "
             "<span id='liveDelta' style='font-size:13px;color:#10b981;font-weight:600'></span></div>";
     html += "<div style='display:flex;gap:6px;flex-wrap:wrap'>";
+    html += "<button type='button' id='btnAuto' class='btn btn-success' style='padding:6px 12px;font-size:12.5px' onclick='liveAuto()'>▶ Автопілот ESP32</button>";
     html += "<button type='button' class='btn btn-secondary' style='padding:6px 10px;font-size:12.5px' onclick='setWattZero()' title='Запам&#39;ятати поточні Вати як 0, щоб бачити чисте споживання лампи'>🎯 Зафіксувати фон</button>";
     html += "<button type='button' class='btn btn-danger' style='padding:6px 10px;font-size:12.5px' onclick='liveOff()'>Вимкнути все (0%)</button>";
     html += "<button type='button' class='btn btn-secondary' style='padding:6px 10px;font-size:12.5px' onclick='liveInternal()'>На внутр. розклад TC421</button>";
@@ -164,6 +180,7 @@ void handleTC421Page() {
         html += "</div>";
     }
     html += "</div></div>";
+    flushChunk();
 
     // ------------------------------------------------------------------------
     // КАРТКА 3: ЖИВИЙ ГРАФІК ДОБИ (SVG 00:00 - 24:00)
@@ -218,6 +235,16 @@ void handleTC421Page() {
 
     // 4 повзунки денного максимуму
     html += "<h3 style='margin:14px 0 6px'>Денний максимум каналів <span class='tc-q' onclick='togH(\"h_day\")'>?</span></h3>";
+    html += "<div id='auditRecBox' class='info-banner' style='display:none;border-left-color:#14b8a6'></div>";
+    html += "<script>(async function(){try{const p=await(await fetch('/audit/profile')).json();if(!p||!p.saved||!p.tc||Object.keys(p.tc).length===0)return;"
+            "const b=document.getElementById('auditRecBox');const ks=['ch1','ch2','ch3','ch4'];const ns=['🔴CH1','⚪CH2','🟡CH3','🟣CH4'];let parts=[];"
+            "ks.forEach((k,i)=>{if(p.tc[k])parts.push(`${ns[i]}: <b>${p.tc[k].pct}%</b> (${p.tc[k].w}Вт)`);});"
+            "b.innerHTML=`<b>🔬 Економний оптимум за аудитом (${p.ts||''}):</b> ${parts.join(' · ')} `+"
+            "`<button type='button' class='btn btn-success' style='padding:5px 10px;font-size:12.5px;margin-left:6px' onclick='applyAuditOpt()'>✨ Підставити в день</button>`;"
+            "b.style.display='block';window._auditTc=p.tc;"
+            "}catch(e){}})();"
+            "function applyAuditOpt(){if(!window._auditTc)return;['ch1','ch2','ch3','ch4'].forEach((k,i)=>{if(window._auditTc[k]){const el=document.getElementById('f_d'+i);if(el){el.value=window._auditTc[k].pct;document.getElementById('f_d'+i+'v').textContent=el.value+'%';}}});if(typeof drawChart==='function')drawChart();}"
+            "</script>";
     html += "<div id='h_day' class='tc-helpbox'>Яскравість кожного каналу в розпал дня (пік). Для вегетації зазвичай більше <b>Білого</b> (75–90%), для цвітіння — більше <b>Червоного</b> (85–100%) і <b>Жовтого</b>. <b>CH4 (IR+UV)</b> вдень працює тільки в «Полуденному вікні».</div>";
     html += "<div class='tc-row'>";
     const char* chNames[4] = {"🔴 CH1 Червоний", "⚪ CH2 Білий", "🟡 CH3 Жовтий", "🟣 CH4 IR+UV (полудень)"};
@@ -233,17 +260,21 @@ void handleTC421Page() {
     // Біологічні імпульси CH4 (IR+UV)
     html += "<h3 style='margin:14px 0 6px'>🟣 Імпульси сходу / полудня / заходу (CH4 IR+UV) <span class='tc-q' onclick='togH(\"h_ir\")'>?</span></h3>";
     html += "<div id='h_ir' class='tc-helpbox'>"
-            "• <b>Світанок IR (10–20 хв, 25–40%):</b> м'який імпульс на старті дня (ефект Емерсона) — допомагає рослині плавно «прокинутись».<br>"
-            "• <b>Полуденне вікно UV/IR (2–4 год, 0=вимк):</b> вмикає CH4 в самому центрі дня (як сонце в зеніті), не перевантажуючи листя ультрафіолетом цілий день.<br>"
-            "• <b>Захід EOD Far-Red (15–20 хв після заходу, 40–50%):</b> «сигнал сну» — швидко переводить фітохроми у нічну фазу. Не став більше 30 хв, щоб рослини не витягувались."
+            "<b>Канал CH4 (IR + UV) має 3 незалежних вікна за добу:</b><br>"
+            "1) <b>Світанок IR (10–20 хв, 25–40%):</b> короткий старт на початку світанку (ефект Емерсона) — м'яко «будить» рослину.<br>"
+            "2) <b>Полудень UV/IR (год):</b> автоматично ставиться <b>рівно посередині</b> твого світлового дня (напр. при дні 23:00–17:00 центр = 08:00, і 3 год = 06:30–09:30). Потужність береться з верхнього повзунка <b>CH4 IR+UV (полудень)</b> — якщо там 100%, у полудень світитиме на 100%. Значення <b>0 год</b> вимикає CH4 вдень.<br>"
+            "3) <b>Захід EOD Far-Red (15–20 хв після заходу, 40–50%):</b> вмикається за 5 хв до кінця заходу і догорає у темряві — «сигнал сну» для фітохромів. Понад 30 хв може викликати витягування.<br>"
+            "<i>Чому зазвичай 25–45%, а не 100%?</i> Бо на CH4 разом UV (сильний УФ може підпалити листя) та IR (цілоденний IR на 100% імітує «тінь» і витягує стебла). Якщо діоди CH4 слабкі (1–3 Вт) — можна сміливо піднімати до 70–100%."
             "</div>";
     html += "<div class='tc-row'>";
     html += "<div class='tc-field'><label><span>Світанок IR (хв)</span></label><input type='number' id='f_dird' name='dir_dur' min='0' max='45' value='" + String(sc.dawnIrDurMin) + "' oninput='drawChart()'><div class='tc-hint'>Реком. 15 хв (0 = вимк)</div></div>";
     html += "<div class='tc-field'><label><span>Світанок IR (%)</span></label><input type='number' id='f_dirp' name='dir_pct' min='0' max='100' value='" + String(sc.dawnIrPct) + "' oninput='drawChart()'><div class='tc-hint'>Реком. 30–35%</div></div>";
     html += "<div class='tc-field'><label><span>Полудень UV/IR (год)</span></label><input type='number' id='f_muv' name='mid_uv' min='0' max='12' value='" + String(sc.middayUvHours) + "' oninput='drawChart()'><div class='tc-hint'>У центрі дня (0 = вимк)</div></div>";
+    html += "<div class='tc-field'><label><span>Фон IR вдень (%)</span></label><input type='number' id='f_bir' name='base_ir' min='0' max='50' value='" + String(sc.dayBaseIrPct) + "' oninput='drawChart()'><div class='tc-hint'>Між піками: 3–5% (0 = вимк)</div></div>";
     html += "<div class='tc-field'><label><span>Захід EOD IR (хв)</span></label><input type='number' id='f_eodd' name='eod_dur' min='0' max='45' value='" + String(sc.eodIrDurMin) + "' oninput='drawChart()'><div class='tc-hint'>Після заходу: 15–20 хв</div></div>";
     html += "<div class='tc-field'><label><span>Захід EOD IR (%)</span></label><input type='number' id='f_eodp' name='eod_pct' min='0' max='100' value='" + String(sc.eodIrPct) + "' oninput='drawChart()'><div class='tc-hint'>Реком. 40–50%</div></div>";
     html += "</div>";
+    html += "<div id='ch4Summary' class='info-banner' style='border-left-color:#a855f7;color:var(--t);font-size:13px'></div>";
 
     // ЕКО-режим при блекауті
     html += "<div class='tc-field' style='margin-top:10px;border-left:3px solid #fb7185'>";
@@ -257,6 +288,7 @@ void handleTC421Page() {
     html += "<a href='/tc421/preset/reset' class='btn btn-secondary' style='font-size:13px' onclick='return confirm(\"Скинути поточний профіль до заводських налаштувань?\")'>↺ Скинути до заводських</a>";
     html += "<span id='saveToast' class='tc-toast'></span>";
     html += "</div></form></div>";
+    flushChunk();
 
     // ------------------------------------------------------------------------
     // JS: LIVE ПОВЗУНКИ (AJAX), ПОТУЖНІСТЬ У ВАТАХ, ПІДКАЗКИ ТА SVG-ГРАФІК
@@ -313,6 +345,13 @@ void handleTC421Page() {
     html += "function liveInternal(){"
             "fetch('/tc421/internal').then(()=>{pollStatus();const t=document.getElementById('liveToast');if(t)t.textContent='✅ Внутр. розклад TC421';});}";
 
+    html += "function liveAuto(){"
+            "fetch('/tc421/api/auto').then(r=>r.json()).then(d=>{"
+            "applyStatus(d);"
+            "if(d.ch){for(let i=0;i<4;i++){const sl=document.getElementById('m_c'+i);if(sl)sl.value=d.ch[i];const lb=document.getElementById('m_c'+i+'v');if(lb)lb.textContent=d.ch[i]+'%';}}"
+            "const t=document.getElementById('liveToast');if(t)t.textContent='✅ Автопілот ESP32 увімкнено';"
+            "setTimeout(pollStatus, 500);}).catch(()=>{});}";
+
     // AJAX збереження Конструктора дня (без стрибка сторінки вгору!)
     html += "function saveScheduleAjax(e){"
             "e.preventDefault();"
@@ -324,6 +363,7 @@ void handleTC421Page() {
             "return false;}";
 
     // SVG-графік
+    flushChunk();
     html += "function ss01(x){return x<=0?0:(x>=1?1:x*x*(3-2*x));}";
     html += "function parseHM(s){if(!s||s.length<5)return 0;const p=s.split(':');return (+p[0])*60+(+p[1]);}";
     html += "function calcAt(cfg,m){"
@@ -336,6 +376,10 @@ void handleTC421Page() {
             "  if(t<sr){const p=sr>0?t/sr:1;const pw=ss01(p),pwh=ss01((p-0.25)/0.75);r=cfg.d0*pw;y=cfg.d2*pw;w=cfg.d1*pwh;}"
             "  else if(t<ssStart){r=cfg.d0;w=cfg.d1;y=cfg.d2;}"
             "  else{const p=ss>0?(t-ssStart)/ss:1;const pw=1-ss01(p),pwh=1-ss01(p/0.75);r=cfg.d0*pw;y=cfg.d2*pw;w=cfg.d1*pwh;}"
+            "}"
+            "if(cfg.baseIr>0&&t>=0&&t<dayLen){"
+            "  let e=1;if(t<sr&&sr>0)e=ss01(t/sr);else if(t>=ssStart&&ss>0)e=1-ss01((t-ssStart)/ss);"
+            "  ir=Math.max(ir,cfg.baseIr*e);"
             "}"
             "if(cfg.dirDur>0&&cfg.dirPct>0&&t>=0&&t<cfg.dirDur){"
             "  const p=t/cfg.dirDur;const e=p<0.25?ss01(p/0.25):(p>0.75?ss01((1-p)/0.25):1);ir=Math.max(ir,cfg.dirPct*e);"
@@ -360,6 +404,7 @@ void handleTC421Page() {
             "d2:+document.getElementById('f_d2').value,d3:+document.getElementById('f_d3').value,"
             "dirDur:+document.getElementById('f_dird').value||0,dirPct:+document.getElementById('f_dirp').value||0,"
             "midUv:+document.getElementById('f_muv').value||0,"
+            "baseIr:+document.getElementById('f_bir').value||0,"
             "eodDur:+document.getElementById('f_eodd').value||0,eodPct:+document.getElementById('f_eodp').value||0,"
             "eco:+document.getElementById('f_eco').value||0};"
             "const W=720,H=220,PL=34,PR=10,PT=12,PB=24,PW=W-PL-PR,PH=H-PT-PB;"
@@ -373,14 +418,25 @@ void handleTC421Page() {
             "  for(let c=0;c<4;c++){const y=(PT+PH*(1-v[c]/100)).toFixed(1);pts[c].push(x+','+y);}}"
             "for(let c=0;c<4;c++){s+=`<polyline fill='none' stroke='${cols[c]}' stroke-width='2.2' points='${pts[c].join(' ')}'/>`;}"
             "if(CUR_MIN>=0){const cx=(PL+PW*(CUR_MIN/1440)).toFixed(1);s+=`<line x1='${cx}' y1='${PT}' x2='${cx}' y2='${PT+PH}' stroke='#22d3ee' stroke-width='2'/>`;}"
-            "document.getElementById('tcChart').innerHTML=s;}"
+            "document.getElementById('tcChart').innerHTML=s;"
+            "const fm=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};"
+            "let dl=cfg.end-cfg.start;if(dl<=0)dl+=1440;if(dl<30)dl=30;"
+            "let sr=cfg.srDur,ss=cfg.ssDur;if(sr+ss>dl){sr=Math.floor(dl/2);ss=dl-sr;}"
+            "const p1=(cfg.dirDur>0&&cfg.dirPct>0)?`${fm(cfg.start)}–${fm(cfg.start+cfg.dirDur)} (${cfg.dirPct}%)`:'вимк';"
+            "let wd=cfg.midUv*60,cl=dl-sr-ss;if(cl>0&&wd>cl)wd=cl;"
+            "const p2=(wd>0&&cfg.d3>0)?`${fm(cfg.start+Math.floor(dl/2-wd/2))}–${fm(cfg.start+Math.floor(dl/2-wd/2)+wd)} (${cfg.d3}%)`:'вимк';"
+            "const ov=ss>=5?5:ss;"
+            "const p3=(cfg.eodDur>0&&cfg.eodPct>0)?`${fm(cfg.start+dl-ov)}–${fm(cfg.start+dl+cfg.eodDur)} (${cfg.eodPct}%)`:'вимк';"
+            "const sumEl=document.getElementById('ch4Summary');"
+            "if(sumEl){sumEl.innerHTML=`📍 <b>Точний розклад CH4</b> (день ${Math.floor(dl/60)}г ${String(dl%60).padStart(2,'0')}хв): Світанок IR: <b>${p1}</b> • Фон вдень: <b>${cfg.baseIr}%</b> • Полудень UV/IR: <b>${p2}</b> • Захід EOD: <b>${p3}</b>`;}}"
             "drawChart();";
     html += "</script>";
 
     html += "</div>"; // container
     html += getNavFooter();
     html += getHtmlFooter();
-    server.send(200, "text/html; charset=utf-8", html);
+    flushChunk();
+    server.sendContent("");
 }
 
 // ============================================================================
@@ -434,6 +490,7 @@ void handleTC421ScheduleSave() {
     sc.dawnIrDurMin  = (uint8_t)server.arg("dir_dur").toInt();
     sc.dawnIrPct     = (uint8_t)server.arg("dir_pct").toInt();
     sc.middayUvHours = (uint8_t)server.arg("mid_uv").toInt();
+    sc.dayBaseIrPct  = (uint8_t)server.arg("base_ir").toInt();
     sc.eodIrDurMin   = (uint8_t)server.arg("eod_dur").toInt();
     sc.eodIrPct      = (uint8_t)server.arg("eod_pct").toInt();
     sc.ecoMaxPercent = (uint8_t)server.arg("eco_max").toInt();
@@ -495,6 +552,14 @@ void handleTC421ApiManual() {
 
 void handleTC421ApiStatus() {
     if (!checkAuth()) return;
+    server.send(200, "application/json", buildStatusJson());
+}
+
+void handleTC421ApiAuto() {
+    if (!checkAuth()) return;
+    TC421ScheduleConfig sc = tc421GetSchedule();
+    sc.enabled = true;
+    tc421SetSchedule(sc, true);
     server.send(200, "application/json", buildStatusJson());
 }
 

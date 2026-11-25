@@ -4,6 +4,7 @@
 #include "web_common.h"
 #include "google_sheets_sync.h"
 #include <SPIFFS.h>
+#include <Preferences.h>
 #include <ArduinoJson.h>
 #include <time.h>
 
@@ -19,6 +20,42 @@ EnergyMeasurements energyData;
 unsigned long lastEnergyUpdate = 0;
 unsigned long lastPowerRecord = 0;
 int currentEnergyHour = -1;
+
+// Двозонний облік електроенергії (Ніч: 23:00-07:00, День: 07:00-23:00)
+static float dayEnergyKwh = 0.0f;
+static float nightEnergyKwh = 0.0f;
+static float lastPzemEnergy = -1.0f;
+static float lastSavedTotalTariff = 0.0f;
+static unsigned long lastTariffSaveMs = 0;
+
+static bool isNightTariffHour(int hour) {
+    return (hour >= 23 || hour < 7);
+}
+
+static void loadTariffCounters() {
+    Preferences ep;
+    ep.begin("energy_trf", true);
+    dayEnergyKwh   = ep.getFloat("dayKwh", 0.0f);
+    nightEnergyKwh = ep.getFloat("nightKwh", 0.0f);
+    lastPzemEnergy = ep.getFloat("lastPzem", -1.0f);
+    ep.end();
+    if (isnan(dayEnergyKwh) || dayEnergyKwh < 0.0f) dayEnergyKwh = 0.0f;
+    if (isnan(nightEnergyKwh) || nightEnergyKwh < 0.0f) nightEnergyKwh = 0.0f;
+    if (isnan(lastPzemEnergy)) lastPzemEnergy = -1.0f;
+    lastSavedTotalTariff = dayEnergyKwh + nightEnergyKwh;
+    Serial.printf("🌗 Тарифні лічильники: День=%.3f kWh, Ніч=%.3f kWh\n", dayEnergyKwh, nightEnergyKwh);
+}
+
+static void saveTariffCounters() {
+    Preferences ep;
+    ep.begin("energy_trf", false);
+    ep.putFloat("dayKwh", dayEnergyKwh);
+    ep.putFloat("nightKwh", nightEnergyKwh);
+    ep.putFloat("lastPzem", lastPzemEnergy);
+    ep.end();
+    lastSavedTotalTariff = dayEnergyKwh + nightEnergyKwh;
+    lastTariffSaveMs = millis();
+}
 
 // RAM буфер для потужності (зберігається на ESP32)
 PowerRecord powerBuffer[ENERGY_POWER_BUFFER_SIZE];
@@ -89,6 +126,7 @@ void initEnergyMonitor() {
 
     PZEMSerial.begin(9600, SERIAL_8N1, PZEM_RX_PIN, PZEM_TX_PIN);
     Serial.printf("📌 PZEM піни: RX=%d, TX=%d\n", PZEM_RX_PIN, PZEM_TX_PIN);
+    loadTariffCounters();
     Serial.println("✅ Енергоконтролер готовий");
 #else
     Serial.println("ℹ️  Енергоконтролер вимкнено (ENABLE_ENERGY_MONITOR=0)");
@@ -156,11 +194,39 @@ void updateEnergyData() {
         if (powerBufferCount < ENERGY_POWER_BUFFER_SIZE) powerBufferCount++;
     }
 
-    // Запис історії kWh щогодини
+    // Двозонний облік (Ніч 23:00-07:00 / День 07:00-23:00) та запис історії kWh щогодини
     time_t t;
     time(&t);
     struct tm* tm_info = localtime(&t);
     if (tm_info && t > 1000000) {  // Час синхронізовано
+        if (!energyData.error) {
+            if (lastPzemEnergy < 0.0f) {
+                lastPzemEnergy = energyData.energy;
+                saveTariffCounters();
+            } else if (energyData.energy > lastPzemEnergy) {
+                float delta = energyData.energy - lastPzemEnergy;
+                // Захист від нереального стрибка (> 5 kWh за 2 сек)
+                if (delta > 0.0f && delta < 5.0f) {
+                    if (isNightTariffHour(tm_info->tm_hour)) {
+                        nightEnergyKwh += delta;
+                    } else {
+                        dayEnergyKwh += delta;
+                    }
+                }
+                lastPzemEnergy = energyData.energy;
+
+                // Зберігаємо в NVS при зміні >= 0.01 kWh або раз на 15 хвилин
+                float curTotal = dayEnergyKwh + nightEnergyKwh;
+                if ((curTotal - lastSavedTotalTariff) >= 0.01f || (now - lastTariffSaveMs) >= 900000UL) {
+                    saveTariffCounters();
+                }
+            } else if (energyData.energy + 0.01f < lastPzemEnergy) {
+                // Лічильник PZEM було скинуто
+                lastPzemEnergy = energyData.energy;
+                saveTariffCounters();
+            }
+        }
+
         if (tm_info->tm_hour != currentEnergyHour) {
             currentEnergyHour = tm_info->tm_hour;
             if (!energyData.error && energyData.energy > 0) {
@@ -228,6 +294,12 @@ void handleEnergyAPI() {
     doc["f"] = data.frequency;
     doc["pf"] = data.powerFactor;
     doc["err"] = data.error;
+    doc["dayKwh"] = dayEnergyKwh;
+    doc["nightKwh"] = nightEnergyKwh;
+    time_t nowT;
+    time(&nowT);
+    struct tm* tmNow = localtime(&nowT);
+    doc["isNight"] = (tmNow && nowT > 1000000) ? isNightTariffHour(tmNow->tm_hour) : false;
 
     serializeJson(doc, json);
     server.send(200, "application/json", json);
@@ -349,7 +421,11 @@ void resetEnergyCounter() {
     uint16_t crc = crc16(cmd, 2);
     cmd[2] = crc & 0xFF; cmd[3] = (crc >> 8) & 0xFF;
     PZEMSerial.write(cmd, 4);
-    Serial.println("🔄 Лічильник енергії скинуто");
+    dayEnergyKwh = 0.0f;
+    nightEnergyKwh = 0.0f;
+    lastPzemEnergy = 0.0f;
+    saveTariffCounters();
+    Serial.println("🔄 Лічильник енергії (та День/Ніч) скинуто");
 #endif
 }
 
@@ -362,13 +438,28 @@ void handleEnergyReset() {
 void handleEnergyPage() {
     if (!checkAuth()) return;
 
-    String html = getHtmlHead("⚡ Енергоконтролер", true);
-    html.reserve(24576);
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "text/html", "");
+
+    String html;
+    html.reserve(4096);
+    auto flushChunk = [&]() {
+        if (html.length() > 0) {
+            server.sendContent(html);
+            html = "";
+            yield();
+        }
+    };
+
+    html = getHtmlHead("⚡ Енергоконтролер", true);
     html += "<div class='container'>";
     html += getNavHeader("⚡ ЕНЕРГОКОНТРОЛЕР");
 
-    // Статус
-    html += "<div style='text-align:center;margin-bottom:15px'><span id='st' style='display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.8rem;color:#fff;background:#f44336'>OFFLINE</span></div>";
+    // Статус + активний тариф
+    html += "<div style='text-align:center;margin-bottom:15px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;'>";
+    html += "<span id='st' style='display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.8rem;color:#fff;background:#f44336'>OFFLINE</span>";
+    html += "<span id='trfBadge' style='display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.8rem;color:#fff;background:#64748b'>🌗 Тариф: --</span>";
+    html += "</div>";
 
     // Картки з даними
     html += "<style>.eg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}";
@@ -386,8 +477,15 @@ void handleEnergyPage() {
     html += "<div class='ek'><span class='ev' id='pf'>--</span><span class='eu'>Cos &#966;</span></div>";
     html += "</div>";
 
+    // Двозонний облік (накопичувальний лічильник День / Ніч)
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;'>";
+    html += "<div class='ek' style='border-top-color:#f59e0b;'><span class='eu'>☀️ Денний тариф (07:00–23:00)</span><span class='ev' id='dayKwh' style='color:#f59e0b;'>--</span><span class='eu' id='dayPct'>kWh</span></div>";
+    html += "<div class='ek' style='border-top-color:#6366f1;'><span class='eu'>🌙 Нічний тариф (23:00–07:00)</span><span class='ev' id='nightKwh' style='color:#818cf8;'>--</span><span class='eu' id='nightPct'>kWh</span></div>";
+    html += "</div>";
+
     // Кнопка скидання — окрема
-    html += "<div style='margin:15px 0;text-align:center'><button class='btn' id='rstBtn' style='background:#f44336;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer' onclick='resetKwh()'>🔄 Скинути лічильник kWh</button></div>";
+    html += "<div style='margin:15px 0;text-align:center'><button class='btn' id='rstBtn' style='background:#f44336;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer' onclick='resetKwh()'>🔄 Скинути лічильник kWh (і День/Ніч)</button></div>";
+    flushChunk();
 
     // Панель навігації по періодах
     html += "<div class='card' style='border-left-color: #f59e0b;'>";
@@ -437,14 +535,18 @@ void handleEnergyPage() {
     html += "<button onclick='powerChart.resetZoom()' class='reset-btn'>🔄 Скинути масштаб</button>";
     html += "</div>";
     html += "<div style='display:flex;gap:15px;flex-wrap:wrap;background:#fff8e1;padding:12px 16px;border-radius:8px;border-left:4px solid #f59e0b;margin-bottom:15px;align-items:center;'>";
-    html += "<div><span style='color:#666;font-size:0.85rem;'>⚡ Спожито за період:</span><br><strong id='periodEnergy' style='font-size:1.3rem;color:#d97706;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>kWh</span></div>";
-    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>📊 Сер. потужність:</span><br><strong id='periodAvgPower' style='font-size:1.3rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>W</span></div>";
-    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>🔥 Пікова потужність:</span><br><strong id='periodMaxPower' style='font-size:1.3rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;'>W</span></div>";
+    html += "<div><span style='color:#666;font-size:0.85rem;'>⚡ Всього за період:</span><br><strong id='periodEnergy' style='font-size:1.3rem;color:#d97706;'>--</strong> <span style='font-size:0.9rem;font-weight:600;color:#333;'>kWh</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>☀️ День (07–23):</span><br><strong id='periodDayEnergy' style='font-size:1.25rem;color:#b45309;'>--</strong> <span id='periodDayPct' style='font-size:0.85rem;color:#555;'>kWh</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>🌙 Ніч (23–07):</span><br><strong id='periodNightEnergy' style='font-size:1.25rem;color:#4f46e5;'>--</strong> <span id='periodNightPct' style='font-size:0.85rem;color:#555;'>kWh</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>📊 Сер. потужність:</span><br><strong id='periodAvgPower' style='font-size:1.25rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;color:#333;'>W</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>🔥 Пікова потужність:</span><br><strong id='periodMaxPower' style='font-size:1.25rem;color:#333;'>--</strong> <span style='font-size:0.9rem;font-weight:600;color:#333;'>W</span></div>";
+    html += "<div style='border-left:1px solid #ffe082;padding-left:15px;'><span style='color:#666;font-size:0.85rem;'>🔌 Без 220В:</span><br><strong id='periodOutageTime' style='font-size:1.25rem;color:#dc2626;'>--</strong> <span id='periodOutageMeta' style='font-size:0.85rem;color:#555;'></span></div>";
     html += "</div>";
     html += "<div class='chart-container' style='height:300px'><canvas id='powerCanvas'></canvas></div>";
     html += "</div>";
 
     html += "</div>"; // container
+    flushChunk();
 
     html += "<script>";
     html += "var powerChart;";
@@ -557,10 +659,28 @@ void handleEnergyPage() {
     html += "  powerChart.update('none');";
     html += "}";
 
-    html += "function updatePeriodSummary(kwh, avgW, maxW){";
+    html += "function isNightHour(h){ return (h >= 23 || h < 7); }";
+    html += "function fmtOutageHours(h){ var m=Math.round(h*60); var hh=Math.floor(m/60); var mm=m%60; return hh+'г '+String(mm).padStart(2,'0')+'хв'; }";
+    html += "function updatePeriodSummary(kwh, avgW, maxW, dayKwh, nightKwh, outageH, totalH, outageCnt){";
     html += "  document.getElementById('periodEnergy').textContent = (kwh !== null && !isNaN(kwh)) ? kwh.toFixed(3) : '--';";
     html += "  document.getElementById('periodAvgPower').textContent = (avgW !== null && !isNaN(avgW)) ? Math.round(avgW) : '--';";
     html += "  document.getElementById('periodMaxPower').textContent = (maxW !== null && !isNaN(maxW)) ? Math.round(maxW) : '--';";
+    html += "  var hasSplit = (dayKwh !== undefined && nightKwh !== undefined && dayKwh !== null && nightKwh !== null && !isNaN(dayKwh) && !isNaN(nightKwh));";
+    html += "  var totSplit = hasSplit ? (dayKwh + nightKwh) : 0;";
+    html += "  document.getElementById('periodDayEnergy').textContent = hasSplit ? dayKwh.toFixed(3) : '--';";
+    html += "  document.getElementById('periodNightEnergy').textContent = hasSplit ? nightKwh.toFixed(3) : '--';";
+    html += "  document.getElementById('periodDayPct').textContent = (hasSplit && totSplit > 0) ? ('kWh (' + Math.round(dayKwh * 100 / totSplit) + '%)') : 'kWh';";
+    html += "  document.getElementById('periodNightPct').textContent = (hasSplit && totSplit > 0) ? ('kWh (' + Math.round(nightKwh * 100 / totSplit) + '%)') : 'kWh';";
+    html += "  var hasOut = (outageH !== undefined && outageH !== null && !isNaN(outageH));";
+    html += "  document.getElementById('periodOutageTime').textContent = hasOut ? fmtOutageHours(outageH) : '--';";
+    html += "  var outMeta = '';";
+    html += "  if (hasOut) {";
+    html += "    var pct = (totalH && totalH > 0) ? Math.round(outageH * 100 / totalH) : 0;";
+    html += "    outMeta = '(' + pct + '%';";
+    html += "    if (outageCnt !== undefined && outageCnt !== null) outMeta += ' • ' + outageCnt + ' відкл.';";
+    html += "    outMeta += ')';";
+    html += "  }";
+    html += "  document.getElementById('periodOutageMeta').textContent = outMeta;";
     html += "}";
     html += "";
     html += "async function loadRAMData(){";
@@ -572,16 +692,19 @@ void handleEnergyPage() {
     html += "    var data=j.data||[];";
     html += "    data=data.filter(function(d){ return d && d.t > 0; });";
     html += "    data.sort(function(a,b){ return a.t - b.t; });";
+    html += "    if(data.length===0){ var td=fmtLocalDate(new Date()); loadDeviceEnergyData(td, td); return; }";
     html += "    var labels=[], fullDates=[], power=[], voltage=[];";
-    html += "    var sumKwh=0, sumW=0, maxW=0;";
+    html += "    var sumKwh=0, dayKwh=0, nightKwh=0, sumW=0, maxW=0;";
+    html += "    var outageH=0, totalH=0, outageCnt=0;";
     html += "    for(var i=0;i<data.length;i++){";
-    html += "      var label='', fullDate='';";
+    html += "      var label='', fullDate='', ptHour=-1;";
     html += "      if(data[i].t > 1000000000){";
     html += "        var d=new Date(data[i].t*1000);";
+    html += "        ptHour = d.getHours();";
     html += "        var day=('0'+d.getDate()).slice(-2);";
     html += "        var month=('0'+(d.getMonth()+1)).slice(-2);";
     html += "        var year=d.getFullYear();";
-    html += "        var hours=('0'+d.getHours()).slice(-2);";
+    html += "        var hours=('0'+ptHour).slice(-2);";
     html += "        var minutes=('0'+d.getMinutes()).slice(-2);";
     html += "        label = day+'.'+month+' '+hours+':'+minutes;";
     html += "        fullDate = day+'.'+month+'.'+year+' '+hours+':'+minutes;";
@@ -592,14 +715,24 @@ void handleEnergyPage() {
     html += "      labels.push(label);";
     html += "      fullDates.push(fullDate);";
     html += "      var p = data[i].p || 0;";
+    html += "      var vCur = data[i].v || 0;";
     html += "      power.push(p);";
-    html += "      voltage.push(data[i].v);";
+    html += "      voltage.push(vCur);";
     html += "      if(p > maxW) maxW = p;";
     html += "      sumW += p;";
+    html += "      if(i === 0 && vCur < 175) outageCnt = 1;";
     html += "      if(i > 0){";
     html += "        var dt = (data[i].t - data[i-1].t) / 3600;";
     html += "        if(dt > 0 && dt < 2){";
-    html += "          sumKwh += ((p + (data[i-1].p||0)) / 2 * dt) / 1000;";
+    html += "          totalH += dt;";
+    html += "          var vPrev = data[i-1].v || 0;";
+    html += "          var offCur = (vCur < 175), offPrev = (vPrev < 175);";
+    html += "          if(offCur && offPrev) outageH += dt;";
+    html += "          else if(offCur || offPrev) outageH += dt * 0.5;";
+    html += "          if(!offPrev && offCur) outageCnt++;";
+    html += "          var stepKwh = ((p + (data[i-1].p||0)) / 2 * dt) / 1000;";
+    html += "          sumKwh += stepKwh;";
+    html += "          if(ptHour >= 0){ if(isNightHour(ptHour)) nightKwh += stepKwh; else dayKwh += stepKwh; }";
     html += "        }";
     html += "      }";
     html += "    }";
@@ -610,12 +743,13 @@ void handleEnergyPage() {
     html += "    powerChart.resetZoom();";
     html += "    powerChart.update('none');";
     html += "    var avgW = data.length > 0 ? (sumW / data.length) : 0;";
-    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW, dayKwh, nightKwh, outageH, totalH, outageCnt);";
     html += "    if(status) status.textContent='✅ '+data.length+' записів (RAM)';";
     html += "  }catch(e){";
     html += "    if(status) status.textContent='❌ Помилка RAM';";
     html += "  }";
     html += "}";
+    flushChunk();
 
     html += "function loadDeviceEnergyData(startDate, endDate){";
     html += "  var status=document.getElementById('loadStatus');";
@@ -631,7 +765,7 @@ void handleEnergyPage() {
     html += "    var startTs=new Date(startDate+'T00:00:00').getTime()/1000;";
     html += "    var endTs=new Date(endDate+'T23:59:59').getTime()/1000;";
     html += "    var prevEnergy=null, firstEnergy=null, lastEnergy=null;";
-    html += "    var sumW=0, maxW=0;";
+    html += "    var sumW=0, maxW=0, dayKwh=0, nightKwh=0;";
     html += "    lines.forEach(function(l){";
     html += "      var parts=l.split(',');";
     html += "      if(parts.length<2) return;";
@@ -647,7 +781,9 @@ void handleEnergyPage() {
     html += "      var minutes=('0'+d.getMinutes()).slice(-2);";
     html += "      labels.push(day+'.'+month+' '+hours+':'+minutes);";
     html += "      fullDates.push(day+'.'+month+'.'+d.getFullYear()+' '+hours+':'+minutes);";
-    html += "      var pEst=(prevEnergy!==null && kwh>=prevEnergy) ? (kwh-prevEnergy)*1000 : 0;";
+    html += "      var deltaKwh=(prevEnergy!==null && kwh>=prevEnergy) ? (kwh-prevEnergy) : 0;";
+    html += "      var pEst=deltaKwh*1000;";
+    html += "      if(deltaKwh>0){ var prevH=(d.getHours()+23)%24; if(isNightHour(prevH)) nightKwh+=deltaKwh; else dayKwh+=deltaKwh; }";
     html += "      prevEnergy=kwh;";
     html += "      power.push(pEst);";
     html += "      voltage.push(230.0);";
@@ -656,7 +792,7 @@ void handleEnergyPage() {
     html += "    });";
     html += "    if(labels.length===0){";
     html += "      if(status) status.textContent='⚠️ Немає даних за період';";
-    html += "      updatePeriodSummary(null, null, null);";
+    html += "      updatePeriodSummary(null, null, null, null, null);";
     html += "      if(btn) btn.disabled=false; return;";
     html += "    }";
     html += "    window.chartFullDates=fullDates;";
@@ -667,7 +803,7 @@ void handleEnergyPage() {
     html += "    powerChart.update('none');";
     html += "    var sumKwh=(firstEnergy!==null && lastEnergy!==null && lastEnergy>=firstEnergy) ? (lastEnergy-firstEnergy) : 0;";
     html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
-    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW, dayKwh, nightKwh);";
     html += "    if(status) status.textContent='✅ '+labels.length+' записів (Пристрій)';";
     html += "    if(btn) btn.disabled=false;";
     html += "  })";
@@ -721,8 +857,9 @@ void handleEnergyPage() {
     html += "    });";
     html += "    rows=Object.keys(dedupMap).sort().map(function(k){ return dedupMap[k]; });";
     html += "    var labels=[], fullDates=[], power=[], voltage=[];";
-    html += "    var sumKwh=0, sumW=0, maxW=0;";
-    html += "    var prevD=null, prevP=0;";
+    html += "    var sumKwh=0, dayKwh=0, nightKwh=0, sumW=0, maxW=0;";
+    html += "    var outageH=0, totalH=0, outageCnt=0;";
+    html += "    var prevD=null, prevP=0, prevV=null;";
     html += "    rows.forEach(function(r){";
     html += "      if(!r[0]) return;";
     html += "      var dt=String(r[0]);";
@@ -746,13 +883,22 @@ void handleEnergyPage() {
     html += "      if(p>maxW) maxW=p;";
     html += "      sumW+=p;";
     html += "      if(!isNaN(d.getTime())){";
+    html += "        if(prevD===null && v<175) outageCnt=1;";
     html += "        if(prevD!==null){";
     html += "          var dtHours=Math.abs(d.getTime()-prevD.getTime())/3600000;";
     html += "          if(dtHours>0 && dtHours<24){";
-    html += "            sumKwh+=((p+prevP)/2*dtHours)/1000;";
+    html += "            totalH+=dtHours;";
+    html += "            var offCur=(v<175), offPrev=(prevV<175);";
+    html += "            if(offCur && offPrev) outageH+=dtHours;";
+    html += "            else if(offCur || offPrev) outageH+=dtHours*0.5;";
+    html += "            if(!offPrev && offCur) outageCnt++;";
+    html += "            var stepKwh=((p+prevP)/2*dtHours)/1000;";
+    html += "            sumKwh+=stepKwh;";
+    html += "            var midDate=new Date((d.getTime()+prevD.getTime())/2);";
+    html += "            if(isNightHour(midDate.getHours())) nightKwh+=stepKwh; else dayKwh+=stepKwh;";
     html += "          }";
     html += "        }";
-    html += "        prevD=d; prevP=p;";
+    html += "        prevD=d; prevP=p; prevV=v;";
     html += "      }";
     html += "    });";
     html += "    window.chartFullDates=fullDates;";
@@ -762,7 +908,7 @@ void handleEnergyPage() {
     html += "    powerChart.resetZoom();";
     html += "    powerChart.update('none');";
     html += "    var avgW=power.length>0 ? (sumW/power.length) : 0;";
-    html += "    updatePeriodSummary(sumKwh, avgW, maxW);";
+    html += "    updatePeriodSummary(sumKwh, avgW, maxW, dayKwh, nightKwh, outageH, totalH, outageCnt);";
     html += "    if(status) status.textContent='✅ '+rows.length+' записів (Sheets)';";
     html += "  })";
     html += "  .catch(function(err){";
@@ -782,6 +928,18 @@ void handleEnergyPage() {
     html += "async function upd(){";
     html += "  try{";
     html += "    var r=await fetch('/energy/api');var d=await r.json();";
+    html += "    var dk=(d.dayKwh!==undefined)?d.dayKwh:0;";
+    html += "    var nk=(d.nightKwh!==undefined)?d.nightKwh:0;";
+    html += "    var tk=dk+nk;";
+    html += "    document.getElementById('dayKwh').innerText=dk.toFixed(3);";
+    html += "    document.getElementById('nightKwh').innerText=nk.toFixed(3);";
+    html += "    document.getElementById('dayPct').innerText=tk>0?('kWh ('+Math.round(dk*100/tk)+'%)'):'kWh';";
+    html += "    document.getElementById('nightPct').innerText=tk>0?('kWh ('+Math.round(nk*100/tk)+'%)'):'kWh';";
+    html += "    var tb=document.getElementById('trfBadge');";
+    html += "    if(tb){";
+    html += "      if(d.isNight){ tb.style.background='#4f46e5'; tb.innerText='🌙 ЗАРАЗ НІЧНИЙ ТАРИФ (23:00–07:00)'; }";
+    html += "      else { tb.style.background='#d97706'; tb.innerText='☀️ ЗАРАЗ ДЕННИЙ ТАРИФ (07:00–23:00)'; }";
+    html += "    }";
     html += "    if(!d.err){";
     html += "      document.getElementById('v').innerText=d.v.toFixed(1);";
     html += "      document.getElementById('c').innerText=d.c.toFixed(2);";
@@ -807,7 +965,7 @@ void handleEnergyPage() {
     html += "  var r=await fetch('/energy/reset',{method:'POST'});";
     html += "  if(r.ok){";
     html += "    document.getElementById('rstBtn').innerText='Скинуто!';";
-    html += "    setTimeout(function(){document.getElementById('rstBtn').innerText='🔄 Скинути лічильник kWh';},2000);";
+    html += "    setTimeout(function(){document.getElementById('rstBtn').innerText='🔄 Скинути лічильник kWh (і День/Ніч)';},2000);";
     html += "  }";
     html += "}";
 
@@ -823,5 +981,6 @@ void handleEnergyPage() {
     html += getNavFooter();
     html += getUkraineMarquee();
     html += getHtmlFooter();
-    server.send(200, "text/html", html);
+    flushChunk();
+    server.sendContent("");
 }

@@ -15,9 +15,19 @@
 // ============================================================================
 
 LoggerStats loggerStats;
-DataRecord ramBuffer[HISTORY_BUFFER_SIZE];  // RAM буфер для історії
+DataRecord* ramBuffer = nullptr;        // Буфер історії (виділяється в PSRAM або fallback RAM)
 uint16_t ramBufferIndex = 0;
+uint16_t ramBufferCapacity = 0;
+bool ramBufferInPsram = false;
 uint32_t globalSequence = 0;  // Глобальний лічильник для унікальності записів
+
+uint16_t getRamBufferCapacity() {
+  return ramBufferCapacity;
+}
+
+bool isRamBufferInPsram() {
+  return ramBufferInPsram;
+}
 
 // Тимчасовий буфер для агрегації (5 записів по 1 хвилині = 5 хвилин)
 DataRecord aggregationBuffer[5];
@@ -131,8 +141,36 @@ bool initDataLogger() {
   loggerStats.lastLogTimeRAM = 0;
   loggerStats.lastLogTimeSPIFFS = 0;
 
-  // Очищуємо буфери
-  memset(ramBuffer, 0, sizeof(ramBuffer));
+  // Виділяємо буфер історії: пріоритетно у PSRAM (30 днів), fallback — внутрішня RAM (6 годин)
+  if (!ramBuffer) {
+    if (psramFound()) {
+      ramBuffer = (DataRecord*)ps_calloc(HISTORY_BUFFER_SIZE, sizeof(DataRecord));
+      if (ramBuffer) {
+        ramBufferCapacity = HISTORY_BUFFER_SIZE;
+        ramBufferInPsram = true;
+        Serial.printf("✅ [PSRAM] Буфер історії виділено у PSRAM: %u записів (%.1f днів, %.2f MB)\n",
+                      ramBufferCapacity,
+                      ramBufferCapacity / 1440.0f,
+                      (ramBufferCapacity * sizeof(DataRecord)) / (1024.0f * 1024.0f));
+      }
+    }
+    if (!ramBuffer) {
+      ramBuffer = (DataRecord*)calloc(HISTORY_BUFFER_FALLBACK_SIZE, sizeof(DataRecord));
+      if (ramBuffer) {
+        ramBufferCapacity = HISTORY_BUFFER_FALLBACK_SIZE;
+        ramBufferInPsram = false;
+        Serial.printf("⚠️ [RAM] PSRAM недоступна — fallback буфер у внутрішній RAM: %u записів (%.1f год)\n",
+                      ramBufferCapacity, ramBufferCapacity / 60.0f);
+      } else {
+        ramBufferCapacity = 0;
+        ramBufferInPsram = false;
+        Serial.println("❌ Помилка виділення буфера історії!");
+      }
+    }
+  } else if (ramBufferCapacity > 0) {
+    memset(ramBuffer, 0, (size_t)ramBufferCapacity * sizeof(DataRecord));
+  }
+  ramBufferIndex = 0;
   memset(aggregationBuffer, 0, sizeof(aggregationBuffer));
 
   Serial.println("✅ Систему логування ініціалізовано успішно!\n");
@@ -172,14 +210,15 @@ void logDataToRAM() {
   record.energy  = 0.0f;
 #endif
 
-  // Зберігаємо у RAM буфер
-  if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) == pdTRUE) {
-    ramBuffer[ramBufferIndex] = record;
-    ramBufferIndex = (ramBufferIndex + 1) % HISTORY_BUFFER_SIZE;
-    xSemaphoreGive(getRamBufferMutex());
+  // Зберігаємо у RAM/PSRAM буфер
+  if (ramBuffer && ramBufferCapacity > 0) {
+    if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) == pdTRUE) {
+      ramBuffer[ramBufferIndex] = record;
+      ramBufferIndex = (ramBufferIndex + 1) % ramBufferCapacity;
+      xSemaphoreGive(getRamBufferMutex());
+    }
+    loggerStats.totalRecordsRAM++;
   }
-
-  loggerStats.totalRecordsRAM++;
   loggerStats.lastLogTimeRAM = millis();
 
   // Додаємо у буфер агрегації для SPIFFS
@@ -300,17 +339,17 @@ void logDataToSPIFFS() {
 // ============================================================================
 
 bool readRAMData(DataRecord* buffer, uint16_t* count) {
-  if (!buffer || !count) return false;
+  if (!buffer || !count || !ramBuffer || ramBufferCapacity == 0) return false;
 
   if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
     return false;
   }
 
-  uint16_t total = (loggerStats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : (uint16_t)loggerStats.totalRecordsRAM;
-  uint16_t startIdx = (loggerStats.totalRecordsRAM >= HISTORY_BUFFER_SIZE) ? ramBufferIndex : 0;
+  uint16_t total = (loggerStats.totalRecordsRAM > ramBufferCapacity) ? ramBufferCapacity : (uint16_t)loggerStats.totalRecordsRAM;
+  uint16_t startIdx = (loggerStats.totalRecordsRAM >= ramBufferCapacity) ? ramBufferIndex : 0;
 
   for (uint16_t i = 0; i < total; i++) {
-    uint16_t idx = (startIdx + i) % HISTORY_BUFFER_SIZE;
+    uint16_t idx = (startIdx + i) % ramBufferCapacity;
     buffer[i] = ramBuffer[idx];
   }
 
@@ -319,25 +358,25 @@ bool readRAMData(DataRecord* buffer, uint16_t* count) {
   return true;
 }
 
-// Читання частини даних з RAM у хронологічному порядку (chunked read)
+// Читання частини даних з RAM/PSRAM у хронологічному порядку (chunked read)
 bool readRAMDataChunk(DataRecord* buffer, uint16_t offset, uint16_t count) {
-  if (!buffer) return false;
+  if (!buffer || !ramBuffer || ramBufferCapacity == 0) return false;
 
   if (xSemaphoreTake(getRamBufferMutex(), pdMS_TO_TICKS(100)) != pdTRUE) {
     return false;
   }
 
-  uint16_t total = (loggerStats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : (uint16_t)loggerStats.totalRecordsRAM;
+  uint16_t total = (loggerStats.totalRecordsRAM > ramBufferCapacity) ? ramBufferCapacity : (uint16_t)loggerStats.totalRecordsRAM;
   if (offset >= total) {
     xSemaphoreGive(getRamBufferMutex());
     return false;
   }
 
   uint16_t recordsToCopy = ((offset + count) > total) ? (total - offset) : count;
-  uint16_t startIdx = (loggerStats.totalRecordsRAM >= HISTORY_BUFFER_SIZE) ? ramBufferIndex : 0;
+  uint16_t startIdx = (loggerStats.totalRecordsRAM >= ramBufferCapacity) ? ramBufferIndex : 0;
 
   for (uint16_t i = 0; i < recordsToCopy; i++) {
-    uint16_t idx = (startIdx + offset + i) % HISTORY_BUFFER_SIZE;
+    uint16_t idx = (startIdx + offset + i) % ramBufferCapacity;
     buffer[i] = ramBuffer[idx];
   }
 

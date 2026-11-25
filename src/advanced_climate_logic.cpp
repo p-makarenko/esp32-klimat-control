@@ -910,6 +910,182 @@ static uint8_t computeSmoothFanPercent(uint8_t targetPercent, bool urgent, uint8
 }
 
 // ============================================================================
+// РОЗУМНЕ КЕРУВАННЯ НАСОСОМ (ВМИКАЄТЬСЯ ЛИШЕ КОЛИ НЕ ВИСТАЧАЄ ТЕПЛОНОСІЯ)
+// ============================================================================
+
+static const int     SMART_PUMP_SAMPLE_SEC   = 10;   // Крок запису в кільцевий буфер (10 сек)
+static const int     SMART_PUMP_BUF_SIZE     = 96;   // 96 * 10с = 960 сек (16 хв історії)
+static float         s_spTempBuf[SMART_PUMP_BUF_SIZE];
+static int           s_spBufHead             = 0;
+static int           s_spBufCount            = 0;
+static unsigned long s_spLastSampleMs        = 0;
+static float         s_spSampleAccum         = 0.0f;
+static int           s_spSampleCnt           = 0;
+
+static bool          s_spPumpOn              = false;
+static unsigned long s_spPumpChangeMs        = 0;
+static unsigned long s_spHeatEvalStartMs     = 0;
+static float         s_spHeatEvalStartTemp   = 0.0f;
+static float         s_spLastMeasuredRise    = 0.0f;
+static bool          s_spRiseValid           = false;
+
+static void recordSmartPumpTempSample(float tempRoom, unsigned long now) {
+    s_spSampleAccum += tempRoom;
+    s_spSampleCnt++;
+
+    if (s_spLastSampleMs == 0) {
+        s_spLastSampleMs = now;
+        s_spTempBuf[0] = tempRoom;
+        s_spBufHead = 1;
+        s_spBufCount = 1;
+        s_spSampleAccum = 0.0f;
+        s_spSampleCnt = 0;
+        return;
+    }
+
+    if (now - s_spLastSampleMs >= (unsigned long)SMART_PUMP_SAMPLE_SEC * 1000UL) {
+        float avgTemp = (s_spSampleCnt > 0) ? (s_spSampleAccum / (float)s_spSampleCnt) : tempRoom;
+        s_spTempBuf[s_spBufHead] = avgTemp;
+        s_spBufHead = (s_spBufHead + 1) % SMART_PUMP_BUF_SIZE;
+        if (s_spBufCount < SMART_PUMP_BUF_SIZE) s_spBufCount++;
+        s_spLastSampleMs = now;
+        s_spSampleAccum = 0.0f;
+        s_spSampleCnt = 0;
+    }
+}
+
+static bool getSmartPumpTempAgo(uint16_t windowSec, float &outTemp) {
+    int stepsBack = (int)((windowSec + SMART_PUMP_SAMPLE_SEC / 2) / SMART_PUMP_SAMPLE_SEC);
+    if (stepsBack < 1) stepsBack = 1;
+    if (stepsBack >= SMART_PUMP_BUF_SIZE) stepsBack = SMART_PUMP_BUF_SIZE - 1;
+    if (s_spBufCount <= stepsBack) return false;
+
+    int idx = (s_spBufHead - 1 - stepsBack + SMART_PUMP_BUF_SIZE * 2) % SMART_PUMP_BUF_SIZE;
+    outTemp = s_spTempBuf[idx];
+    return true;
+}
+
+static uint8_t computeSmartPumpPercent(float tempRoom, float tempCarrier, bool carrierValid, uint8_t smoothFan, unsigned long now) {
+    recordSmartPumpTempSample(tempRoom, now);
+
+    uint8_t workPct = constrain(config.smartPump.workPercent, (uint8_t)10, (uint8_t)100);
+
+    // Повне блокування насоса
+    if (config.pumpDisabled) {
+        s_spPumpOn = false;
+        s_spHeatEvalStartMs = 0;
+        return 0;
+    }
+
+    // Якщо розумний режим вимкнено — простий режим по порогу теплоносія з гістерезисом 2°C
+    if (!config.smartPump.enabled) {
+        s_spRiseValid = false;
+        if (!carrierValid) {
+            s_spPumpOn = false;
+            return 0;
+        }
+        float lowT = constrain(config.smartPump.carrierLowTemp, 15.0f, 60.0f);
+        if (!s_spPumpOn && tempCarrier < lowT) {
+            s_spPumpOn = true;
+            s_spPumpChangeMs = now;
+        } else if (s_spPumpOn && tempCarrier >= (lowT + 2.0f)) {
+            s_spPumpOn = false;
+            s_spPumpChangeMs = now;
+        }
+        return s_spPumpOn ? workPct : 0;
+    }
+
+    // Розумний режим: оцінюємо чи потрібен активний нагрів кімнати
+    bool heatingDemand = (smoothFan > 0) && (tempRoom < config.tempMax);
+
+    if (!heatingDemand) {
+        // Кімната прогріта або вентилятор стоїть — насос вимикаємо і скидаємо таймер оцінки
+        if (s_spPumpOn) {
+            s_spPumpOn = false;
+            s_spPumpChangeMs = now;
+            Serial.printf("💧 Розумний насос: ВИМК (ціль досягнута: T_кімн=%.1f°C, Вент=%u%%)\n", tempRoom, smoothFan);
+        }
+        s_spHeatEvalStartMs = 0;
+        s_spRiseValid = false;
+        return 0;
+    }
+
+    unsigned long minRunMs = (unsigned long)config.smartPump.minRunSec * 1000UL;
+    unsigned long minOffMs = (unsigned long)config.smartPump.minOffSec * 1000UL;
+    uint16_t evalSec = constrain(config.smartPump.evalWindowSec, (uint16_t)30, (uint16_t)900);
+    unsigned long evalWindowMs = (unsigned long)evalSec * 1000UL;
+    float minRise = constrain(config.smartPump.minTempRise, 0.02f, 2.0f);
+
+    if (s_spPumpOn) {
+        // Насос зараз працює — перевіряємо, чи можна вимкнути після minRunSec
+        unsigned long runElapsed = now - s_spPumpChangeMs;
+        if (runElapsed >= minRunMs &&
+            carrierValid &&
+            config.smartPump.carrierStopTemp > 1.0f &&
+            tempCarrier >= config.smartPump.carrierStopTemp) {
+            s_spPumpOn = false;
+            s_spPumpChangeMs = now;
+            // Після вимкнення насоса починаємо нове вікно спостереження без насоса
+            s_spHeatEvalStartMs = now;
+            s_spHeatEvalStartTemp = tempRoom;
+            s_spRiseValid = false;
+            Serial.printf("💧 Розумний насос: ВИМК (теплоносій %.1f°C >= %.1f°C після %luс)\n",
+                          tempCarrier, config.smartPump.carrierStopTemp, runElapsed / 1000UL);
+            return 0;
+        }
+        return workPct;
+    }
+
+    // Насос зараз вимкнений, але є попит на нагрів (heatingDemand == true)
+    if (s_spHeatEvalStartMs == 0) {
+        s_spHeatEvalStartMs = now;
+        s_spHeatEvalStartTemp = tempRoom;
+        s_spRiseValid = false;
+    }
+
+    // Антициклювання: мінімальна пауза після попереднього вимкнення насоса
+    if (s_spPumpChangeMs > 0 && (now - s_spPumpChangeMs) < minOffMs) {
+        return 0;
+    }
+
+    // Аварійне раннє підхоплення: якщо попри роботу вентилятора кімната помітно падає (-0.25°C від старту оцінки)
+    float dropFromStart = s_spHeatEvalStartTemp - tempRoom;
+    if (dropFromStart >= 0.25f && (now - s_spHeatEvalStartMs) >= 30000UL) {
+        s_spPumpOn = true;
+        s_spPumpChangeMs = now;
+        s_spLastMeasuredRise = -dropFromStart;
+        s_spRiseValid = true;
+        Serial.printf("💧 Розумний насос: ВКЛ (темп. падає -%.2f°C, T_нос=%.1f°C)\n",
+                      dropFromStart, carrierValid ? tempCarrier : -99.0f);
+        return workPct;
+    }
+
+    // Чекаємо повне вікно оцінки без насоса, щоб дати радіатору шанс нагріти кімнату самому
+    if ((now - s_spHeatEvalStartMs) < evalWindowMs) {
+        return 0;
+    }
+
+    // Обчислюємо приріст температури кімнати за evalWindowSec
+    float tempAgo = s_spHeatEvalStartTemp;
+    getSmartPumpTempAgo(evalSec, tempAgo);
+    float rise = tempRoom - tempAgo;
+    s_spLastMeasuredRise = rise;
+    s_spRiseValid = true;
+
+    if (rise < minRise) {
+        // Швидкості нагріву не вистачає — вмикаємо насос!
+        s_spPumpOn = true;
+        s_spPumpChangeMs = now;
+        Serial.printf("💧 Розумний насос: ВКЛ (приріст %+.2f°C < %.2f°C за %us, T_нос=%.1f°C)\n",
+                      rise, minRise, evalSec, carrierValid ? tempCarrier : -99.0f);
+        return workPct;
+    }
+
+    // Теплоносія вистачає — насос не вмикаємо
+    return 0;
+}
+
+// ============================================================================
 // АДАПТИВНЕ КЕРУВАННЯ ОПАЛЕННЯМ (ВИПРАВЛЕНА ЛОГІКА З ПЛАВНИМ ВЕНТИЛЯТОРОМ)
 // ============================================================================
 
@@ -983,15 +1159,6 @@ void smartHeatingControl() {
         }
     }
     
-    // Насос 0% у штатному режимі
-    if (!heatingState.emergencyMode) {
-        if (carrierValid && tempCarrier < 30.0f) {
-            setPumpPercent(33);  // Циркуляція 33% при охолодженні теплоносія нижче 30°C
-        } else {
-            setPumpPercent(0);   // Вимкнено, коли теплоносій прогрітий (>= 30°C) або датчик несправний
-        }
-    }
-
     // ------------------------------------------------------------------------
     // ✅ ПЛАВНА ЛОГІКА ВЕНТИЛЯТОРА (З ГІСТЕРЕЗИСОМ ТА АНТИЦИКЛЮВАННЯМ):
     // ------------------------------------------------------------------------
@@ -1032,9 +1199,25 @@ void smartHeatingControl() {
     uint8_t smoothFan = computeSmoothFanPercent((uint8_t)targetFanPower, urgentStop, minFan);
     setFanPercent(smoothFan);
 
+    // ------------------------------------------------------------------------
+    // 💧 РОЗУМНЕ КЕРУВАННЯ НАСОСОМ (У ШТАТНОМУ РЕЖИМІ):
+    // ------------------------------------------------------------------------
+    uint8_t smartPumpPct = 0;
+    if (!heatingState.emergencyMode) {
+        smartPumpPct = computeSmartPumpPercent(tempRoom, tempCarrier, carrierValid, smoothFan, now);
+        setPumpPercent(smartPumpPct);
+    }
+
     if (config.autoStatusEnabled && now - lastPowerUpdate > POWER_UPDATE_INTERVAL) {
-        Serial.printf("🏠 [%s] Штатний режим: T_кімн=%.1f°C, Вентилятор=%d%% (ціль %d%%)\n",
-                     getFormattedTime().c_str(), tempRoom, smoothFan, targetFanPower);
+        if (config.smartPump.enabled && s_spRiseValid) {
+            Serial.printf("🏠 [%s] Штатний: T_кімн=%.1f°C (Δ%+.2f°C/%us), T_нос=%.1f°C, Вент=%d%% (ціль %d%%), Насос=%d%%\n",
+                         getFormattedTime().c_str(), tempRoom, s_spLastMeasuredRise, config.smartPump.evalWindowSec,
+                         carrierValid ? tempCarrier : -99.0f, smoothFan, targetFanPower, smartPumpPct);
+        } else {
+            Serial.printf("🏠 [%s] Штатний: T_кімн=%.1f°C, T_нос=%.1f°C, Вент=%d%% (ціль %d%%), Насос=%d%%\n",
+                         getFormattedTime().c_str(), tempRoom,
+                         carrierValid ? tempCarrier : -99.0f, smoothFan, targetFanPower, smartPumpPct);
+        }
         lastPowerUpdate = now;
     }
 }
@@ -1241,6 +1424,10 @@ void advancedUpdateExtractorTimer() {
         ecoExtCycleStart = 0;
         // Перезапускаємо штатний стан витяжки після виходу з ЕКО
         config.extractorTimer.cycleStart = 0;
+    }
+
+    if (heatingState.manualMode) {
+        return;
     }
 
     if (!config.extractorTimer.enabled) {

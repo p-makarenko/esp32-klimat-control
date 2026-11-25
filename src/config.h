@@ -69,10 +69,14 @@
 #define PLANT_FAN_PIN              11    // GPIO вентилятора рослин (PWM)
 #define PLANT_FAN_CHANNEL          3     // PWM канал (0-2 зайняті)
 
-// Таймер
-#define PLANT_FAN_TIMER_DEFAULT_ON   20  // Час роботи за замовчуванням (хв)
-#define PLANT_FAN_TIMER_DEFAULT_OFF  40  // Час паузи за замовчуванням (хв)
-#define PLANT_FAN_TIMER_DEFAULT_POWER 50 // Потужність за замовчуванням (%)
+// Таймер (заводські параметри)
+#define PLANT_FAN_TIMER_DEFAULT_ENABLED true // Увімкнено за замовчуванням
+#define PLANT_FAN_TIMER_DEFAULT_ON      0    // Час роботи за замовчуванням (хв)
+#define PLANT_FAN_TIMER_DEFAULT_ON_SEC  30   // Час роботи за замовчуванням (сек)
+#define PLANT_FAN_TIMER_DEFAULT_OFF     3    // Час паузи за замовчуванням (хв)
+#define PLANT_FAN_TIMER_DEFAULT_OFF_SEC 0    // Час паузи за замовчуванням (сек)
+#define PLANT_FAN_TIMER_DEFAULT_POWER   70   // Потужність за замовчуванням (%)
+#define PLANT_FAN_TIMER_DEFAULT_MIN_START 60 // Мінімальний старт (%)
 
 // Режим природнього вітру
 #define BREEZE_BASE_MIN      20   // Мінімальна базова швидкість (%)
@@ -103,7 +107,9 @@
 #define STATUS_PRINT_INTERVAL  30000   // Період автовиведення статусу (мс)
 #define TEMP_HISTORY_SIZE      300     // Історія температури (5 хв при 1с)
 #define HEATING_CHECK_INTERVAL 300000  // Перевірка ефективності (5 хв)
-#define HISTORY_BUFFER_SIZE    360     // 6 годин (360 записів) в RAM для гарантованої стабільності SSL і WebServer
+#define HISTORY_BUFFER_SIZE          43200   // 30 днів (43200 записів по 1 хв, ~2.07 MB) у 8 MB PSRAM
+#define HISTORY_BUFFER_FALLBACK_SIZE 360     // Fallback 6 годин у внутрішній RAM, якщо PSRAM недоступна
+#define LEGACY_HISTORY_SIZE          60      // Компактний буфер (1 година) для legacy data_storage.cpp
 #define NTP_UPDATE_INTERVAL    3600000 // Оновлення часу NTP кожну годину
 #define EXTRACTOR_TIMER_CYCLE  3600000 // Цикл таймера витяжки (1 година)
 #define TREND_WINDOW_SIZE      300     // Вікно аналізу тренду температури

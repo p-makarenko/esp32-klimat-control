@@ -30,6 +30,8 @@ void plantFanSave();
 void plantFanLoad();
 
 void          plantFanResetBreeze();   // Скинути фазу вітру (при зміні конфігу)
+void          plantFanSetManual(uint8_t percent); // Ручне керування (0..100%, автоповернення через 15 хв)
+void          plantFanClearManual();              // Повернути в штатний авто-режим
 uint8_t       plantFanGetCurrentPower();
 BreezePhase   plantFanGetBreezePhase();
 bool          plantFanGetTimerState();

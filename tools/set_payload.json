@@ -1,0 +1,1 @@
+{"apname":"Smart-539874","apchn":"1","apkey":"","apip":"192.168.4.1","apmask":"255.255.255.0","staname":"KlimatLight","stakey":"12345678","stadhcp":"1","staip":"0.0.0.0","stamask":"0.0.0.0","stagw":"0.0.0.0","type":"1","server":"192.168.10.1","port":"5000","timeout":"5000","baud":"115200","Nuser":"admin","Nkey":"admin","mode":"1","active":3}

@@ -21,6 +21,10 @@
 // Forward declarations
 extern String getTimeString();
 extern String getUkraineMarquee();
+extern const char* resetReasonToStr(int r);
+extern int getDiagLastResetReason();
+extern uint32_t getDiagBootCount();
+extern uint32_t getDiagCrashCount();
 
 // ============================================================================
 // ГОЛОВНА СТОРІНКА
@@ -295,6 +299,8 @@ void handleRoot() {
     html += "      if (fin(data.humidity)) document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';";
     html += "      else document.getElementById('humidity').textContent = '🚨 ПОМИЛКА';";
     html += "      if (fin(data.pressure)) document.getElementById('pressure').textContent = data.pressure.toFixed(1) + ' hPa';";
+    html += "      else document.getElementById('pressure').textContent = '🚨 ПОМИЛКА';";
+    html += "      if (data.humidifierActive !== undefined) { const el = document.getElementById('humidifierStatus'); if (el) el.textContent = data.humidifierActive ? 'ВКЛ' : 'ВИМК'; }";
     html += "      if (fin(data.co2Level)) {";
     html += "        document.getElementById('co2Level').textContent = data.co2Level.toFixed(0) + ' ppm';";
     html += "        document.getElementById('co2Status').textContent = '✓ OK';";
@@ -438,14 +444,23 @@ void handleStatus() {
 
     JsonDocument doc;
 
-    doc["tempRoom"] = sensorData.roomValid ? sensorData.tempRoom : (float)NAN;
-    doc["tempCarrier"] = sensorData.carrierValid ? sensorData.tempCarrier : (float)NAN;
-    doc["tempBME"] = sensorData.bmeValid ? sensorData.tempBME : (float)NAN;
-    doc["humidity"] = sensorData.bmeValid ? sensorData.humidity : (float)NAN;
-    doc["pressure"] = sensorData.bmeValid ? sensorData.pressure : (float)NAN;
-    doc["co2Level"] = sensorData.co2Valid ? sensorData.co2Level : (float)NAN;
-    doc["co2Temp"] = sensorData.co2Valid ? getSCD30Temperature() : (float)NAN;
-    doc["co2Humidity"] = sensorData.co2Valid ? getSCD30Humidity() : (float)NAN;
+    SensorData sdCopy;
+    if (xSemaphoreTake(getSensorMutex(), pdMS_TO_TICKS(50))) {
+        sdCopy = sensorData;
+        xSemaphoreGive(getSensorMutex());
+    } else {
+        sdCopy = sensorData;
+    }
+
+    doc["tempRoom"] = sdCopy.roomValid ? sdCopy.tempRoom : (float)NAN;
+    doc["tempCarrier"] = sdCopy.carrierValid ? sdCopy.tempCarrier : (float)NAN;
+    doc["tempBME"] = sdCopy.bmeValid ? sdCopy.tempBME : (float)NAN;
+    doc["humidity"] = sdCopy.bmeValid ? sdCopy.humidity : (float)NAN;
+    doc["pressure"] = sdCopy.bmeValid ? sdCopy.pressure : (float)NAN;
+    doc["co2Level"] = sdCopy.co2Valid ? sdCopy.co2Level : (float)NAN;
+    doc["co2Temp"] = sdCopy.co2Valid ? getSCD30Temperature() : (float)NAN;
+    doc["co2Humidity"] = sdCopy.co2Valid ? getSCD30Humidity() : (float)NAN;
+    doc["humidifierActive"] = humidifierState.active;
     if (xSemaphoreTake(getHeatingMutex(), pdMS_TO_TICKS(50))) {
         doc["pumpPower"] = round(heatingState.pumpPower * 100.0 / 255.0);
         doc["fanPower"] = round(heatingState.fanPower * 100.0 / 255.0);
@@ -481,10 +496,16 @@ void handleStatus() {
 
     doc["time"] = getTimeString();
     doc["memory"] = ESP.getFreeHeap() / 1024;
+    doc["minMemory"] = ESP.getMinFreeHeap() / 1024;
+    doc["maxBlock"] = ESP.getMaxAllocHeap() / 1024;
     doc["uptime"] = millis() / 1000;
+    doc["resetReason"] = resetReasonToStr(getDiagLastResetReason());
+    doc["bootCount"] = getDiagBootCount();
+    doc["crashCount"] = getDiagCrashCount();
 
     LoggerStats jsonStats = getLoggerStats();
     doc["historyCount"] = jsonStats.totalRecordsRAM;
+    doc["spiffsRecords"] = jsonStats.totalRecordsSPIFFS;
 
     String response;
     serializeJson(doc, response);

@@ -78,8 +78,13 @@ struct LoggerStats {
 // ============================================================================
 
 extern LoggerStats loggerStats;
-extern DataRecord ramBuffer[HISTORY_BUFFER_SIZE];  // RAM буфер для історії
+extern DataRecord* ramBuffer;          // Буфер історії (PSRAM або fallback RAM)
 extern uint16_t ramBufferIndex;        // Поточний індекс у буфері
+extern uint16_t ramBufferCapacity;     // Фактична ємність буфера (записів)
+extern bool ramBufferInPsram;          // true = буфер розміщено у PSRAM
+
+uint16_t getRamBufferCapacity();
+bool isRamBufferInPsram();
 
 // ============================================================================
 // ФУНКЦІЇ

@@ -7,6 +7,8 @@
 
 #include <WebServer.h>
 #include <WiFi.h>
+#include <esp_task_wdt.h>
+#include <memory>
 #include "web_common.h"
 #include "global_declarations.h"
 #include "data_logger.h"
@@ -32,17 +34,39 @@ void handleHistoryPage() {
     if (!checkAuth()) return;
     if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_AP && WiFi.getMode() != WIFI_AP_STA) return;
 
-    String html = getHtmlHead("📈 Історія даних", true); // true = includeChartJS
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "text/html; charset=utf-8", "");
+
+    String html;
+    html.reserve(4096);
+    auto flushChunk = [&]() {
+        if (html.length() > 0) {
+            esp_task_wdt_reset();
+            server.sendContent(html);
+            html = "";
+            yield();
+        }
+    };
+
+    html = getHtmlHead("📈 Історія даних", true); // true = includeChartJS
+    flushChunk();
 
     html += "<div class='container'>";
 
     // Навігація зверху
     html += getNavHeader("📈 ІСТОРІЯ ТЕМПЕРАТУРИ І ВОЛОГОСТІ");
+    flushChunk();
 
     // Статистика
     LoggerStats stats = getLoggerStats();
+    uint16_t bufCap = getRamBufferCapacity();
+    const char* memLabel = isRamBufferInPsram() ? "PSRAM" : "RAM";
+    uint16_t storedRam = (stats.totalRecordsRAM > bufCap) ? bufCap : (uint16_t)stats.totalRecordsRAM;
     html += "<div class='info' id='statsInfo' style='text-align: center; color: var(--m); margin-bottom: 20px; font-size: 0.9em;'>";
-    html += "Записів в RAM: " + String(stats.totalRecordsRAM) + " / " + String(HISTORY_BUFFER_SIZE);
+    html += "Записів в " + String(memLabel) + ": " + String(storedRam) + " / " + String(bufCap);
+    if (bufCap >= 1440) {
+        html += " (" + String(bufCap / 1440) + " дн.)";
+    }
     html += " | Записів в SPIFFS: " + String(stats.totalRecordsSPIFFS);
     html += " | Оновлення кожну хвилину";
     html += "</div>";
@@ -60,7 +84,7 @@ void handleHistoryPage() {
 
     html += "<div style='display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid #eee;'>";
     html += "<div><strong>📁 Джерело даних:</strong> ";
-    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 RAM (останній період)</label>";
+    html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='ram' checked onchange='switchDataSource()'> 📊 " + String(memLabel) + " (до " + String(bufCap >= 1440 ? (String(bufCap / 1440) + " дн.") : (String(bufCap / 60) + " год.")) + ")</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='spiffs' onchange='switchDataSource()'> 💾 Пристрій (архів)</label>";
     html += "<label style='margin-left: 8px;'><input type='radio' name='dataSource' value='sheets' onchange='switchDataSource()'> ☁️ Google Sheets</label>";
     html += "</div>";
@@ -136,6 +160,7 @@ void handleHistoryPage() {
     html += "</div>";
 
     html += "</div>"; // container
+    flushChunk();
 
     // JavaScript для графіків
     html += "<script>";
@@ -253,11 +278,11 @@ void handleHistoryPage() {
     html += "} else if (period === 'year') {";
     html += "const d = new Date(Date.now() - 365*24*60*60*1000);";
     html += "start = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');";
-    html += "} else if (period === 'custom') {";
-    html += "document.getElementById('dateSelector').style.display = 'block';";
     html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
     html += "document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked = true;";
     html += "}";
+    html += "} else if (period === 'custom') {";
+    html += "document.getElementById('dateSelector').style.display = 'block';";
     html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
     html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
     html += "loadDataForCurrentSelection();";
@@ -266,9 +291,6 @@ void handleHistoryPage() {
     html += "document.getElementById('startDate').value = start;";
     html += "document.getElementById('endDate').value = today;";
     html += "document.getElementById('dateSelector').style.display = 'block';";
-    html += "if (document.querySelector('input[name=\"dataSource\"]:checked').value === 'ram') {";
-    html += "document.querySelector('input[name=\"dataSource\"][value=\"sheets\"]').checked = true;";
-    html += "}";
     html += "loadDataForCurrentSelection();";
     html += "}";
 
@@ -276,16 +298,12 @@ void handleHistoryPage() {
     html += "function switchDataSource() {";
     html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "const dateSelector = document.getElementById('dateSelector');";
-    html += "if (source === 'ram') {";
-    html += "selectPeriod('day');";
-    html += "} else {";
     html += "const now = new Date();";
     html += "const today = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');";
     html += "if (!document.getElementById('startDate').value) document.getElementById('startDate').value = today;";
     html += "if (!document.getElementById('endDate').value) document.getElementById('endDate').value = today;";
-    html += "dateSelector.style.display = 'block';";
+    html += "dateSelector.style.display = (source === 'ram' && currentPeriod === 'day') ? 'none' : 'block';";
     html += "loadDataForCurrentSelection();";
-    html += "}";
     html += "}";
 
     // Завантаження за поточним вибором
@@ -293,23 +311,39 @@ void handleHistoryPage() {
     html += "const source = document.querySelector('input[name=\"dataSource\"]:checked').value;";
     html += "const startDate = document.getElementById('startDate').value;";
     html += "const endDate = document.getElementById('endDate').value;";
-    html += "if (source === 'ram') { loadRAMData(); }";
+    html += "if (source === 'ram') { loadRAMData(startDate, endDate); }";
     html += "else if (source === 'sheets') { loadSheetsData(startDate, endDate); }";
     html += "else { loadArchiveData(startDate, endDate); }";
     html += "}";
 
-    // Завантаження RAM
-    html += "function loadRAMData() {";
+    // Завантаження RAM/PSRAM (з фільтром періоду та fallback на SPIFFS за сьогодні, якщо буфер ще порожній після ребута)
+    html += "function loadRAMData(startDate, endDate) {";
     html += "const status = document.getElementById('loadStatus');";
     html += "if (status) status.textContent = '⏳ Оновлення...';";
-    html += "fetch('/history/data?source=ram&format=json')";
+    html += "let url = '/history/data?source=ram&format=json&maxPoints=1440';";
+    html += "if (currentPeriod === 'day') { url += '&hours=24'; }";
+    html += "else if (startDate && endDate) { url += '&start=' + encodeURIComponent(startDate) + '&end=' + encodeURIComponent(endDate); }";
+    html += "fetch(url)";
     html += ".then(response => response.json())";
     html += ".then(result => {";
     html += "let data = result.data || [];";
     html += "data.sort((a, b) => a.timestamp - b.timestamp);";
     html += "if (data.length === 0) {";
-    html += "if (status) status.textContent = '⚠️ Немає даних в RAM';";
-    html += "return;";
+    html += "  const now = new Date();";
+    html += "  const today = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');";
+    html += "  fetch('/history/data?source=spiffs&format=json&start=' + today + '&end=' + today)";
+    html += "    .then(r => r.json())";
+    html += "    .then(spRes => {";
+    html += "      let spData = spRes.data || [];";
+    html += "      spData.sort((a, b) => a.timestamp - b.timestamp);";
+    html += "      if (spData.length > 0) {";
+    html += "        renderChartRecords(spData, 'Пристрій • RAM набирається після ребута');";
+    html += "      } else {";
+    html += "        if (status) status.textContent = '⚠️ Немає даних в RAM (перший запис через 1 хв)';";
+    html += "      }";
+    html += "    })";
+    html += "    .catch(() => { if (status) status.textContent = '⚠️ Немає даних в RAM'; });";
+    html += "  return;";
     html += "}";
     html += "renderChartRecords(data, 'RAM');";
     html += "})";
@@ -318,6 +352,7 @@ void handleHistoryPage() {
     html += "if (status) status.textContent = '❌ Помилка RAM';";
     html += "});";
     html += "}";
+    flushChunk();
 
     // Завантаження архіву SPIFFS (з fallback на RAM якщо SPIFFS ще порожній)
     html += "function loadArchiveData(startDate, endDate) {";
@@ -461,12 +496,164 @@ void handleHistoryPage() {
     html += "selectPeriod('day');";
 
     html += "</script>";
+    flushChunk();
 
     html += getNavFooter();
     html += getUkraineMarquee();
     html += getHtmlFooter();
 
-    server.send(200, "text/html", html);
+    flushChunk();
+    server.sendContent("");
+}
+
+// ============================================================================
+// ПОТОКОВЕ ЧИТАННЯ SPIFFS БЕЗ ВЕЛИКИХ АЛОКАЦІЙ RAM / JSONDOCUMENT
+// ============================================================================
+
+static void streamSPIFFSFileRecords(File& file, bool asCsv,
+                                    unsigned long startTs, unsigned long endTs,
+                                    bool& firstJsonRecord, String& outBuf) {
+    char lineBuf[256];
+    size_t idx = 0;
+    uint16_t lines = 0;
+
+    auto processLine = [&]() {
+        if (idx == 0) return;
+        lineBuf[idx] = '\0';
+        idx = 0;
+
+        unsigned long ts = strtoul(lineBuf, NULL, 10);
+        if (ts == 0) return;
+        bool inRange = (startTs == 0) || (ts >= startTs && ts <= endTs);
+        if (!inRange) return;
+
+        if (asCsv) {
+            outBuf += lineBuf;
+            outBuf += "\n";
+        } else {
+            char* savePtr = nullptr;
+            char* f0 = strtok_r(lineBuf, ",", &savePtr);
+            char* f1 = strtok_r(nullptr, ",", &savePtr);
+            char* f2 = strtok_r(nullptr, ",", &savePtr);
+            char* f3 = strtok_r(nullptr, ",", &savePtr);
+            char* f4 = strtok_r(nullptr, ",", &savePtr);
+            char* f5 = strtok_r(nullptr, ",", &savePtr);
+            char* f6 = strtok_r(nullptr, ",", &savePtr);
+            char* f7 = strtok_r(nullptr, ",", &savePtr);
+            char* f8 = strtok_r(nullptr, ",", &savePtr);
+            char* f9 = strtok_r(nullptr, ",", &savePtr);
+            if (!f0 || !f1 || !f2 || !f3 || !f4) return;
+
+            if (!firstJsonRecord) outBuf += ",";
+            outBuf += "{\"timestamp\":";
+            outBuf += f0;
+            outBuf += ",\"tempCarrier\":";
+            outBuf += String(atof(f1), 1);
+            outBuf += ",\"tempRoom\":";
+            outBuf += String(atof(f2), 1);
+            outBuf += ",\"tempBME\":";
+            outBuf += String(atof(f3), 1);
+            outBuf += ",\"humidity\":";
+            outBuf += String(atof(f4), 1);
+            outBuf += ",\"co2Level\":";
+            outBuf += String(f5 ? atoi(f5) : 0);
+            outBuf += ",\"pumpPower\":";
+            outBuf += String(f6 ? atoi(f6) : 0);
+            outBuf += ",\"fanPower\":";
+            outBuf += String(f7 ? atoi(f7) : 0);
+            outBuf += ",\"extractorPower\":";
+            outBuf += String(f8 ? atoi(f8) : 0);
+            outBuf += ",\"mode\":";
+            outBuf += String(f9 ? atoi(f9) : 0);
+            outBuf += "}";
+            firstJsonRecord = false;
+        }
+
+        if (outBuf.length() >= 2048) {
+            esp_task_wdt_reset();
+            server.sendContent(outBuf);
+            outBuf = "";
+            yield();
+        }
+    };
+
+    while (file.available()) {
+        if (++lines % 32 == 0) {
+            esp_task_wdt_reset();
+            yield();
+        }
+        int c = file.read();
+        if (c < 0) break;
+        if (c == '\n') {
+            processLine();
+        } else if (c != '\r' && idx < sizeof(lineBuf) - 1) {
+            lineBuf[idx++] = (char)c;
+        }
+    }
+    if (idx > 0) {
+        processLine();
+    }
+}
+
+static void streamAllSPIFFSRecords(const String& startDate, const String& endDate, bool asCsv, const String& downloadFilename) {
+    unsigned long startTs = (startDate.length() > 0) ? stringToTimestamp(startDate.c_str(), false) : 0;
+    unsigned long endTs   = (endDate.length() > 0)   ? stringToTimestamp(endDate.c_str(), true)    : 0;
+
+    if (downloadFilename.length() > 0) {
+        server.sendHeader("Content-Disposition", "attachment; filename=" + downloadFilename);
+    }
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, asCsv ? "text/csv; charset=utf-8" : "application/json", "");
+
+    String outBuf;
+    outBuf.reserve(2304);
+    bool firstJson = true;
+
+    if (asCsv) {
+        outBuf = "timestamp,tempCarrier,tempRoom,tempBME,humidity,co2Level,pumpPower,fanPower,extractorPower,mode\n";
+    } else {
+        outBuf = "{\"data\":[";
+    }
+
+    // Збираємо список архівних файлів наперед, щоб не тримати відкритим root одночасно з читанням
+    String archives[8];
+    uint8_t archCount = 0;
+    File root = SPIFFS.open("/");
+    if (root) {
+        File entry = root.openNextFile();
+        while (entry) {
+            String fn = entry.name();
+            entry.close();
+            if (fn.indexOf("archive_") >= 0 && archCount < 8) {
+                archives[archCount++] = fn.startsWith("/") ? fn : ("/" + fn);
+            }
+            entry = root.openNextFile();
+        }
+        root.close();
+    }
+
+    for (uint8_t i = 0; i < archCount; i++) {
+        File af = SPIFFS.open(archives[i], "r");
+        if (af) {
+            streamSPIFFSFileRecords(af, asCsv, startTs, endTs, firstJson, outBuf);
+            af.close();
+        }
+    }
+
+    File curFile = SPIFFS.open(LOG_CURRENT_FILE, "r");
+    if (curFile) {
+        streamSPIFFSFileRecords(curFile, asCsv, startTs, endTs, firstJson, outBuf);
+        curFile.close();
+    }
+
+    if (!asCsv) {
+        outBuf += "]}";
+    }
+    if (outBuf.length() > 0) {
+        esp_task_wdt_reset();
+        server.sendContent(outBuf);
+    }
+    server.sendContent("");
 }
 
 // ============================================================================
@@ -487,7 +674,29 @@ void handleHistoryData() {
 
     if (source == "ram") {
         LoggerStats stats = getLoggerStats();
-        uint16_t totalRecords = (stats.totalRecordsRAM > HISTORY_BUFFER_SIZE) ? HISTORY_BUFFER_SIZE : stats.totalRecordsRAM;
+        uint16_t bufCap = getRamBufferCapacity();
+        uint16_t totalRecords = (stats.totalRecordsRAM > bufCap) ? bufCap : (uint16_t)stats.totalRecordsRAM;
+
+        unsigned long startTs = (startDate.length() > 0) ? stringToTimestamp(startDate.c_str(), false) : 0;
+        unsigned long endTs   = (endDate.length() > 0)   ? stringToTimestamp(endDate.c_str(), true)    : 0;
+        uint16_t hoursLimit   = server.hasArg("hours") ? (uint16_t)server.arg("hours").toInt() : 0;
+        uint16_t maxPoints    = server.hasArg("maxPoints") ? (uint16_t)server.arg("maxPoints").toInt() : 0;
+
+        // Якщо задано hours (напр. останні 24 год) — обмежуємо початковий offset у кільцевому буфері
+        uint16_t startOffset = 0;
+        if (hoursLimit > 0 && startTs == 0) {
+            uint32_t maxByHours = (uint32_t)hoursLimit * 60UL;
+            if (totalRecords > maxByHours) {
+                startOffset = totalRecords - (uint16_t)maxByHours;
+            }
+        }
+
+        const uint16_t CHUNK_SIZE = 32;
+        std::unique_ptr<DataRecord[]> chunk(new (std::nothrow) DataRecord[CHUNK_SIZE]);
+        if (!chunk) {
+            server.send(500, "application/json", "{\"error\":\"Недостатньо RAM\"}");
+            return;
+        }
 
         if (format == "csv") {
             server.sendHeader("Content-Disposition", "attachment; filename=klimat_data.csv");
@@ -496,17 +705,17 @@ void handleHistoryData() {
 
             server.sendContent("timestamp,tempCarrier,tempRoom,tempBME,humidity,co2Level,pumpPower,fanPower,extractorPower,mode\n");
 
-            const uint16_t CHUNK_SIZE = 50;
-            DataRecord chunk[CHUNK_SIZE];
-
-            for (uint16_t offset = 0; offset < totalRecords; offset += CHUNK_SIZE) {
+            for (uint16_t offset = startOffset; offset < totalRecords; offset += CHUNK_SIZE) {
                 uint16_t chunkCount = (totalRecords - offset > CHUNK_SIZE) ? CHUNK_SIZE : (totalRecords - offset);
 
-                if (readRAMDataChunk(chunk, offset, chunkCount)) {
+                if (readRAMDataChunk(chunk.get(), offset, chunkCount)) {
                     String csvChunk = "";
                     csvChunk.reserve(chunkCount * 80);
 
                     for (uint16_t i = 0; i < chunkCount; i++) {
+                        if (startTs > 0 && (chunk[i].timestamp < startTs || (endTs > 0 && chunk[i].timestamp > endTs))) {
+                            continue;
+                        }
                         csvChunk += String(chunk[i].timestamp) + ",";
                         csvChunk += String(isnan(chunk[i].tempCarrier) ? 0.0f : chunk[i].tempCarrier, 1) + ",";
                         csvChunk += String(isnan(chunk[i].tempRoom) ? 0.0f : chunk[i].tempRoom, 1) + ",";
@@ -518,30 +727,55 @@ void handleHistoryData() {
                         csvChunk += String(chunk[i].extractorPower) + ",";
                         csvChunk += String(chunk[i].mode) + "\n";
                     }
-                    server.sendContent(csvChunk);
+                    if (csvChunk.length() > 0) {
+                        esp_task_wdt_reset();
+                        server.sendContent(csvChunk);
+                    }
                     yield();
                 }
             }
             server.sendContent("");
 
         } else {
+            // Обчислюємо крок проріджування для JSON, щоб великі діапазони (тиждень/місяць з PSRAM) не перевантажували Chart.js
+            uint16_t effectiveMax = (maxPoints > 0) ? maxPoints : 1440;
+            uint16_t rangeCount = totalRecords - startOffset;
+            uint16_t step = 1;
+            if (startTs == 0 && rangeCount > effectiveMax) {
+                step = (rangeCount + effectiveMax - 1) / effectiveMax;
+            } else if (startTs > 0 && endTs >= startTs) {
+                uint32_t spanMinutes = (endTs - startTs) / 60UL + 1UL;
+                uint32_t estCount = (spanMinutes < rangeCount) ? spanMinutes : rangeCount;
+                if (estCount > effectiveMax) {
+                    step = (uint16_t)((estCount + effectiveMax - 1UL) / effectiveMax);
+                }
+            }
+
             server.setContentLength(CONTENT_LENGTH_UNKNOWN);
             server.send(200, "application/json", "");
 
             server.sendContent("{\"data\":[");
-
-            const uint16_t CHUNK_SIZE = 50;
-            DataRecord chunk[CHUNK_SIZE];
             bool firstRecord = true;
+            uint32_t matchedIdx = 0;
 
-            for (uint16_t offset = 0; offset < totalRecords; offset += CHUNK_SIZE) {
+            for (uint16_t offset = startOffset; offset < totalRecords; offset += CHUNK_SIZE) {
                 uint16_t chunkCount = (totalRecords - offset > CHUNK_SIZE) ? CHUNK_SIZE : (totalRecords - offset);
 
-                if (readRAMDataChunk(chunk, offset, chunkCount)) {
+                if (readRAMDataChunk(chunk.get(), offset, chunkCount)) {
                     String jsonChunk = "";
                     jsonChunk.reserve(chunkCount * 120);
 
                     for (uint16_t i = 0; i < chunkCount; i++) {
+                        if (startTs > 0 && (chunk[i].timestamp < startTs || (endTs > 0 && chunk[i].timestamp > endTs))) {
+                            continue;
+                        }
+                        bool isLastInBuffer = ((offset + i + 1) == totalRecords);
+                        if (step > 1 && (matchedIdx % step != 0) && !isLastInBuffer) {
+                            matchedIdx++;
+                            continue;
+                        }
+                        matchedIdx++;
+
                         if (!firstRecord) jsonChunk += ",";
                         jsonChunk += "{";
                         jsonChunk += "\"timestamp\":" + String(chunk[i].timestamp) + ",";
@@ -557,7 +791,10 @@ void handleHistoryData() {
                         jsonChunk += "}";
                         firstRecord = false;
                     }
-                    server.sendContent(jsonChunk);
+                    if (jsonChunk.length() > 0) {
+                        esp_task_wdt_reset();
+                        server.sendContent(jsonChunk);
+                    }
                     yield();
                 }
             }
@@ -567,29 +804,11 @@ void handleHistoryData() {
         }
 
     } else if (source == "spiffs") {
-        String data;
-
-        Serial.printf("📥 SPIFFS read request: %s to %s (format: %s)\n",
+        Serial.printf("📥 SPIFFS stream request: %s to %s (format: %s)\n",
                       startDate.c_str(), endDate.c_str(), format.c_str());
-
-        if (format == "csv") {
-            if (readSPIFFSDataCSV(startDate.c_str(), endDate.c_str(), data)) {
-                Serial.printf("✅ SPIFFS CSV: %u bytes\n", data.length());
-                server.sendHeader("Content-Disposition", "attachment; filename=klimat_archive.csv");
-                server.send(200, "text/csv", data);
-            } else {
-                Serial.println("❌ SPIFFS CSV read failed");
-                server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
-            }
-        } else {
-            if (readSPIFFSData(startDate.c_str(), endDate.c_str(), data)) {
-                Serial.printf("✅ SPIFFS JSON: %u bytes\n", data.length());
-                server.send(200, "application/json", data);
-            } else {
-                Serial.println("❌ SPIFFS JSON read failed");
-                server.send(500, "application/json", "{\"error\":\"Помилка читання SPIFFS\"}");
-            }
-        }
+        bool asCsv = (format == "csv");
+        String dlName = asCsv ? "klimat_archive.csv" : "";
+        streamAllSPIFFSRecords(startDate, endDate, asCsv, dlName);
     } else {
         server.send(400, "application/json", "{\"error\":\"Невірний параметр source\"}");
     }
@@ -630,6 +849,10 @@ void handleHistoryStats() {
 
     String json = "{";
     json += "\"totalRecordsRAM\":" + String(stats.totalRecordsRAM) + ",";
+    json += "\"ramBufferCapacity\":" + String(getRamBufferCapacity()) + ",";
+    json += "\"ramInPsram\":" + String(isRamBufferInPsram() ? "true" : "false") + ",";
+    json += "\"psramTotalBytes\":" + String(ESP.getPsramSize()) + ",";
+    json += "\"psramFreeBytes\":" + String(ESP.getFreePsram()) + ",";
     json += "\"totalRecordsSPIFFS\":" + String(stats.totalRecordsSPIFFS) + ",";
     json += "\"lastLogTimeRAM\":" + String(stats.lastLogTimeRAM) + ",";
     json += "\"lastLogTimeSPIFFS\":" + String(stats.lastLogTimeSPIFFS) + ",";
@@ -664,20 +887,8 @@ void handleHistoryExport() {
         return;
     }
 
-    String data;
-    String contentType;
-    String filename;
-
-    if (format == "json") {
-        data = exportToJSON(startDate.c_str(), endDate.c_str());
-        contentType = "application/json";
-        filename = "klimat_data_" + startDate + "_" + endDate + ".json";
-    } else {
-        data = exportToCSV(startDate.c_str(), endDate.c_str());
-        contentType = "text/csv";
-        filename = "klimat_data_" + startDate + "_" + endDate + ".csv";
-    }
-
-    server.sendHeader("Content-Disposition", "attachment; filename=" + filename);
-    server.send(200, contentType, data);
+    bool asCsv = (format != "json");
+    String ext = asCsv ? ".csv" : ".json";
+    String filename = "klimat_data_" + startDate + "_" + endDate + ext;
+    streamAllSPIFFSRecords(startDate, endDate, asCsv, filename);
 }

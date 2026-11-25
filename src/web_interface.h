@@ -28,6 +28,7 @@ void handleHistoryExport();
 void handleHistoryClearLogs();
 void handleHelpPage();
 void handleDebugPage();
+void handleTabletPage();
 
 // Servo calibration
 void handleServoPage();
@@ -51,8 +52,9 @@ String processWebCommand(const String& cmd);
 String wifiStrengthToHTML(int rssi);
 String encryptionTypeToString(wifi_auth_mode_t type);
 
-// Завдання веб-сервера
+// Завдання веб-сервера та безпечний перезапуск після відновлення Wi-Fi
 void webTask(void *parameter);
+void requestWebServerRestart();
 
 // ============================================================================
 // ЕНЕРГОКОНТРОЛЕР - forward declarations
@@ -84,9 +86,20 @@ void handleTC421ResetProfile();
 void handleTC421Manual();
 void handleTC421ApiManual();
 void handleTC421ApiStatus();
+void handleTC421ApiAuto();
 void handleTC421Off();
 void handleTC421Internal();
 void handleTC421SyncTime();
+
+// ============================================================================
+// ЕНЕРГО- ТА СВІТЛОВИЙ АУДИТ (/audit) - forward declarations
+// ============================================================================
+void handleAuditPage();
+void handleAuditPhyphoxProxy();
+void handleAuditProfileGet();
+void handleAuditProfilePost();
+void handleAuditDataGet();
+void handleAuditDataPost();
 
 // ============================================================================
 // OTA ТА BACKUP - forward declarations
